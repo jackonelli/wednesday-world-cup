@@ -1,4 +1,4 @@
-use crate::game::GoalCount;
+use crate::game::{Game, GoalCount};
 use crate::team::TeamId;
 use crate::Date;
 use thiserror::Error;
@@ -42,6 +42,15 @@ pub struct PrePlayoffGame {
 impl PrePlayoffGame {
     pub fn new(home: TeamId, away: TeamId, date: Date) -> Self {
         Self { home, away, date }
+    }
+}
+
+impl Game for PrePlayoffGame {
+    fn home_team(&self) -> TeamId {
+        self.home
+    }
+    fn away_team(&self) -> TeamId {
+        self.away
     }
 }
 
