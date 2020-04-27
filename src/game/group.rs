@@ -1,11 +1,11 @@
 use crate::fair_play::FairPlay;
-use crate::game::NumGames;
-use crate::game::{Game, GoalCount};
-use crate::group::stats::GroupPoint;
-use crate::group::stats::GroupTeamStats;
+use crate::game::GoalDiff;
+use crate::game::{Game, GoalCount, NumGames};
+use crate::group::stats::{GamesDiff, GroupPoint, GroupTeamStats};
 use crate::team::TeamId;
 use crate::Date;
 use derive_more::{Add, AddAssign};
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Score {
@@ -81,14 +81,29 @@ impl PlayedGroupGame {
         }
     }
 
+    fn goal_diff(&self) -> GoalDiff {
+        self.score.home - self.score.away
+    }
+
+    fn game_diff(&self) -> (GamesDiff, GamesDiff) {
+        let goal_diff = self.goal_diff();
+        let mut home = HashMap::new();
+        home.insert(self.away_team(), goal_diff);
+        let mut away = HashMap::new();
+        away.insert(self.home_team(), -goal_diff);
+        (home.into(), away.into())
+    }
+
     pub(crate) fn stats(&self) -> (GroupTeamStats, GroupTeamStats) {
         let (home_points, away_points) = self.points_rewarded();
+        let (home_game_diff, away_game_diff) = self.game_diff();
         let home_stats = GroupTeamStats::new(
             home_points,
             NumGames(1),
             self.score.home,
             self.score.away,
             0,
+            home_game_diff,
         );
         let away_stats = GroupTeamStats::new(
             away_points,
@@ -96,6 +111,7 @@ impl PlayedGroupGame {
             self.score.away,
             self.score.home,
             0,
+            away_game_diff,
         );
         (home_stats, away_stats)
     }

@@ -17,13 +17,17 @@ impl GroupStats {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, AddAssign)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, From)]
+pub(crate) struct GamesDiff(HashMap<TeamId, GoalDiff>);
+
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct GroupTeamStats {
     points: GroupPoint,
     games_played: NumGames,
     goals_scored: GoalCount,
     goals_conceded: GoalCount,
     fair_play: FairPlayScore,
+    games_diff: GamesDiff,
 }
 
 impl GroupTeamStats {
@@ -38,6 +42,7 @@ impl GroupTeamStats {
         goals_scored: G,
         goals_conceded: G,
         fair_play: F,
+        games_diff: GamesDiff,
     ) -> Self {
         GroupTeamStats {
             points: points.into(),
@@ -45,6 +50,7 @@ impl GroupTeamStats {
             goals_scored: goals_scored.into(),
             goals_conceded: goals_conceded.into(),
             fair_play: fair_play.into(),
+            games_diff,
         }
     }
 
@@ -78,6 +84,25 @@ impl std::cmp::Ord for GroupTeamStats {
     }
 }
 
+impl std::ops::AddAssign for GroupTeamStats {
+    fn add_assign(&mut self, rhs: GroupTeamStats) {
+        self.points += rhs.points;
+        self.games_played += rhs.games_played;
+        self.goals_scored += rhs.goals_scored;
+        self.goals_conceded += rhs.goals_conceded;
+        self.fair_play += rhs.fair_play;
+        self.games_diff = rhs
+            .games_diff
+            .0
+            .iter()
+            // TODO: The clone seems unecessry
+            .fold(self.games_diff.clone(), |mut acc, game_diff| {
+                acc.0.insert(*game_diff.0, *game_diff.1);
+                acc
+            });
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct GroupPoint(pub u8);
 
@@ -86,15 +111,15 @@ mod tests {
     use super::*;
     #[test]
     fn group_team_stats_ordering_points_and_games_played() {
-        let stats_1 = GroupTeamStats::new(1, 2, 4, 2, 0);
-        let stats_2 = GroupTeamStats::new(1, 0, 0, 1, 0);
+        let stats_1 = GroupTeamStats::new(1, 2, 4, 2, 0, GamesDiff::default());
+        let stats_2 = GroupTeamStats::new(1, 0, 0, 1, 0, GamesDiff::default());
         more_asserts::assert_gt!(stats_1, stats_2);
     }
 
     #[test]
     fn group_team_stats_ordering_points() {
-        let stats_1 = GroupTeamStats::new(0, 2, 4, 2, 0);
-        let stats_2 = GroupTeamStats::new(1, 0, 0, 1, 0);
+        let stats_1 = GroupTeamStats::new(0, 2, 4, 2, 0, GamesDiff::default());
+        let stats_2 = GroupTeamStats::new(1, 0, 0, 1, 0, GamesDiff::default());
         more_asserts::assert_lt!(stats_1, stats_2);
     }
 }

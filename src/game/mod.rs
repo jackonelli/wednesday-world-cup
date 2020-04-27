@@ -1,5 +1,5 @@
 use crate::team::TeamId;
-use derive_more::{Add, AddAssign, From};
+use derive_more::{Add, AddAssign, From, Neg};
 use std::ops::Sub;
 pub mod group;
 pub mod playoff;
@@ -14,7 +14,7 @@ impl Sub for GoalCount {
     }
 }
 
-#[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
+#[derive(Default, Debug, Clone, Copy, From, Eq, Neg, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct GoalDiff(pub i8);
 
 #[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
