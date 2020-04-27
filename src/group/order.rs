@@ -12,21 +12,6 @@ pub trait Order {
     }
 }
 
-pub struct GroupOrder(Vec<TeamId>);
-
-impl GroupOrder {
-    fn team_by_rank(&self, rank: GroupRank) -> TeamId {
-        // TODO impl slice for rank: GroupOrder[GroupRank] -> TeamId
-        (self.0)[rank.0]
-    }
-    pub fn winner(&self) -> TeamId {
-        self.team_by_rank(GroupRank(0))
-    }
-    pub fn runner_up(&self) -> TeamId {
-        self.team_by_rank(GroupRank(1))
-    }
-}
-
 /// FIFA World Cup 2018 Order
 ///
 /// https://www.fifa.com/worldcup/news/tie-breakers-for-russia-2018-groups
@@ -50,4 +35,23 @@ impl GroupOrder {
 /// 8. Drawing of lots by the FIFA.
 pub struct Fifa2018Order {}
 
+#[derive(Clone, Copy, Debug)]
 pub struct GroupRank(usize);
+
+pub struct GroupOrder(Vec<TeamId>);
+
+impl GroupOrder {
+    pub fn winner(&self) -> TeamId {
+        self[GroupRank(0)]
+    }
+    pub fn runner_up(&self) -> TeamId {
+        self[GroupRank(1)]
+    }
+}
+
+impl std::ops::Index<GroupRank> for GroupOrder {
+    type Output = TeamId;
+    fn index(&self, idx: GroupRank) -> &Self::Output {
+        &self.0[idx.0]
+    }
+}
