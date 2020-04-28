@@ -1,5 +1,6 @@
 use crate::game::group::{PlayedGroupGame, PreGroupGame};
 use crate::game::Game;
+use crate::group::order::GroupOrder;
 use crate::group::stats::{GroupStats, GroupTeamStats};
 use crate::team::TeamId;
 use std::collections::HashSet;
@@ -38,8 +39,8 @@ impl Group {
         })
     }
 
-    fn rank_teams(&self) -> Vec<TeamId> {
-        let stats = self.stats();
+    fn rank_teams(&self, order: fn(&Group) -> GroupOrder) -> Vec<TeamId> {
+        let group_ranking = order(self);
         todo!();
     }
 

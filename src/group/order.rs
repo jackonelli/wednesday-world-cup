@@ -28,12 +28,18 @@ pub trait Order {
 /// 5. Goal difference resulting from the group matches between the teams concerned
 /// 6. Greater number of goals scored in all group matches between the teams concerned
 /// 7. Greater number of points obtained in the fair play conduct of the teams based on yellow and red cards received in all group matches
-///     - Yellow card: –1 points
-///     - Indirect red card (second yellow card): –3 points
-///     - Direct red card: –4 points
-///     - Yellow card and direct red card: –5 points
+///     - Yellow card: -1 points
+///     - Indirect red card (second yellow card): -3 points
+///     - Direct red card: -4 points
+///     - Yellow card and direct red card: -5 points
 /// 8. Drawing of lots by the FIFA.
 pub struct Fifa2018Order {}
+
+impl Order for Fifa2018Order {
+    fn order(&self, group: &Group) -> GroupOrder {
+        todo!();
+    }
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct GroupRank(usize);
