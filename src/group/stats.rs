@@ -5,7 +5,7 @@ use derive_more::{Add, AddAssign, From};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct PrimaryStats {
     points: GroupPoint,
     goal_diff: GoalDiff,
@@ -68,11 +68,39 @@ pub trait Unary {}
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use rand::seq::SliceRandom;
+    use rand::{thread_rng, Rng};
     #[test]
     fn primary_stats_points() {
         let stats_1 = PrimaryStats::new(0, 2, 4);
         let stats_2 = PrimaryStats::new(1, 0, 0);
-        more_asserts::assert_lt!(stats_1, stats_2);
+        more_asserts::assert_gt!(stats_2, stats_1);
+    }
+
+    #[test]
+    fn primary_stats_points_goal_diff() {
+        let stats_1 = PrimaryStats::new(1, 2, 4);
+        let stats_2 = PrimaryStats::new(1, 0, 0);
+        more_asserts::assert_gt!(stats_1, stats_2);
+    }
+
+    #[test]
+    fn primary_stats_points_goaldiff_goalsscored() {
+        let stats_1 = PrimaryStats::new(3, -2, 4);
+        let stats_2 = PrimaryStats::new(3, -2, 0);
+        more_asserts::assert_gt!(stats_1, stats_2);
+    }
+    #[test]
+    fn sort_in_vector() {
+        let stats_1 = PrimaryStats::new(3, -2, 4);
+        let stats_2 = PrimaryStats::new(3, -2, 0);
+        let stats_3 = PrimaryStats::new(1, 2, 4);
+        let stats_4 = PrimaryStats::new(1, 0, 0);
+        let true_vec = vec![stats_1, stats_2, stats_3, stats_4];
+        let mut stats_vec = true_vec.clone();
+        stats_vec.shuffle(&mut thread_rng());
+        stats_vec.sort();
+        stats_vec.reverse();
+        assert_eq!(true_vec, stats_vec);
     }
 }
