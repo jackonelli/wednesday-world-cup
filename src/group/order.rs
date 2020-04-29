@@ -23,6 +23,8 @@ use crate::team::TeamId;
 ///     - Direct red card: -4 points
 ///     - Yellow card and direct red card: -5 points
 /// 8. Drawing of lots by the FIFA.
+///
+/// TODO: Complete rules 4-8
 pub fn fifa_2018_rules(group: &Group) -> GroupOrder {
     let mut team_stats: Vec<(TeamId, PrimaryStats)> = group
         .primary_stats()
@@ -30,8 +32,8 @@ pub fn fifa_2018_rules(group: &Group) -> GroupOrder {
         .map(|(team, stat)| (team, stat))
         .collect();
     team_stats.sort_by_key(|x| x.1);
-    team_stats.reverse();
-    GroupOrder(team_stats.into_iter().map(|(team, _)| team).collect())
+    // Need to reverse the iter since the sort is ascending
+    GroupOrder(team_stats.into_iter().rev().map(|(team, _)| team).collect())
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -89,6 +91,19 @@ mod tests {
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
+        assert_eq!(true_order, group_order);
+    }
+
+    /// Two teams with same points, diff and score.
+    /// The internal game decides
+    #[test]
+    fn internal_game() {
+        let game_1 = PlayedGroupGame::new(0, 0, 1, (1, 0), (0, 0), Date {});
+        let game_2 = PlayedGroupGame::new(0, 0, 2, (0, 1), (0, 0), Date {});
+        let game_3 = PlayedGroupGame::new(0, 1, 2, (1, 0), (0, 0), Date {});
+        let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
+        let group_order = order::fifa_2018_rules(&group);
+        let true_order = GroupOrder(vec![0, 1, 2].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 }
