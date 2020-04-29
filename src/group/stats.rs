@@ -76,10 +76,6 @@ impl std::cmp::Ord for GroupTeamStats {
             return pot_order;
         }
         let pot_order = self.goals_scored.cmp(&other.goals_scored);
-        if pot_order != Ordering::Equal {
-            return pot_order;
-        }
-        let pot_order = self.goals_scored.cmp(&other.goals_scored);
         pot_order
     }
 }
@@ -105,6 +101,19 @@ impl std::ops::AddAssign for GroupTeamStats {
 
 #[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct GroupPoint(pub u8);
+
+impl Unary for GroupPoint {}
+
+impl num::Zero for GroupPoint {
+    fn zero() -> GroupPoint {
+        GroupPoint(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+
+pub trait Unary {}
 
 #[cfg(test)]
 mod tests {

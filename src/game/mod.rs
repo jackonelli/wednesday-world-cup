@@ -1,3 +1,4 @@
+use crate::group::stats::Unary;
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign, From, Neg};
 use std::ops::Sub;
@@ -14,8 +15,30 @@ impl Sub for GoalCount {
     }
 }
 
+impl Unary for GoalCount {}
+
+impl num::Zero for GoalCount {
+    fn zero() -> GoalCount {
+        GoalCount(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+
 #[derive(Default, Debug, Clone, Copy, From, Eq, Neg, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct GoalDiff(pub i8);
+
+impl Unary for GoalDiff {}
+
+impl num::Zero for GoalDiff {
+    fn zero() -> GoalDiff {
+        GoalDiff(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
 
 #[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct NumGames(pub u8);

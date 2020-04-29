@@ -1,9 +1,10 @@
+use crate::game::group;
 use crate::game::group::{PlayedGroupGame, PreGroupGame};
-use crate::game::Game;
+use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::order::GroupOrder;
-use crate::group::stats::{GroupStats, GroupTeamStats};
+use crate::group::stats::{GroupPoint, GroupStats, GroupTeamStats, Unary};
 use crate::team::TeamId;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 pub mod order;
 pub mod stats;
@@ -44,25 +45,58 @@ impl Group {
         todo!();
     }
 
+    pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
+        self.unary_stat(group::points)
+    }
+
+    pub fn goal_diff(&self) -> HashMap<TeamId, GoalDiff> {
+        self.unary_stat(group::goal_diff)
+    }
+
+    pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
+        self.unary_stat(group::goals_scored)
+    }
+
+    fn unary_stat<T>(&self, stat: fn(&PlayedGroupGame) -> (T, T)) -> HashMap<TeamId, T>
+    where
+        T: Unary + num::Zero + std::ops::AddAssign,
+    {
+        let team_map = self.teams().fold(HashMap::new(), |mut acc, team| {
+            acc.insert(team, T::zero());
+            acc
+        });
+
+        self.team_stat_from_played_games(team_map, stat)
+    }
+
+    fn team_stat_from_played_games<T>(
+        &self,
+        default_map: HashMap<TeamId, T>,
+        stat: fn(&PlayedGroupGame) -> (T, T),
+    ) -> HashMap<TeamId, T>
+    where
+        T: std::ops::AddAssign,
+    {
+        self.played_games.iter().fold(default_map, |mut acc, game| {
+            let (delta_home_stat, delta_away_stat) = stat(game);
+
+            let stats = acc
+                .get_mut(&game.home)
+                .expect("TeamId will always be present");
+            *stats += delta_home_stat;
+
+            let stats = acc
+                .get_mut(&game.away)
+                .expect("TeamId will always be present");
+            *stats += delta_away_stat;
+            acc
+        })
+    }
+
+    ///Remove?
     pub fn stats(&self) -> GroupStats {
-        self.played_games
-            .iter()
-            .fold(self.init_group_stats(), |mut acc, game| {
-                let (delta_home_stats, delta_away_stats) = game.stats();
-
-                let stats = acc
-                    .0
-                    .get_mut(&game.home)
-                    .expect("TeamId will always be present");
-                *stats += delta_home_stats;
-
-                let stats = acc
-                    .0
-                    .get_mut(&game.away)
-                    .expect("TeamId will always be present");
-                *stats += delta_away_stats;
-                acc
-            })
+        let team_map = self.init_group_stats().0;
+        GroupStats(self.team_stat_from_played_games(team_map, group::stats))
     }
 }
 

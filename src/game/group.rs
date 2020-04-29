@@ -70,7 +70,7 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
-    pub(crate) fn points_rewarded(&self) -> (GroupPoint, GroupPoint) {
+    pub(crate) fn points(&self) -> (GroupPoint, GroupPoint) {
         let score = &self.score;
         if score.home > score.away {
             (GroupPoint(3), GroupPoint(0))
@@ -81,40 +81,68 @@ impl PlayedGroupGame {
         }
     }
 
-    fn goal_diff(&self) -> GoalDiff {
-        self.score.home - self.score.away
+    fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
+        goal_diff(self)
+    }
+
+    fn goals_scored(&self) -> (GoalCount, GoalCount) {
+        goals_scored(self)
     }
 
     fn game_diff(&self) -> (GamesDiff, GamesDiff) {
-        let goal_diff = self.goal_diff();
+        let (goal_diff_home, goal_diff_away) = self.goal_diff();
         let mut home = HashMap::new();
-        home.insert(self.away_team(), goal_diff);
+        home.insert(self.away_team(), goal_diff_home);
         let mut away = HashMap::new();
-        away.insert(self.home_team(), -goal_diff);
+        away.insert(self.home_team(), goal_diff_away);
         (home.into(), away.into())
     }
 
     pub(crate) fn stats(&self) -> (GroupTeamStats, GroupTeamStats) {
-        let (home_points, away_points) = self.points_rewarded();
-        let (home_game_diff, away_game_diff) = self.game_diff();
-        let home_stats = GroupTeamStats::new(
-            home_points,
-            NumGames(1),
-            self.score.home,
-            self.score.away,
-            0,
-            home_game_diff,
-        );
-        let away_stats = GroupTeamStats::new(
-            away_points,
-            NumGames(1),
-            self.score.away,
-            self.score.home,
-            0,
-            away_game_diff,
-        );
-        (home_stats, away_stats)
+        stats(self)
     }
+}
+
+pub fn points(game: &PlayedGroupGame) -> (GroupPoint, GroupPoint) {
+    let score = &game.score;
+    if score.home > score.away {
+        (GroupPoint(3), GroupPoint(0))
+    } else if score.home < score.away {
+        (GroupPoint(0), GroupPoint(3))
+    } else {
+        (GroupPoint(1), GroupPoint(1))
+    }
+}
+
+pub fn goal_diff(game: &PlayedGroupGame) -> (GoalDiff, GoalDiff) {
+    let goal_diff = game.score.home - game.score.away;
+    (goal_diff, -goal_diff)
+}
+
+pub fn goals_scored(game: &PlayedGroupGame) -> (GoalCount, GoalCount) {
+    (game.score.home, game.score.away)
+}
+
+pub(crate) fn stats(game: &PlayedGroupGame) -> (GroupTeamStats, GroupTeamStats) {
+    let (home_points, away_points) = game.points();
+    let (home_game_diff, away_game_diff) = game.game_diff();
+    let home_stats = GroupTeamStats::new(
+        home_points,
+        NumGames(1),
+        game.score.home,
+        game.score.away,
+        0,
+        home_game_diff,
+    );
+    let away_stats = GroupTeamStats::new(
+        away_points,
+        NumGames(1),
+        game.score.away,
+        game.score.home,
+        0,
+        away_game_diff,
+    );
+    (home_stats, away_stats)
 }
 
 impl Game for PreGroupGame {
@@ -146,7 +174,7 @@ mod tests {
             fair_play: FairPlay::default(),
             date: Date {},
         };
-        let (home, away) = game.points_rewarded();
+        let (home, away) = game.points();
         assert_eq!(home, GroupPoint(3));
         assert_eq!(away, GroupPoint(0));
     }
@@ -164,7 +192,7 @@ mod tests {
             fair_play: FairPlay::new(0, 0, 0, 0),
             date: Date {},
         };
-        let (home, away) = game.points_rewarded();
+        let (home, away) = game.points();
         assert_eq!(home, GroupPoint(0));
         assert_eq!(away, GroupPoint(3));
     }
@@ -182,7 +210,7 @@ mod tests {
             fair_play: FairPlay::new(0, 0, 0, 0),
             date: Date {},
         };
-        let (home, away) = game.points_rewarded();
+        let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));
     }
