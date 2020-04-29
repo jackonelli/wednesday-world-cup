@@ -1,16 +1,6 @@
+use crate::group::stats::PrimaryStats;
 use crate::group::Group;
 use crate::team::TeamId;
-
-// TODO: Struct best way? Perhaps alias trait Fn: Group -> GroupOrder?
-pub trait Order {
-    fn order(&self, group: &Group) -> GroupOrder;
-    fn winner(&self, group: &Group) -> TeamId {
-        self.order(group).winner()
-    }
-    fn runner_up(&self, group: &Group) -> TeamId {
-        self.order(group).runner_up()
-    }
-}
 
 /// FIFA World Cup 2018 Order
 ///
@@ -33,17 +23,21 @@ pub trait Order {
 ///     - Direct red card: -4 points
 ///     - Yellow card and direct red card: -5 points
 /// 8. Drawing of lots by the FIFA.
-pub struct Fifa2018Order {}
-
-impl Order for Fifa2018Order {
-    fn order(&self, group: &Group) -> GroupOrder {
-        todo!();
-    }
+pub fn fifa_2018_rules(group: &Group) -> GroupOrder {
+    let mut team_stats: Vec<(TeamId, PrimaryStats)> = group
+        .primary_stats()
+        .into_iter()
+        .map(|(team, stat)| (team, stat))
+        .collect();
+    team_stats.sort_by_key(|x| x.1);
+    team_stats.reverse();
+    GroupOrder(team_stats.into_iter().map(|(team, _)| team).collect())
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct GroupRank(usize);
 
+#[derive(Debug, PartialEq)]
 pub struct GroupOrder(Vec<TeamId>);
 
 impl GroupOrder {
@@ -53,11 +47,48 @@ impl GroupOrder {
     pub fn runner_up(&self) -> TeamId {
         self[GroupRank(1)]
     }
+    pub fn iter(&self) -> impl Iterator<Item = &TeamId> {
+        self.0.iter()
+    }
 }
 
 impl std::ops::Index<GroupRank> for GroupOrder {
     type Output = TeamId;
     fn index(&self, idx: GroupRank) -> &Self::Output {
         &self.0[idx.0]
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::game::group::PlayedGroupGame;
+    use crate::group::order;
+    use crate::group::Group;
+    use crate::Date;
+
+    /// One round of the group stage of 4 teams.
+    /// Strict order only on PrimaryStats
+    #[test]
+    fn simple_point_order() {
+        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date {});
+        let game_2 = PlayedGroupGame::new(0, 2, 3, (1, 0), (0, 0), Date {});
+        let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+        let group_order = order::fifa_2018_rules(&group);
+        let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
+        assert_eq!(true_order, group_order);
+    }
+
+    /// One round of the group stage of 4 teams.
+    /// FairPlayScore necessary for strict order
+    /// Is the sorting deterministic if the order is not strict?
+    #[test]
+    fn fair_play_order() {
+        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 0), (1, 4), Date {});
+        let game_2 = PlayedGroupGame::new(0, 2, 3, (0, 0), (0, 2), Date {});
+        let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+        let group_order = order::fifa_2018_rules(&group);
+        let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
+        assert_eq!(true_order, group_order);
     }
 }

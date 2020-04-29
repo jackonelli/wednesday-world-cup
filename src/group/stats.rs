@@ -1,11 +1,8 @@
-use crate::fair_play::FairPlayScore;
-use crate::game::{GoalCount, GoalDiff, NumGames};
-use crate::team::TeamId;
+use crate::game::{GoalCount, GoalDiff};
 use derive_more::{Add, AddAssign, From};
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct PrimaryStats {
     points: GroupPoint,
     goal_diff: GoalDiff,
@@ -41,13 +38,16 @@ impl std::cmp::Ord for PrimaryStats {
     }
 }
 
-impl std::ops::AddAssign for PrimaryStats {
-    fn add_assign(&mut self, rhs: PrimaryStats) {
-        self.points += rhs.points;
-        self.goal_diff += rhs.goal_diff;
-        self.goals_scored += rhs.goals_scored;
+impl num::Zero for PrimaryStats {
+    fn zero() -> Self {
+        PrimaryStats::default()
+    }
+    fn is_zero(&self) -> bool {
+        self.points.0 == 0 && self.goal_diff.0 == 0 && self.goals_scored.0 == 0
     }
 }
+
+impl Unary for PrimaryStats {}
 
 #[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct GroupPoint(pub u8);
@@ -78,7 +78,7 @@ mod tests {
     }
 
     #[test]
-    fn primary_stats_points_goal_diff() {
+    fn primary_stats_points_goaldiff() {
         let stats_1 = PrimaryStats::new(1, 2, 4);
         let stats_2 = PrimaryStats::new(1, 0, 0);
         more_asserts::assert_gt!(stats_1, stats_2);

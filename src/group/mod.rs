@@ -2,7 +2,7 @@ use crate::game::group;
 use crate::game::group::{PlayedGroupGame, PreGroupGame};
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::order::GroupOrder;
-use crate::group::stats::{GroupPoint, Unary};
+use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
 use crate::team::TeamId;
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
@@ -33,9 +33,8 @@ impl Group {
         unique_set.into_iter()
     }
 
-    fn rank_teams(&self, order: fn(&Group) -> GroupOrder) -> Vec<TeamId> {
-        let group_ranking = order(self);
-        todo!();
+    fn rank_teams(&self, order: fn(&Group) -> GroupOrder) -> GroupOrder {
+        order(self)
     }
 
     pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
@@ -48,6 +47,10 @@ impl Group {
 
     pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
         self.unary_stat(group::goals_scored)
+    }
+
+    pub fn primary_stats(&self) -> HashMap<TeamId, PrimaryStats> {
+        self.unary_stat(group::primary_stats)
     }
 
     fn unary_stat<T>(&self, stat: fn(&PlayedGroupGame) -> (T, T)) -> HashMap<TeamId, T>
@@ -105,14 +108,15 @@ pub enum GroupError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::fair_play::FairPlay;
-    use crate::game::group::{GroupGameId, PreGroupGame, Score};
+    use crate::fair_play::FairPlayScore;
+    use crate::game::group::PreGroupGame;
+    use crate::game::group::Score;
     use crate::team::TeamId;
     use crate::Date;
     #[test]
     fn test_team_from_game_vec() {
-        let game_1 = PreGroupGame::new(GroupGameId(1), TeamId(0), TeamId(1), Date {});
-        let game_2 = PreGroupGame::new(GroupGameId(2), TeamId(0), TeamId(3), Date {});
+        let game_1 = PreGroupGame::new(1, 0, 1, Date {});
+        let game_2 = PreGroupGame::new(2, 0, 3, Date {});
         let parsed_teams: HashSet<TeamId> = team_set_from_game_vec(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
@@ -122,16 +126,17 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::new(GroupGameId(1), TeamId(0), TeamId(1), Date {});
-        let game_2 = PreGroupGame::new(GroupGameId(2), TeamId(0), TeamId(3), Date {});
-        let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1, game_2], vec![])
+        let game_1 = PreGroupGame::new(1, 0, 1, Date {});
+        let game_2 =
+            PreGroupGame::new(3, 1, 2, Date {}).play(Score::new(2, 0), FairPlayScore::default());
+        let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .teams()
             .collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
         true_teams.insert(TeamId(1));
-        true_teams.insert(TeamId(3));
+        true_teams.insert(TeamId(2));
         assert_eq!(true_teams, parsed_teams)
     }
 }
