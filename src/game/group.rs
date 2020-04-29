@@ -1,11 +1,10 @@
 use crate::fair_play::FairPlay;
 use crate::game::GoalDiff;
-use crate::game::{Game, GoalCount, NumGames};
-use crate::group::stats::{GamesDiff, GroupPoint, GroupTeamStats};
+use crate::game::{Game, GoalCount};
+use crate::group::stats::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
 use derive_more::{Add, AddAssign};
-use std::collections::HashMap;
 
 #[derive(Clone)]
 pub struct Score {
@@ -88,19 +87,6 @@ impl PlayedGroupGame {
     fn goals_scored(&self) -> (GoalCount, GoalCount) {
         goals_scored(self)
     }
-
-    fn game_diff(&self) -> (GamesDiff, GamesDiff) {
-        let (goal_diff_home, goal_diff_away) = self.goal_diff();
-        let mut home = HashMap::new();
-        home.insert(self.away_team(), goal_diff_home);
-        let mut away = HashMap::new();
-        away.insert(self.home_team(), goal_diff_away);
-        (home.into(), away.into())
-    }
-
-    pub(crate) fn stats(&self) -> (GroupTeamStats, GroupTeamStats) {
-        stats(self)
-    }
 }
 
 pub fn points(game: &PlayedGroupGame) -> (GroupPoint, GroupPoint) {
@@ -121,28 +107,6 @@ pub fn goal_diff(game: &PlayedGroupGame) -> (GoalDiff, GoalDiff) {
 
 pub fn goals_scored(game: &PlayedGroupGame) -> (GoalCount, GoalCount) {
     (game.score.home, game.score.away)
-}
-
-pub(crate) fn stats(game: &PlayedGroupGame) -> (GroupTeamStats, GroupTeamStats) {
-    let (home_points, away_points) = game.points();
-    let (home_game_diff, away_game_diff) = game.game_diff();
-    let home_stats = GroupTeamStats::new(
-        home_points,
-        NumGames(1),
-        game.score.home,
-        game.score.away,
-        0,
-        home_game_diff,
-    );
-    let away_stats = GroupTeamStats::new(
-        away_points,
-        NumGames(1),
-        game.score.away,
-        game.score.home,
-        0,
-        away_game_diff,
-    );
-    (home_stats, away_stats)
 }
 
 impl Game for PreGroupGame {

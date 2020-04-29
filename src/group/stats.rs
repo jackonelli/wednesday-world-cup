@@ -5,97 +5,47 @@ use derive_more::{Add, AddAssign, From};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-#[derive(Default, Debug)]
-pub struct GroupStats(pub HashMap<TeamId, GroupTeamStats>);
-
-impl GroupStats {
-    pub fn get(&self, id: &TeamId) -> Option<&GroupTeamStats> {
-        self.0.get(id)
-    }
-    pub fn rank_teams() -> Vec<TeamId> {
-        todo!()
-    }
-}
-
-#[derive(Debug, Clone, Default, Eq, PartialEq, From)]
-pub(crate) struct GamesDiff(HashMap<TeamId, GoalDiff>);
-
 #[derive(Debug, Default, Eq, PartialEq)]
-pub struct GroupTeamStats {
+pub struct PrimaryStats {
     points: GroupPoint,
-    games_played: NumGames,
+    goal_diff: GoalDiff,
     goals_scored: GoalCount,
-    goals_conceded: GoalCount,
-    fair_play: FairPlayScore,
-    games_diff: GamesDiff,
 }
 
-impl GroupTeamStats {
-    pub(crate) fn new<
-        P: Into<GroupPoint>,
-        N: Into<NumGames>,
-        G: Into<GoalCount>,
-        F: Into<FairPlayScore>,
-    >(
+impl PrimaryStats {
+    pub(crate) fn new<P: Into<GroupPoint>, D: Into<GoalDiff>, G: Into<GoalCount>>(
         points: P,
-        games_played: N,
+        goal_diff: D,
         goals_scored: G,
-        goals_conceded: G,
-        fair_play: F,
-        games_diff: GamesDiff,
     ) -> Self {
-        GroupTeamStats {
+        PrimaryStats {
             points: points.into(),
-            games_played: games_played.into(),
+            goal_diff: goal_diff.into(),
             goals_scored: goals_scored.into(),
-            goals_conceded: goals_conceded.into(),
-            fair_play: fair_play.into(),
-            games_diff,
         }
     }
-
-    pub fn goal_diff(&self) -> GoalDiff {
-        self.goals_scored - self.goals_conceded
-    }
 }
 
-impl std::cmp::PartialOrd for GroupTeamStats {
+impl std::cmp::PartialOrd for PrimaryStats {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl std::cmp::Ord for GroupTeamStats {
+impl std::cmp::Ord for PrimaryStats {
     fn cmp(&self, other: &Self) -> Ordering {
-        let pot_order = self.points.cmp(&other.points);
-        if pot_order != Ordering::Equal {
-            return pot_order;
-        }
-        let pot_order = self.goal_diff().cmp(&other.goal_diff());
-        if pot_order != Ordering::Equal {
-            return pot_order;
-        }
-        let pot_order = self.goals_scored.cmp(&other.goals_scored);
-        pot_order
+        self.points
+            .cmp(&other.points)
+            .then(self.goal_diff.cmp(&other.goal_diff))
+            .then(self.goals_scored.cmp(&other.goals_scored))
     }
 }
 
-impl std::ops::AddAssign for GroupTeamStats {
-    fn add_assign(&mut self, rhs: GroupTeamStats) {
+impl std::ops::AddAssign for PrimaryStats {
+    fn add_assign(&mut self, rhs: PrimaryStats) {
         self.points += rhs.points;
-        self.games_played += rhs.games_played;
+        self.goal_diff += rhs.goal_diff;
         self.goals_scored += rhs.goals_scored;
-        self.goals_conceded += rhs.goals_conceded;
-        self.fair_play += rhs.fair_play;
-        self.games_diff = rhs
-            .games_diff
-            .0
-            .iter()
-            // TODO: The clone seems unecessry
-            .fold(self.games_diff.clone(), |mut acc, game_diff| {
-                acc.0.insert(*game_diff.0, *game_diff.1);
-                acc
-            });
     }
 }
 
@@ -118,17 +68,11 @@ pub trait Unary {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn group_team_stats_ordering_points_and_games_played() {
-        let stats_1 = GroupTeamStats::new(1, 2, 4, 2, 0, GamesDiff::default());
-        let stats_2 = GroupTeamStats::new(1, 0, 0, 1, 0, GamesDiff::default());
-        more_asserts::assert_gt!(stats_1, stats_2);
-    }
 
     #[test]
-    fn group_team_stats_ordering_points() {
-        let stats_1 = GroupTeamStats::new(0, 2, 4, 2, 0, GamesDiff::default());
-        let stats_2 = GroupTeamStats::new(1, 0, 0, 1, 0, GamesDiff::default());
+    fn primary_stats_points() {
+        let stats_1 = PrimaryStats::new(0, 2, 4);
+        let stats_2 = PrimaryStats::new(1, 0, 0);
         more_asserts::assert_lt!(stats_1, stats_2);
     }
 }

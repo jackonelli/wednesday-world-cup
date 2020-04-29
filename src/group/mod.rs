@@ -2,7 +2,7 @@ use crate::game::group;
 use crate::game::group::{PlayedGroupGame, PreGroupGame};
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::order::GroupOrder;
-use crate::group::stats::{GroupPoint, GroupStats, GroupTeamStats, Unary};
+use crate::group::stats::{GroupPoint, Unary};
 use crate::team::TeamId;
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
@@ -31,13 +31,6 @@ impl Group {
         let upcoming_teams = team_set_from_game_vec(&self.upcoming_games);
         unique_set.extend(upcoming_teams);
         unique_set.into_iter()
-    }
-
-    fn init_group_stats(&self) -> GroupStats {
-        self.teams().fold(GroupStats::default(), |mut acc, id| {
-            acc.0.insert(id, GroupTeamStats::default());
-            acc
-        })
     }
 
     fn rank_teams(&self, order: fn(&Group) -> GroupOrder) -> Vec<TeamId> {
@@ -92,12 +85,6 @@ impl Group {
             acc
         })
     }
-
-    ///Remove?
-    pub fn stats(&self) -> GroupStats {
-        let team_map = self.init_group_stats().0;
-        GroupStats(self.team_stat_from_played_games(team_map, group::stats))
-    }
 }
 
 fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> {
@@ -120,7 +107,6 @@ mod tests {
     use super::*;
     use crate::fair_play::FairPlay;
     use crate::game::group::{GroupGameId, PreGroupGame, Score};
-    use crate::group::stats::GamesDiff;
     use crate::team::TeamId;
     use crate::Date;
     #[test]
@@ -147,34 +133,5 @@ mod tests {
         true_teams.insert(TeamId(1));
         true_teams.insert(TeamId(3));
         assert_eq!(true_teams, parsed_teams)
-    }
-    #[test]
-    fn stats_from_played_games() {
-        let dummy_fair_play = FairPlay::default();
-        let score = Score::new(2, 1);
-        let game_1 = PreGroupGame::new(GroupGameId(1), TeamId(0), TeamId(1), Date {});
-        let game_1 = game_1.play(score, dummy_fair_play.clone());
-
-        let score = Score::new(0, 0);
-        let game_2 = PreGroupGame::new(GroupGameId(2), TeamId(2), TeamId(3), Date {});
-        let game_2 = game_2.play(score, dummy_fair_play.clone());
-
-        let score = Score::new(2, 1);
-        let game_3 = PreGroupGame::new(GroupGameId(3), TeamId(3), TeamId(1), Date {});
-        let game_3 = game_3.play(score, dummy_fair_play.clone());
-
-        let games = vec![game_1, game_2, game_3];
-        let group = Group::try_new(Vec::new(), games).unwrap();
-        let stats = group.stats();
-        let is_1 = stats.get(&TeamId(1)).unwrap();
-        let is_2 = stats.get(&TeamId(2)).unwrap();
-        let is_3 = stats.get(&TeamId(3)).unwrap();
-
-        let true_1 = &GroupTeamStats::new(0, 2, 2, 4, 0, GamesDiff::default());
-        let true_2 = &GroupTeamStats::new(1, 1, 0, 0, 0, GamesDiff::default());
-        let true_3 = &GroupTeamStats::new(4, 2, 2, 1, 0, GamesDiff::default());
-        assert_eq!(is_1, true_1);
-        assert_eq!(is_2, true_2);
-        assert_eq!(is_3, true_3);
     }
 }
