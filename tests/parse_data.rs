@@ -1,13 +1,10 @@
-use std::fs::File;
-use std::io::Read;
-use wednesday_world_cup::data::Data;
+use wednesday_world_cup::data::lsv;
+use wednesday_world_cup::utils::file_io;
 
 #[test]
 fn teams_from_full_data() {
-    let mut file = File::open("tests/data/wc-2018.json").expect("File not found.");
-    let mut data = String::new();
-    file.read_to_string(&mut data)
-        .expect("Error reading file contents to string.");
-    let data: Data = serde_json::from_str(&data).expect("JSON format error.");
+    let data_json = file_io::read_json_file_to_str("tests/data/wc-2018.json")
+        .expect("Could not read from file");
+    let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
     assert_eq!(data.teams.len(), 32);
 }

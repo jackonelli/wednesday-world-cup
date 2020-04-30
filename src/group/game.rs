@@ -2,11 +2,13 @@ use crate::fair_play::FairPlayScore;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};
 use crate::group::stats::{GroupPoint, PrimaryStats};
+use crate::group::GroupError;
 use crate::team::TeamId;
 use crate::Date;
 use derive_more::{Add, AddAssign, From};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Score {
     pub home: GoalCount,
     pub away: GoalCount,
@@ -30,6 +32,7 @@ impl Score {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PreGroupGame {
     id: GroupGameId,
     pub home: TeamId,
@@ -38,12 +41,21 @@ pub struct PreGroupGame {
 }
 
 impl PreGroupGame {
-    pub fn new<G: Into<GroupGameId>, T: Into<TeamId>>(id: G, home: T, away: T, date: Date) -> Self {
-        Self {
-            id: id.into(),
-            home: home.into(),
-            away: away.into(),
-            date,
+    pub fn try_new<G: Into<GroupGameId>, T: Into<TeamId> + Eq>(
+        id: G,
+        home: T,
+        away: T,
+        date: Date,
+    ) -> Result<Self, GroupError> {
+        if home != away {
+            Ok(Self {
+                id: id.into(),
+                home: home.into(),
+                away: away.into(),
+                date,
+            })
+        } else {
+            Err(GroupError::GameTeamsNotUnique)
         }
     }
     pub fn play(self, score: Score, fair_play: FairPlayScore) -> PlayedGroupGame {
@@ -67,7 +79,7 @@ impl Game for PreGroupGame {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
     id: GroupGameId,
     pub home: TeamId,
@@ -78,21 +90,30 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
-    pub fn new<G: Into<GroupGameId>, T: Into<TeamId>, S: Into<Score>, F: Into<FairPlayScore>>(
+    pub fn try_new<
+        G: Into<GroupGameId>,
+        T: Into<TeamId> + Eq,
+        S: Into<Score>,
+        F: Into<FairPlayScore>,
+    >(
         id: G,
         home: T,
         away: T,
         score: S,
         fair_play: F,
         date: Date,
-    ) -> Self {
-        Self {
-            id: id.into(),
-            home: home.into(),
-            away: away.into(),
-            score: score.into(),
-            fair_play: fair_play.into(),
-            date,
+    ) -> Result<Self, GroupError> {
+        if home != away {
+            Ok(Self {
+                id: id.into(),
+                home: home.into(),
+                away: away.into(),
+                score: score.into(),
+                fair_play: fair_play.into(),
+                date,
+            })
+        } else {
+            Err(GroupError::GameTeamsNotUnique)
         }
     }
     pub(crate) fn points(&self) -> (GroupPoint, GroupPoint) {
@@ -153,7 +174,9 @@ pub fn primary_stats(game: &PlayedGroupGame) -> (PrimaryStats, PrimaryStats) {
     (prim_stats_home, prim_stats_away)
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, PartialOrd, Add, AddAssign, From)]
+#[derive(
+    Default, Debug, Deserialize, Serialize, Clone, Copy, PartialEq, PartialOrd, Add, AddAssign, From,
+)]
 pub struct GroupGameId(pub u8);
 
 #[cfg(test)]
@@ -161,7 +184,7 @@ mod tests {
     use super::*;
     #[test]
     fn home_win() {
-        let game = PlayedGroupGame::new(0, 0, 1, (3, 0), (0, 0), Date::dummy());
+        let game = PlayedGroupGame::try_new(0, 0, 1, (3, 0), (0, 0), Date::dummy()).unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(3));
         assert_eq!(away, GroupPoint(0));
@@ -169,7 +192,7 @@ mod tests {
 
     #[test]
     fn away_win() {
-        let game = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date::dummy());
+        let game = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::dummy()).unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(0));
         assert_eq!(away, GroupPoint(3));
@@ -177,7 +200,7 @@ mod tests {
 
     #[test]
     fn draw() {
-        let game = PlayedGroupGame::new(0, 0, 1, (0, 0), (0, 0), Date::dummy());
+        let game = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (0, 0), Date::dummy()).unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));

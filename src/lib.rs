@@ -9,7 +9,7 @@ pub mod playoff;
 pub mod team;
 pub mod utils;
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Copy, Debug)]
 pub struct Date(#[serde(with = "serde_date")] DateTime<FixedOffset>);
 
 impl Date {

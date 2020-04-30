@@ -3,8 +3,6 @@ use crate::team::TeamId;
 use derive_more::{Add, AddAssign, From, Neg};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
-pub mod group;
-pub mod playoff;
 
 #[derive(
     Default,

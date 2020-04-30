@@ -37,7 +37,7 @@ pub fn fifa_2018_rules(group: &Group) -> GroupOrder {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct GroupRank(usize);
+pub struct GroupRank(pub usize);
 
 #[derive(Debug, PartialEq)]
 pub struct GroupOrder(Vec<TeamId>);
@@ -64,7 +64,7 @@ impl std::ops::Index<GroupRank> for GroupOrder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::game::group::PlayedGroupGame;
+    use crate::group::game::PlayedGroupGame;
     use crate::group::order;
     use crate::group::Group;
     use crate::Date;
@@ -73,8 +73,8 @@ mod tests {
     /// Strict order only on PrimaryStats
     #[test]
     fn simple_point_order() {
-        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date::dummy());
-        let game_2 = PlayedGroupGame::new(0, 2, 3, (1, 0), (0, 0), Date::dummy());
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::dummy()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(0, 2, 3, (1, 0), (0, 0), Date::dummy()).unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -86,8 +86,8 @@ mod tests {
     /// Is the sorting deterministic if the order is not strict?
     #[test]
     fn fair_play_order() {
-        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 0), (1, 4), Date::dummy());
-        let game_2 = PlayedGroupGame::new(0, 2, 3, (0, 0), (0, 2), Date::dummy());
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (1, 4), Date::dummy()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(0, 2, 3, (0, 0), (0, 2), Date::dummy()).unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -98,9 +98,9 @@ mod tests {
     /// The internal game decides
     #[test]
     fn internal_game() {
-        let game_1 = PlayedGroupGame::new(0, 0, 1, (1, 0), (0, 0), Date::dummy());
-        let game_2 = PlayedGroupGame::new(0, 0, 2, (0, 1), (0, 0), Date::dummy());
-        let game_3 = PlayedGroupGame::new(0, 1, 2, (1, 0), (0, 0), Date::dummy());
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::dummy()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(0, 0, 2, (0, 1), (0, 0), Date::dummy()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(0, 1, 2, (1, 0), (0, 0), Date::dummy()).unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![0, 1, 2].iter().map(|x| TeamId(*x)).collect());

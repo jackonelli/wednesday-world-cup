@@ -1,13 +1,13 @@
-use crate::game::group;
-use crate::game::group::{PlayedGroupGame, PreGroupGame};
 use crate::game::{Game, GoalCount, GoalDiff};
-use crate::group::order::GroupOrder;
+use crate::group::game::{PlayedGroupGame, PreGroupGame};
+use crate::group::order::{GroupOrder, GroupRank};
 use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
 use crate::team::TeamId;
 use derive_more::From;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
+pub mod game;
 pub mod order;
 pub mod stats;
 
@@ -24,6 +24,7 @@ pub mod stats;
 )]
 pub struct GroupId(pub char);
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
     upcoming_games: Vec<PreGroupGame>,
     played_games: Vec<PlayedGroupGame>,
@@ -48,24 +49,32 @@ impl Group {
         unique_set.into_iter()
     }
 
-    fn rank_teams(&self, order: fn(&Group) -> GroupOrder) -> GroupOrder {
-        order(self)
+    pub fn rank_teams(&self, order_fn: fn(&Group) -> GroupOrder) -> GroupOrder {
+        order_fn(self)
+    }
+
+    pub fn winner(&self, order_fn: fn(&Group) -> GroupOrder) -> TeamId {
+        (order_fn(self))[GroupRank(0)]
+    }
+
+    pub fn runner_up(&self, order_fn: fn(&Group) -> GroupOrder) -> TeamId {
+        (order_fn(self))[GroupRank(1)]
     }
 
     pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
-        self.unary_stat(group::points)
+        self.unary_stat(game::points)
     }
 
     pub fn goal_diff(&self) -> HashMap<TeamId, GoalDiff> {
-        self.unary_stat(group::goal_diff)
+        self.unary_stat(game::goal_diff)
     }
 
     pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
-        self.unary_stat(group::goals_scored)
+        self.unary_stat(game::goals_scored)
     }
 
     pub fn primary_stats(&self) -> HashMap<TeamId, PrimaryStats> {
-        self.unary_stat(group::primary_stats)
+        self.unary_stat(game::primary_stats)
     }
 
     fn unary_stat<T>(&self, stat: fn(&PlayedGroupGame) -> (T, T)) -> HashMap<TeamId, T>
@@ -118,20 +127,23 @@ fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> 
 pub enum GroupError {
     #[error("Teams in group not unique")]
     GameTeamsNotInTeams,
+    #[error("Teams in game not unique")]
+    GameTeamsNotUnique,
+    #[error("Generic")]
+    GenericError,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::fair_play::FairPlayScore;
-    use crate::game::group::PreGroupGame;
-    use crate::game::group::Score;
+    use crate::group::game::{PreGroupGame, Score};
     use crate::team::TeamId;
     use crate::Date;
     #[test]
     fn test_team_from_game_vec() {
-        let game_1 = PreGroupGame::new(1, 0, 1, Date::dummy());
-        let game_2 = PreGroupGame::new(2, 0, 3, Date::dummy());
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
+        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::dummy()).unwrap();
         let parsed_teams: HashSet<TeamId> = team_set_from_game_vec(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
@@ -141,8 +153,9 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::new(1, 0, 1, Date::dummy());
-        let game_2 = PreGroupGame::new(3, 1, 2, Date::dummy())
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
+        let game_2 = PreGroupGame::try_new(3, 1, 2, Date::dummy())
+            .unwrap()
             .play(Score::new(2, 0), FairPlayScore::default());
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()

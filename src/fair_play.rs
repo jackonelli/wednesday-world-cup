@@ -1,4 +1,5 @@
 use derive_more::{Add, AddAssign, From};
+use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 ///Yellow card: –1 points;
 ///Indirect red card (second yellow card): –3 points;
@@ -34,7 +35,7 @@ impl FairPlay {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Add, AddAssign)]
+#[derive(Copy, Clone, Deserialize, Serialize, Debug, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct FairPlayScore {
     home: FairPlayValue,
     away: FairPlayValue,
@@ -49,7 +50,7 @@ impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Add, AddAssign)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct FairPlayValue(i8);
 
 impl FairPlayValue {
