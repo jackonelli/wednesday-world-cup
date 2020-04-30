@@ -1,11 +1,26 @@
 use crate::group::stats::Unary;
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign, From, Neg};
+use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 pub mod group;
 pub mod playoff;
 
-#[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
+#[derive(
+    Default,
+    Debug,
+    Deserialize,
+    Serialize,
+    Clone,
+    Copy,
+    From,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Add,
+    AddAssign,
+)]
 pub struct GoalCount(pub u8);
 
 impl Sub for GoalCount {

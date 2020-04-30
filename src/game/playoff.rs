@@ -7,6 +7,7 @@ use thiserror::Error;
 pub struct Score {
     pub home: GoalCount,
     pub away: GoalCount,
+    // TODO: Own type?
     pub home_penalty: Option<GoalCount>,
     pub away_penalty: Option<GoalCount>,
 }

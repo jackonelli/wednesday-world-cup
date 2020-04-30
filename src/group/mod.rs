@@ -4,10 +4,25 @@ use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::order::GroupOrder;
 use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
 use crate::team::TeamId;
+use derive_more::From;
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 pub mod order;
 pub mod stats;
+
+#[derive(
+    Deserialize,
+    Serialize,
+    Debug,
+    Clone,
+    Copy,
+    std::cmp::Eq,
+    std::cmp::PartialEq,
+    std::hash::Hash,
+    From,
+)]
+pub struct GroupId(pub char);
 
 pub struct Group {
     upcoming_games: Vec<PreGroupGame>,
