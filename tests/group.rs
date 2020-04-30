@@ -9,8 +9,16 @@ fn group_ordering() {
         .expect("Could not read from file");
     let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
     let groups = lsv::try_groups_from_data(&data).expect("Could not parse groups from data");
-    let group_a = groups
-        .get(&GroupId('a'))
-        .expect("No group 'a' in parsed groups");
-    assert_eq!(group_a.winner(order::fifa_2018_rules), TeamId(4));
+
+    let id = GroupId('a');
+    let group = groups
+        .get(&id)
+        .expect(&format!("No group '{:?}' in parsed groups", &id));
+    assert_eq!(group.winner(order::fifa_2018_rules), TeamId(4));
+
+    let id = GroupId('d');
+    let group = groups
+        .get(&id)
+        .expect(&format!("No group '{:?}' in parsed groups", &id));
+    assert_eq!(group.runner_up(order::fifa_2018_rules), TeamId(13));
 }
