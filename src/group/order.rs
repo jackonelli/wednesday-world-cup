@@ -73,8 +73,8 @@ mod tests {
     /// Strict order only on PrimaryStats
     #[test]
     fn simple_point_order() {
-        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date {});
-        let game_2 = PlayedGroupGame::new(0, 2, 3, (1, 0), (0, 0), Date {});
+        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date::dummy());
+        let game_2 = PlayedGroupGame::new(0, 2, 3, (1, 0), (0, 0), Date::dummy());
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -86,8 +86,8 @@ mod tests {
     /// Is the sorting deterministic if the order is not strict?
     #[test]
     fn fair_play_order() {
-        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 0), (1, 4), Date {});
-        let game_2 = PlayedGroupGame::new(0, 2, 3, (0, 0), (0, 2), Date {});
+        let game_1 = PlayedGroupGame::new(0, 0, 1, (0, 0), (1, 4), Date::dummy());
+        let game_2 = PlayedGroupGame::new(0, 2, 3, (0, 0), (0, 2), Date::dummy());
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -98,9 +98,9 @@ mod tests {
     /// The internal game decides
     #[test]
     fn internal_game() {
-        let game_1 = PlayedGroupGame::new(0, 0, 1, (1, 0), (0, 0), Date {});
-        let game_2 = PlayedGroupGame::new(0, 0, 2, (0, 1), (0, 0), Date {});
-        let game_3 = PlayedGroupGame::new(0, 1, 2, (1, 0), (0, 0), Date {});
+        let game_1 = PlayedGroupGame::new(0, 0, 1, (1, 0), (0, 0), Date::dummy());
+        let game_2 = PlayedGroupGame::new(0, 0, 2, (0, 1), (0, 0), Date::dummy());
+        let game_3 = PlayedGroupGame::new(0, 1, 2, (1, 0), (0, 0), Date::dummy());
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
         let group_order = order::fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![0, 1, 2].iter().map(|x| TeamId(*x)).collect());

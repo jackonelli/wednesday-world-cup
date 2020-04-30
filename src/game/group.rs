@@ -161,7 +161,7 @@ mod tests {
     use super::*;
     #[test]
     fn home_win() {
-        let game = PlayedGroupGame::new(0, 0, 1, (3, 0), (0, 0), Date {});
+        let game = PlayedGroupGame::new(0, 0, 1, (3, 0), (0, 0), Date::dummy());
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(3));
         assert_eq!(away, GroupPoint(0));
@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn away_win() {
-        let game = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date {});
+        let game = PlayedGroupGame::new(0, 0, 1, (0, 2), (0, 0), Date::dummy());
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(0));
         assert_eq!(away, GroupPoint(3));
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn draw() {
-        let game = PlayedGroupGame::new(0, 0, 1, (0, 0), (0, 0), Date {});
+        let game = PlayedGroupGame::new(0, 0, 1, (0, 0), (0, 0), Date::dummy());
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));

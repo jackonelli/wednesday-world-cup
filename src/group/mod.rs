@@ -130,8 +130,8 @@ mod tests {
     use crate::Date;
     #[test]
     fn test_team_from_game_vec() {
-        let game_1 = PreGroupGame::new(1, 0, 1, Date {});
-        let game_2 = PreGroupGame::new(2, 0, 3, Date {});
+        let game_1 = PreGroupGame::new(1, 0, 1, Date::dummy());
+        let game_2 = PreGroupGame::new(2, 0, 3, Date::dummy());
         let parsed_teams: HashSet<TeamId> = team_set_from_game_vec(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
@@ -141,9 +141,9 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::new(1, 0, 1, Date {});
-        let game_2 =
-            PreGroupGame::new(3, 1, 2, Date {}).play(Score::new(2, 0), FairPlayScore::default());
+        let game_1 = PreGroupGame::new(1, 0, 1, Date::dummy());
+        let game_2 = PreGroupGame::new(3, 1, 2, Date::dummy())
+            .play(Score::new(2, 0), FairPlayScore::default());
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .teams()
