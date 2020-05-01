@@ -4,6 +4,7 @@ use crate::group::order::{GroupOrder, GroupRank};
 use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
 use crate::team::TeamId;
 use derive_more::From;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
@@ -32,14 +33,27 @@ pub struct Group {
 
 impl Group {
     pub fn try_new(
-        upcoming_games: Vec<PreGroupGame>,
         played_games: Vec<PlayedGroupGame>,
+        upcoming_games: Vec<PreGroupGame>,
     ) -> Result<Self, GroupError> {
-        // TODO: Check for completeness
-        Ok(Self {
-            upcoming_games,
-            played_games,
-        })
+        if Self::unique_game_ids(&played_games, &upcoming_games) {
+            Ok(Self {
+                upcoming_games,
+                played_games,
+            })
+        } else {
+            Err(GroupError::GameIdsNotUnique)
+        }
+    }
+
+    fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
+        let games_id: Vec<_> = played_games
+            .iter()
+            .map(|x| x.id.clone())
+            .chain(upcoming_games.iter().map(|x| x.id.clone()))
+            .unique()
+            .collect();
+        games_id.len() == played_games.len() + upcoming_games.len()
     }
 
     pub fn teams(&self) -> impl Iterator<Item = TeamId> {
@@ -126,6 +140,8 @@ pub enum GroupError {
     GameTeamsNotInTeams,
     #[error("Teams in game not unique")]
     GameTeamsNotUnique,
+    #[error("Game Id's in group not unique")]
+    GameIdsNotUnique,
     #[error("Generic")]
     GenericError,
 }
@@ -137,6 +153,24 @@ mod tests {
     use crate::group::game::{PreGroupGame, Score};
     use crate::team::TeamId;
     use crate::Date;
+    #[test]
+    fn group_unique_game_ids_fail() {
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
+        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::dummy()).unwrap();
+        let upcoming = vec![game_1, game_2];
+        let game_3 = PlayedGroupGame::try_new(2, 2, 1, (1, 2), (0, 1), Date::dummy()).unwrap();
+        let played = vec![game_3];
+        assert_eq!(Group::unique_game_ids(&played, &upcoming), false);
+    }
+    #[test]
+    fn group_unique_game_ids_ok() {
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
+        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::dummy()).unwrap();
+        let upcoming = vec![game_1, game_2];
+        let game_3 = PlayedGroupGame::try_new(3, 2, 1, (1, 2), (0, 1), Date::dummy()).unwrap();
+        let played = vec![game_3];
+        assert_eq!(Group::unique_game_ids(&played, &upcoming), true);
+    }
     #[test]
     fn test_team_from_game_vec() {
         let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
@@ -150,10 +184,10 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
-        let game_2 = PreGroupGame::try_new(3, 1, 2, Date::dummy())
+        let game_1 = PreGroupGame::try_new(3, 1, 2, Date::dummy())
             .unwrap()
             .play(Score::new(2, 0), FairPlayScore::default());
+        let game_2 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .teams()

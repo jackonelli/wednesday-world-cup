@@ -34,7 +34,7 @@ impl Score {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PreGroupGame {
-    id: GroupGameId,
+    pub id: GroupGameId,
     pub home: TeamId,
     pub away: TeamId,
     date: Date,
@@ -81,7 +81,7 @@ impl Game for PreGroupGame {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
-    id: GroupGameId,
+    pub id: GroupGameId,
     pub home: TeamId,
     pub away: TeamId,
     pub score: Score,
@@ -175,7 +175,20 @@ pub fn primary_stats(game: &PlayedGroupGame) -> (PrimaryStats, PrimaryStats) {
 }
 
 #[derive(
-    Default, Debug, Deserialize, Serialize, Clone, Copy, PartialEq, PartialOrd, Add, AddAssign, From,
+    Default,
+    Debug,
+    Deserialize,
+    Serialize,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
+    Hash,
+    Ord,
+    PartialOrd,
+    Add,
+    AddAssign,
+    From,
 )]
 pub struct GroupGameId(pub u8);
 
