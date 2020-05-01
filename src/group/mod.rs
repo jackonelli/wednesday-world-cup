@@ -81,10 +81,7 @@ impl Group {
     where
         T: Unary + num::Zero + std::ops::AddAssign,
     {
-        let team_map = self.teams().fold(HashMap::new(), |mut acc, team| {
-            acc.insert(team, T::zero());
-            acc
-        });
+        let team_map = self.teams().map(|team| (team, T::zero())).collect();
 
         self.team_stat_from_played_games(team_map, stat)
     }
