@@ -46,14 +46,17 @@ impl Group {
         }
     }
 
+    /// Check games have unique id's.
+    /// Extract and combine Game Id's from played and upcoming games,
+    /// Compare the number of unique id's with the total number of games
     fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
-        let games_id: Vec<_> = played_games
+        let unique_game_ids: Vec<_> = played_games
             .iter()
             .map(|x| x.id.clone())
             .chain(upcoming_games.iter().map(|x| x.id.clone()))
             .unique()
             .collect();
-        games_id.len() == played_games.len() + upcoming_games.len()
+        unique_game_ids.len() == played_games.len() + upcoming_games.len()
     }
 
     pub fn teams(&self) -> impl Iterator<Item = TeamId> {
@@ -136,8 +139,6 @@ fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> 
 
 #[derive(Error, Debug)]
 pub enum GroupError {
-    #[error("Teams in group not unique")]
-    GameTeamsNotInTeams,
     #[error("Teams in game not unique")]
     GameTeamsNotUnique,
     #[error("Game Id's in group not unique")]

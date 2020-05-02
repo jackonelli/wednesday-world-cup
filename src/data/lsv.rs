@@ -11,14 +11,15 @@ use crate::Date;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;
+use thiserror::Error;
 
-pub fn try_groups_from_data(data: &Data) -> Result<HashMap<GroupId, Group>, GroupError> {
+pub fn try_groups_from_data(data: &Data) -> Result<HashMap<GroupId, Group>, LsvParseError> {
     let groups_with_err = data.groups.iter().map(|(id, group)| {
         let group: Result<Group, GroupError> = (group.clone()).try_into();
         (id, group)
     });
     if groups_with_err.clone().any(|(_, group)| group.is_err()) {
-        Err(GroupError::GenericError)
+        Err(LsvParseError::GroupError)
     } else {
         Ok(groups_with_err
             .map(|(id, group)| (*id, group.unwrap()))
@@ -108,4 +109,10 @@ enum GameType {
     Qualified,
     Winner,
     Loser,
+}
+
+#[derive(Error, Debug)]
+pub enum LsvParseError {
+    #[error("Error parsing group")]
+    GroupError,
 }
