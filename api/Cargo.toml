@@ -1,0 +1,28 @@
+[package]
+name = "wwc_api"
+version = "0.1.0"
+authors = ["Jakob <jakob.lindqvist@chalmers.se>"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wwc_core = {path = "../core"}
+wwc_data = {path = "../data"}
+wasm-bindgen = { version = "0.2.62", features = ["serde-serialize"]  }
+js-sys = "0.3.39"
+wasm-bindgen-futures = "0.4.12"
+serde = { version = "1.0.80", features = ["derive"] }
+serde_derive = "^1.0.59"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'Headers',
+  'Request',
+  'RequestInit',
+  'RequestMode',
+  'Response',
+  'Window',
+]

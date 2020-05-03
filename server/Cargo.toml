@@ -5,10 +5,11 @@ authors = ["Jakob <jakob.lindqvist@chalmers.se>"]
 edition = "2018"
 
 [dependencies]
-rocket = "0.4.4"
 wwc_data = {path = "../data"}
 wwc_core = {path = "../core"}
 serde = {version = ">=1", features = ["derive"]}
 serde_json = ">=1"
 thiserror = ">=1"
+rocket = "0.4.4"
 rocket_contrib = "0.4.4"
+rocket_cors = "0.5.1"
