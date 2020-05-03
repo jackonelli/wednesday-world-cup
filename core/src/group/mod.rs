@@ -14,6 +14,9 @@ pub mod game;
 pub mod order;
 pub mod stats;
 
+pub type Groups = HashMap<GroupId, Group>;
+
+#[wasm_bindgen]
 #[derive(
     Deserialize,
     Serialize,
