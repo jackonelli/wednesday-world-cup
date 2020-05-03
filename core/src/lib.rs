@@ -1,13 +1,18 @@
 use crate::utils::serde_date;
 use chrono::{DateTime, FixedOffset, TimeZone};
 use serde::{Deserialize, Serialize};
-pub mod data;
 pub mod fair_play;
 pub mod game;
 pub mod group;
 pub mod playoff;
 pub mod team;
 pub mod utils;
+
+// When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
+// allocator.
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[derive(Deserialize, Serialize, Clone, Copy, Debug)]
 pub struct Date(#[serde(with = "serde_date")] DateTime<FixedOffset>);

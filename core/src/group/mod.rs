@@ -3,11 +3,13 @@ use crate::group::game::{PlayedGroupGame, PreGroupGame};
 use crate::group::order::{GroupOrder, GroupRank};
 use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
 use crate::team::TeamId;
+use crate::Date;
 use derive_more::From;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
+use wasm_bindgen::prelude::*;
 pub mod game;
 pub mod order;
 pub mod stats;
@@ -25,10 +27,30 @@ pub mod stats;
 )]
 pub struct GroupId(pub char);
 
+#[wasm_bindgen]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
     upcoming_games: Vec<PreGroupGame>,
     played_games: Vec<PlayedGroupGame>,
+}
+
+// Wasm API
+#[wasm_bindgen]
+impl Group {
+    pub fn dummy() -> Self {
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::dummy()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::dummy()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::dummy()).unwrap();
+        let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
+        group
+    }
+    pub fn repr(&self) -> String {
+        format!(
+            "Group:\n\tPlayed games: {}\n\tUpcoming games: {}",
+            self.played_games.len(),
+            self.upcoming_games.len()
+        )
+    }
 }
 
 impl Group {
