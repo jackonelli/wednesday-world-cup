@@ -1,0 +1,21 @@
+[package]
+name = "wwc_data"
+version = "0.1.0"
+authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
+edition = "2018"
+
+[lib]
+crate-type = ["rlib"]
+
+[dependencies]
+derive_more = "0.99.5"
+thiserror = "1"
+serde = {version = ">=1", features =["derive"]}
+serde_json = ">=1"
+chrono = ">=0.4"
+itertools = ">=0.9.0"
+wwc_core = {path = "../core"}
+
+[dev-dependencies]
+more-asserts = "0.2.1"
+rand = "0.7.3"
