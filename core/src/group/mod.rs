@@ -44,7 +44,8 @@ impl Group {
         let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::dummy()).unwrap();
         let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::dummy()).unwrap();
         let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::dummy()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
+        let group = Group::try_new(vec![game_1, game_2, game_3], vec![])
+            .expect("This literal group construction should never fail");
         group
     }
     pub fn repr(&self) -> String {
@@ -57,6 +58,11 @@ impl Group {
 }
 
 impl Group {
+    /// Fallible `Group` constructor
+    /// Creates a new group from a vec of played and upcoming games
+    /// Imposes the following restrictions on the group type (more might come):
+    ///
+    /// - Every game (played or upcoming) must have a unique game id.
     pub fn try_new(
         played_games: Vec<PlayedGroupGame>,
         upcoming_games: Vec<PreGroupGame>,
@@ -86,7 +92,7 @@ impl Group {
 
     /// Get teams in group
     /// Finds all team id's in the group games
-    /// (played and unplayed).
+    /// (played and upcoming).
     ///
     /// Returns an iterator over unique team id's
     pub fn teams(&self) -> impl Iterator<Item = TeamId> {
