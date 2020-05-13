@@ -84,11 +84,15 @@ impl Group {
         unique_game_ids.len() == played_games.len() + upcoming_games.len()
     }
 
+    /// Get teams in group
+    /// Finds all team id's in the group games
+    /// (played and unplayed).
+    ///
+    /// Returns an iterator over unique team id's
     pub fn teams(&self) -> impl Iterator<Item = TeamId> {
-        let mut unique_set: HashSet<TeamId> = team_set_from_game_vec(&self.played_games).collect();
-        let upcoming_teams = team_set_from_game_vec(&self.upcoming_games);
-        unique_set.extend(upcoming_teams);
-        unique_set.into_iter()
+        team_set_from_game_vec(&self.played_games)
+            .chain(team_set_from_game_vec(&self.upcoming_games))
+            .unique()
     }
 
     pub fn rank_teams(&self, order_fn: fn(&Group) -> GroupOrder) -> GroupOrder {
