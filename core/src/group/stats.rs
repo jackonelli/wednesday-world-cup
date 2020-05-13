@@ -2,6 +2,12 @@ use crate::game::{GoalCount, GoalDiff};
 use derive_more::{Add, AddAssign, From};
 use std::cmp::Ordering;
 
+/// Primary stats for a group team
+///
+/// Collection of statistics that can be aggregated over games,
+/// as opposed to stats based on a teams performance versus another specific team.
+/// The name primary refers to the fact that it is (usually) the
+/// first statistics that is used to determine group ordering.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct PrimaryStats {
     points: GroupPoint,

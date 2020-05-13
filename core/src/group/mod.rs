@@ -1,6 +1,6 @@
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::game::{PlayedGroupGame, PreGroupGame};
-use crate::group::order::{GroupOrder, GroupRank};
+use crate::group::order::GroupOrder;
 use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
 use crate::team::TeamId;
 use crate::Date;
@@ -59,6 +59,7 @@ impl Group {
 
 impl Group {
     /// Fallible `Group` constructor
+    ///
     /// Creates a new group from a vec of played and upcoming games
     /// Imposes the following restrictions on the group type (more might come):
     ///
@@ -77,8 +78,9 @@ impl Group {
         }
     }
 
-    /// Check games have unique id's.
-    /// Extract and combine Game Id's from played and upcoming games,
+    /// Check games for unique id's.
+    ///
+    /// Extract and combine Game Id's from played and upcoming games.
     /// Compare the number of unique id's with the total number of games
     fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
         let unique_game_ids: Vec<_> = played_games
@@ -91,9 +93,9 @@ impl Group {
     }
 
     /// Get teams in group
+    ///
     /// Finds all team id's in the group games
     /// (played and upcoming).
-    ///
     /// Returns an iterator over unique team id's
     pub fn teams(&self) -> impl Iterator<Item = TeamId> {
         team_set_from_game_vec(&self.played_games)
@@ -101,30 +103,43 @@ impl Group {
             .unique()
     }
 
+    /// Calculate group winner
+    ///
+    /// Order group according to `order_fn`
     pub fn rank_teams(&self, order_fn: fn(&Group) -> GroupOrder) -> GroupOrder {
         order_fn(self)
     }
 
+    /// Calculate group winner
+    ///
+    /// Order group according to `order_fn` and return first in order.
     pub fn winner(&self, order_fn: fn(&Group) -> GroupOrder) -> TeamId {
-        (order_fn(self))[GroupRank(0)]
+        (order_fn(self)).winner()
     }
 
+    /// Calculate group runner up
+    ///
+    /// Order group according to `order_fn` and return second in order.
     pub fn runner_up(&self, order_fn: fn(&Group) -> GroupOrder) -> TeamId {
-        (order_fn(self))[GroupRank(1)]
+        (order_fn(self)).runner_up()
     }
 
+    /// Calculate points for group teams
     pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
         self.unary_stat(game::points)
     }
 
+    /// Calculate goal difference for group teams
     pub fn goal_diff(&self) -> HashMap<TeamId, GoalDiff> {
         self.unary_stat(game::goal_diff)
     }
 
+    /// Calculate goals scored for group teams
     pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
         self.unary_stat(game::goals_scored)
     }
 
+    /// Calculate [Primary Stats](stats/struct.PrimaryStats.html) for group teams
     pub fn primary_stats(&self) -> HashMap<TeamId, PrimaryStats> {
         self.unary_stat(game::primary_stats)
     }
