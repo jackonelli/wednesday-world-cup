@@ -23,13 +23,13 @@ impl PrimaryStats {
     }
 }
 
-impl std::cmp::PartialOrd for PrimaryStats {
+impl PartialOrd for PrimaryStats {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl std::cmp::Ord for PrimaryStats {
+impl Ord for PrimaryStats {
     fn cmp(&self, other: &Self) -> Ordering {
         self.points
             .cmp(&other.points)
@@ -69,7 +69,7 @@ pub trait Unary {}
 mod tests {
     use super::*;
     use rand::seq::SliceRandom;
-    use rand::{thread_rng, Rng};
+    use rand::thread_rng;
     #[test]
     fn primary_stats_points() {
         let stats_1 = PrimaryStats::new(0, 2, 4);
