@@ -117,14 +117,7 @@ impl PlayedGroupGame {
         }
     }
     pub(crate) fn points(&self) -> (GroupPoint, GroupPoint) {
-        let score = &self.score;
-        if score.home > score.away {
-            (GroupPoint(3), GroupPoint(0))
-        } else if score.home < score.away {
-            (GroupPoint(0), GroupPoint(3))
-        } else {
-            (GroupPoint(1), GroupPoint(1))
-        }
+        points(self)
     }
 
     fn goal_diff(&self) -> (GoalDiff, GoalDiff) {

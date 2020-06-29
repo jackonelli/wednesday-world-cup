@@ -1,6 +1,7 @@
 use derive_more::{Add, AddAssign, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
+
 ///Yellow card: –1 points;
 ///Indirect red card (second yellow card): –3 points;
 ///Direct red card: –4 points;
