@@ -1,7 +1,7 @@
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::game::{PlayedGroupGame, PreGroupGame};
 use crate::group::order::GroupOrder;
-use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
+use crate::group::stats::{GroupPoint, PrimaryStats};
 use crate::team::TeamId;
 use crate::Date;
 use derive_more::From;
@@ -103,6 +103,10 @@ impl Group {
             .unique()
     }
 
+    pub fn num_teams(&self) -> usize {
+        self.teams().count()
+    }
+
     /// Calculate group winner
     ///
     /// Order group according to `order_fn`
@@ -146,7 +150,7 @@ impl Group {
 
     fn unary_stat<T>(&self, stat: fn(&PlayedGroupGame) -> (T, T)) -> HashMap<TeamId, T>
     where
-        T: Unary + num::Zero + std::ops::AddAssign,
+        T: num::Zero + std::ops::AddAssign,
     {
         let team_map = self.teams().map(|team| (team, T::zero())).collect();
 
@@ -193,6 +197,8 @@ pub enum GroupError {
     GameTeamsNotUnique,
     #[error("Game Id's in group not unique")]
     GameIdsNotUnique,
+    #[error("Group does not define a strict ordering")]
+    NonStrictOrder,
     #[error("Generic")]
     GenericError,
 }

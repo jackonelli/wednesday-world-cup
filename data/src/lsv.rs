@@ -40,6 +40,7 @@ pub struct ParseGroup {
     games: Vec<ParseGame>,
 }
 
+
 impl TryInto<Group> for ParseGroup {
     type Error = GroupError;
     fn try_into(self) -> Result<Group, Self::Error> {

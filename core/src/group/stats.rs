@@ -1,4 +1,5 @@
 use crate::game::{GoalCount, GoalDiff};
+use crate::group::Group;
 use derive_more::{Add, AddAssign, From};
 use std::cmp::Ordering;
 
@@ -8,6 +9,7 @@ use std::cmp::Ordering;
 /// as opposed to stats based on a teams performance versus another specific team.
 /// The name primary refers to the fact that it is (usually) the
 /// first statistics that is used to determine group ordering.
+/// TODO: Remove, DEPRECATED
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct PrimaryStats {
     points: GroupPoint,
@@ -53,12 +55,8 @@ impl num::Zero for PrimaryStats {
     }
 }
 
-impl Unary for PrimaryStats {}
-
 #[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
 pub struct GroupPoint(pub u8);
-
-impl Unary for GroupPoint {}
 
 impl num::Zero for GroupPoint {
     fn zero() -> GroupPoint {
@@ -68,8 +66,6 @@ impl num::Zero for GroupPoint {
         self.0 == 0
     }
 }
-
-pub trait Unary {}
 
 #[cfg(test)]
 mod tests {

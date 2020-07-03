@@ -2,6 +2,8 @@ use derive_more::{Add, AddAssign, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
+/// Fifa World Cup 2018 Rules:
+///
 ///Yellow card: –1 points;
 ///Indirect red card (second yellow card): –3 points;
 ///Direct red card: –4 points;
@@ -15,7 +17,7 @@ pub struct FairPlay {
 }
 
 impl FairPlay {
-    pub(crate) fn new<C: Into<CardCount>>(
+    pub fn new<C: Into<CardCount>>(
         yellow: C,
         indirect_red: C,
         direct_red: C,
@@ -55,7 +57,7 @@ impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
 pub struct FairPlayValue(i8);
 
 impl FairPlayValue {
-    pub(crate) fn new(val: u8) -> Self {
+    pub fn new(val: u8) -> Self {
         FairPlayValue(-(val as i8))
     }
 }
