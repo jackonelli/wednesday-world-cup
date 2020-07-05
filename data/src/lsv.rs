@@ -10,7 +10,7 @@ use thiserror::Error;
 use wwc_core::game::GoalCount;
 use wwc_core::group::game::{PlayedGroupGame, PreGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Team, TeamId};
+use wwc_core::team::{Rank, Team, TeamId};
 use wwc_core::Date;
 
 pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
@@ -29,8 +29,35 @@ pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Data {
-    pub teams: Vec<Team>,
+    pub teams: Vec<ParseTeam>,
     pub groups: HashMap<GroupId, ParseGroup>,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct ParseTeam {
+    id: TeamId,
+    name: String,
+    #[serde(rename = "fifaCode")]
+    fifa_code: String,
+    iso2: String,
+    rank: Option<Rank>,
+}
+
+impl TryInto<Team> for ParseTeam {
+    type Error = LsvParseError;
+    fn try_into(self) -> Result<Team, Self::Error> {
+        if let Some(rank) = self.rank {
+            Ok(Team::new(
+                self.id,
+                self.name,
+                self.fifa_code,
+                self.iso2,
+                rank,
+            ))
+        } else {
+            Err(Self::Error::TeamError)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -39,7 +66,6 @@ pub struct ParseGroup {
     #[serde(rename = "matches")]
     games: Vec<ParseGame>,
 }
-
 
 impl TryInto<Group> for ParseGroup {
     type Error = GroupError;
@@ -114,6 +140,8 @@ enum GameType {
 
 #[derive(Error, Debug)]
 pub enum LsvParseError {
+    #[error("Error parsing team")]
+    TeamError,
     #[error("Error parsing group")]
     GroupError,
 }
