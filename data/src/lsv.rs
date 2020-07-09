@@ -7,8 +7,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use thiserror::Error;
+use wwc_core::fair_play::FairPlayScore;
 use wwc_core::game::GoalCount;
-use wwc_core::group::game::{PlayedGroupGame, PreGroupGame};
+use wwc_core::group::game::{PlayedGroupGame, PreGroupGame, Score};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{Rank, Team, TeamId};
 use wwc_core::Date;
@@ -79,6 +80,7 @@ impl TryInto<Group> for ParseGroup {
                 game.try_into()
             })
             .collect::<Result<Vec<PreGroupGame>, GroupError>>()?;
+
         let played_games = self
             .games
             .iter()
@@ -118,14 +120,10 @@ impl TryInto<PreGroupGame> for ParseGame {
 impl TryInto<PlayedGroupGame> for ParseGame {
     type Error = GroupError;
     fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
-        PlayedGroupGame::try_new(
-            self.id,
-            self.home_team,
-            self.away_team,
-            (self.home_result, self.away_result),
-            (0, 0),
-            self.date,
-        )
+        let game = PreGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
+        let score = Score::from((self.home_result, self.away_result));
+        let fair_play_score = FairPlayScore::from((0, 0));
+        Ok(game.play(score, fair_play_score))
     }
 }
 

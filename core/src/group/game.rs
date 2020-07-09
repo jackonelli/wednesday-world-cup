@@ -91,7 +91,7 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
-    pub fn try_new<
+    pub(crate) fn try_new<
         G: Into<GroupGameId>,
         T: Into<TeamId> + Eq,
         S: Into<Score>,
