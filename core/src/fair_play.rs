@@ -40,8 +40,8 @@ impl FairPlay {
 
 #[derive(Copy, Clone, Deserialize, Serialize, Debug, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct FairPlayScore {
-    home: FairPlayValue,
-    away: FairPlayValue,
+    pub home: FairPlayValue,
+    pub away: FairPlayValue,
 }
 
 impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
@@ -53,18 +53,34 @@ impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, Default, Eq, PartialEq, Add, AddAssign)]
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Serialize,
+    Deserialize,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Add,
+    AddAssign,
+)]
 pub struct FairPlayValue(i8);
-
-impl FairPlayValue {
-    pub fn new(val: u8) -> Self {
-        FairPlayValue(-(val as i8))
-    }
-}
 
 impl From<u8> for FairPlayValue {
     fn from(magnitude: u8) -> Self {
         FairPlayValue(-(magnitude as i8))
+    }
+}
+
+impl num::Zero for FairPlayValue {
+    fn zero() -> Self {
+        FairPlayValue(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
     }
 }
 

@@ -1,7 +1,8 @@
+use crate::fair_play::FairPlayValue;
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::game::PlayedGroupGame;
 use crate::group::{Group, GroupPoint};
-use crate::team::TeamId;
+use crate::team::{Rank, TeamId};
 use std::collections::HashMap;
 use std::ops;
 
@@ -53,12 +54,9 @@ impl UnaryStat for GoalCount {
     }
 }
 
-impl num::Zero for GroupPoint {
-    fn zero() -> GroupPoint {
-        GroupPoint(0)
-    }
-    fn is_zero(&self) -> bool {
-        self.0 == 0
+impl UnaryStat for FairPlayValue {
+    fn stat(game: &PlayedGroupGame) -> (Self, Self) {
+        (game.fair_play.home, game.fair_play.away)
     }
 }
 

@@ -14,9 +14,6 @@ pub mod game;
 pub mod order;
 pub mod stats;
 
-#[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
-pub struct GroupPoint(pub u8);
-
 pub type Groups = HashMap<GroupId, Group>;
 
 #[wasm_bindgen]
@@ -154,6 +151,18 @@ fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> 
         acc
     });
     teams.into_iter()
+}
+
+#[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
+pub struct GroupPoint(pub u8);
+
+impl num::Zero for GroupPoint {
+    fn zero() -> GroupPoint {
+        GroupPoint(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
 }
 
 #[derive(Error, Debug)]

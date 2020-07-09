@@ -1,7 +1,8 @@
+use crate::fair_play::FairPlayValue;
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::UnaryStat;
 use crate::group::{Group, GroupError, GroupPoint};
-use crate::team::TeamId;
+use crate::team::{Rank, TeamId};
 use std::convert::{TryFrom, TryInto};
 
 /// Fifa World Cup 2018 Order
@@ -33,6 +34,8 @@ pub fn fifa_2018() -> Rules<Random> {
             Box::new(GroupPoint::default()),
             Box::new(GoalDiff::default()),
             Box::new(GoalCount::default()),
+            // TODO Binary rules
+            Box::new(FairPlayValue::default()),
         ],
         tiebreaker: Random {},
     }
@@ -109,47 +112,6 @@ impl TryFrom<NonStrictGroupOrder> for GroupOrder {
     }
 }
 
-pub trait Tiebreaker {
-    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder;
-}
-
-pub struct Random;
-
-impl Tiebreaker for Random {
-    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder {
-        todo!();
-    }
-}
-
-pub trait SubOrdering {
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
-}
-
-impl<T: UnaryStat> SubOrdering for T {
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
-        let all_points = T::team_stats(group);
-        let mut point_stats: Vec<(TeamId, T)> = order
-            .into_iter()
-            .map(|id| (id, all_points.get(&id)))
-            .filter(|(_, x)| x.is_some())
-            .map(|(id, x)| (id, *x.unwrap()))
-            .collect();
-        point_stats.sort_by_key(|x| x.1);
-        let point_stats = point_stats;
-        let (_, new_order) = point_stats.iter().rev().fold(
-            (point_stats[0].1, NonStrictGroupOrder::empty()),
-            |acc, x| {
-                if acc.0 == x.1 {
-                    (x.1, acc.1.extend_sub_order(x.0))
-                } else {
-                    (x.1, acc.1.add_sub_order(x.0))
-                }
-            },
-        );
-        new_order
-    }
-}
-
 #[derive(Debug, PartialEq)]
 pub struct NonStrictGroupOrder(Vec<Vec<TeamId>>);
 
@@ -186,6 +148,54 @@ impl NonStrictGroupOrder {
     fn extend(self, sub_order: NonStrictGroupOrder) -> Self {
         NonStrictGroupOrder([&self.0[..], &sub_order.0[..]].concat())
     }
+}
+
+impl<T: UnaryStat + core::fmt::Debug> SubOrdering for T {
+    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
+        let stats_all_teams = T::team_stats(group);
+        let mut team_stats: Vec<(TeamId, T)> = order
+            .into_iter()
+            .map(|id| (id, stats_all_teams.get(&id)))
+            .filter(|(_, x)| x.is_some())
+            .map(|(id, x)| (id, *x.unwrap()))
+            .collect();
+        team_stats.sort_by_key(|x| x.1);
+        println!("Team stats: {:?}", team_stats);
+        let team_stats = team_stats;
+        let (_, new_order) = team_stats.iter().rev().fold(
+            (team_stats[0].1, NonStrictGroupOrder::empty()),
+            |acc, x| {
+                if acc.0 == x.1 {
+                    (x.1, acc.1.extend_sub_order(x.0))
+                } else {
+                    (x.1, acc.1.add_sub_order(x.0))
+                }
+            },
+        );
+        new_order
+    }
+}
+
+pub trait Tiebreaker {
+    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder;
+}
+
+pub struct Random;
+
+impl Tiebreaker for Random {
+    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder {
+        todo!();
+    }
+}
+
+impl Tiebreaker for Rank {
+    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder {
+        todo!();
+    }
+}
+
+pub trait SubOrdering {
+    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
 }
 
 #[cfg(test)]
@@ -231,7 +241,7 @@ mod tests {
         let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
+        let true_order = GroupOrder(vec![2, 0, 3, 1].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 

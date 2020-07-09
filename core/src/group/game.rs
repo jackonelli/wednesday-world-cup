@@ -86,7 +86,7 @@ pub struct PlayedGroupGame {
     pub home: TeamId,
     pub away: TeamId,
     pub score: Score,
-    fair_play: FairPlayScore,
+    pub fair_play: FairPlayScore,
     date: Date,
 }
 

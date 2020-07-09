@@ -22,6 +22,8 @@ pub struct TeamId(pub u8);
     std::cmp::Eq,
     std::cmp::PartialEq,
     std::hash::Hash,
+    std::cmp::PartialOrd,
+    std::cmp::Ord,
     From,
 )]
 pub struct Rank(pub u8);
