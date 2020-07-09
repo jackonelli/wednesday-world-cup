@@ -1,6 +1,7 @@
 use crate::fair_play::FairPlayScore;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};
+use crate::group::stats::UnaryStat;
 use crate::group::stats::{GroupPoint, PrimaryStats};
 use crate::group::GroupError;
 use crate::team::TeamId;
@@ -117,7 +118,7 @@ impl PlayedGroupGame {
         }
     }
     pub(crate) fn points(&self) -> (GroupPoint, GroupPoint) {
-        points(self)
+        GroupPoint::stat(self)
     }
 
     fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
@@ -138,17 +139,7 @@ impl Game for PlayedGroupGame {
     }
 }
 
-pub fn points(game: &PlayedGroupGame) -> (GroupPoint, GroupPoint) {
-    let score = &game.score;
-    if score.home > score.away {
-        (GroupPoint(3), GroupPoint(0))
-    } else if score.home < score.away {
-        (GroupPoint(0), GroupPoint(3))
-    } else {
-        (GroupPoint(1), GroupPoint(1))
-    }
-}
-
+// TODO: Move to unary stat impl
 pub fn goal_diff(game: &PlayedGroupGame) -> (GoalDiff, GoalDiff) {
     let goal_diff = game.score.home - game.score.away;
     (goal_diff, -goal_diff)

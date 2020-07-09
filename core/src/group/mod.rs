@@ -1,6 +1,7 @@
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::game::{PlayedGroupGame, PreGroupGame};
 use crate::group::order::GroupOrder;
+use crate::group::stats::UnaryStat;
 use crate::group::stats::{GroupPoint, PrimaryStats};
 use crate::team::TeamId;
 use crate::Date;
@@ -130,7 +131,7 @@ impl Group {
 
     /// Calculate points for group teams
     pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
-        self.unary_stat(game::points)
+        self.unary_stat(GroupPoint::stat)
     }
 
     /// Calculate goal difference for group teams
@@ -148,6 +149,7 @@ impl Group {
         self.unary_stat(game::primary_stats)
     }
 
+    // TODO: Use Unary stat trait instead of `fn` type
     fn unary_stat<T>(&self, stat: fn(&PlayedGroupGame) -> (T, T)) -> HashMap<TeamId, T>
     where
         T: num::Zero + std::ops::AddAssign,

@@ -1,8 +1,11 @@
-use crate::group::stats::PrimaryStats;
+use crate::group::game::PlayedGroupGame;
+use crate::group::stats::{PrimaryStats, UnaryStat};
 use crate::group::{Group, GroupError, GroupPoint};
 use crate::team::TeamId;
+use num::Zero;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::ops::AddAssign;
 
 /// Fifa World Cup 2018 Order
 ///
@@ -136,8 +139,8 @@ pub trait SubOrdering {
 
 impl<T: UnaryStat> SubOrdering for T {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
-        let all_points = T::stat(group);
-        let mut point_stats: Vec<(TeamId, T::Stat)> = order
+        let all_points = T::team_stats(group);
+        let mut point_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, all_points.get(&id)))
             .filter(|(_, x)| x.is_some())
@@ -156,21 +159,6 @@ impl<T: UnaryStat> SubOrdering for T {
             },
         );
         new_order
-    }
-}
-
-pub trait UnaryStat {
-    type Stat: Ord + Copy;
-    fn stat(group: &Group) -> HashMap<TeamId, Self::Stat>;
-}
-
-pub struct PointOrder {}
-
-impl UnaryStat for PointOrder {
-    type Stat = GroupPoint;
-
-    fn stat(group: &Group) -> HashMap<TeamId, Self::Stat> {
-        group.points()
     }
 }
 
@@ -227,7 +215,7 @@ mod tests {
         let game_3 = PlayedGroupGame::try_new(2, 0, 3, (0, 1), (0, 0), Date::dummy()).unwrap();
         let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
         let rules = Rules {
-            non_strict: vec![Box::new(PointOrder {})],
+            non_strict: vec![Box::new(GroupPoint::default())],
             tiebreaker: Random {},
         };
         let group_order = order_group(&group, rules);
