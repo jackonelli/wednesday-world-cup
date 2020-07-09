@@ -1,11 +1,8 @@
-use crate::group::game::PlayedGroupGame;
-use crate::group::stats::{PrimaryStats, UnaryStat};
+use crate::game::{GoalCount, GoalDiff};
+use crate::group::stats::UnaryStat;
 use crate::group::{Group, GroupError, GroupPoint};
 use crate::team::TeamId;
-use num::Zero;
-use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::ops::AddAssign;
 
 /// Fifa World Cup 2018 Order
 ///
@@ -30,14 +27,23 @@ use std::ops::AddAssign;
 /// 8. Drawing of lots by the FIFA.
 ///
 /// TODO: Complete rules 4-8
-pub struct Fifa2018;
+pub fn fifa_2018() -> Rules<Random> {
+    Rules {
+        non_strict: vec![
+            Box::new(GroupPoint::default()),
+            Box::new(GoalDiff::default()),
+            Box::new(GoalCount::default()),
+        ],
+        tiebreaker: Random {},
+    }
+}
 
 pub struct Rules<T: Tiebreaker> {
     non_strict: Vec<Box<dyn SubOrdering>>,
     tiebreaker: T,
 }
 
-pub fn order_group<T: Tiebreaker>(group: &Group, rules: Rules<T>) -> GroupOrder {
+pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
     let possibly_non_strict = ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
     if !possibly_non_strict.is_strict() {
         rules.tiebreaker.order(group, possibly_non_strict)
@@ -65,24 +71,6 @@ fn ordering(
             });
         ordering(group, remaining_rules, sub_order)
     }
-}
-
-/// TODO: Remove, DEPRECATED
-pub fn fifa_2018_rules(group: &Group) -> GroupOrder {
-    let mut primary_stats: Vec<(TeamId, PrimaryStats)> = group
-        .primary_stats()
-        .into_iter()
-        .map(|(team, stat)| (team, stat))
-        .collect();
-    primary_stats.sort_by_key(|x| x.1);
-    // Need to reverse the iter since the sort is ascending
-    GroupOrder(
-        primary_stats
-            .into_iter()
-            .rev()
-            .map(|(team, _)| team)
-            .collect(),
-    )
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -214,11 +202,8 @@ mod tests {
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 1), (0, 0), Date::dummy()).unwrap();
         let game_3 = PlayedGroupGame::try_new(2, 0, 3, (0, 1), (0, 0), Date::dummy()).unwrap();
         let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
-        let rules = Rules {
-            non_strict: vec![Box::new(GroupPoint::default())],
-            tiebreaker: Random {},
-        };
-        let group_order = order_group(&group, rules);
+        let rules = fifa_2018();
+        let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![3, 1, 2, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
@@ -230,20 +215,22 @@ mod tests {
         let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::dummy()).unwrap();
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::dummy()).unwrap();
         let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
-        let group_order = fifa_2018_rules(&group);
+        let rules = fifa_2018();
+        let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
     /// One round of the group stage of 4 teams.
-    /// FairPlayScore necessary for strict order
-    /// Is the sorting deterministic if the order is not strict?
+    /// FairPlayScore necessary for strict order.
+    /// NB: The sorting is not deterministic if the order is not strict.
     #[test]
     fn fair_play_order() {
         let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (1, 4), Date::dummy()).unwrap();
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (0, 0), (0, 2), Date::dummy()).unwrap();
         let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
-        let group_order = fifa_2018_rules(&group);
+        let rules = fifa_2018();
+        let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
@@ -256,7 +243,8 @@ mod tests {
         let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::dummy()).unwrap();
         let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::dummy()).unwrap();
         let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
-        let group_order = fifa_2018_rules(&group);
+        let rules = fifa_2018();
+        let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![0, 1, 2].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }

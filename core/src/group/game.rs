@@ -2,8 +2,8 @@ use crate::fair_play::FairPlayScore;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};
 use crate::group::stats::UnaryStat;
-use crate::group::stats::{GroupPoint, PrimaryStats};
 use crate::group::GroupError;
+use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
 use derive_more::{Add, AddAssign, From};
@@ -117,16 +117,16 @@ impl PlayedGroupGame {
             Err(GroupError::GameTeamsNotUnique)
         }
     }
-    pub(crate) fn points(&self) -> (GroupPoint, GroupPoint) {
+    pub fn points(&self) -> (GroupPoint, GroupPoint) {
         GroupPoint::stat(self)
     }
 
-    fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
-        goal_diff(self)
+    pub fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
+        GoalDiff::stat(self)
     }
 
-    fn goals_scored(&self) -> (GoalCount, GoalCount) {
-        goals_scored(self)
+    pub fn goals_scored(&self) -> (GoalCount, GoalCount) {
+        GoalCount::stat(self)
     }
 }
 
@@ -137,25 +137,6 @@ impl Game for PlayedGroupGame {
     fn away_team(&self) -> TeamId {
         self.away
     }
-}
-
-// TODO: Move to unary stat impl
-pub fn goal_diff(game: &PlayedGroupGame) -> (GoalDiff, GoalDiff) {
-    let goal_diff = game.score.home - game.score.away;
-    (goal_diff, -goal_diff)
-}
-
-pub fn goals_scored(game: &PlayedGroupGame) -> (GoalCount, GoalCount) {
-    (game.score.home, game.score.away)
-}
-
-pub fn primary_stats(game: &PlayedGroupGame) -> (PrimaryStats, PrimaryStats) {
-    let (home_points, away_points) = game.points();
-    let (home_goal_diff, away_goal_diff) = game.goal_diff();
-    let (home_goals_scored, away_goals_scored) = game.goals_scored();
-    let prim_stats_home = PrimaryStats::new(home_points, home_goal_diff, home_goals_scored);
-    let prim_stats_away = PrimaryStats::new(away_points, away_goal_diff, away_goals_scored);
-    (prim_stats_home, prim_stats_away)
 }
 
 #[derive(
