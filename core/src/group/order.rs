@@ -64,6 +64,7 @@ fn ordering(
     }
 }
 
+/// TODO: Remove, DEPRECATED
 pub fn fifa_2018_rules(group: &Group) -> GroupOrder {
     let mut primary_stats: Vec<(TeamId, PrimaryStats)> = group
         .primary_stats()

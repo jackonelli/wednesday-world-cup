@@ -2,16 +2,10 @@
 
 #[macro_use]
 extern crate rocket;
-use rocket::http::Method; // 1.
+use rocket::http::Method;
 use rocket::response::status::NotFound;
 use rocket_contrib::json::Json;
-use rocket_cors::{
-    AllowedHeaders,
-    AllowedOrigins,
-    Cors,
-    CorsOptions, // 3.
-    Error,       // 2.
-};
+use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions, Error};
 use wwc_data::lsv;
 
 #[get("/<file_name>")]
@@ -28,7 +22,6 @@ fn index(file_name: String) -> Result<Json<lsv::Data>, NotFound<String>> {
 
 fn make_cors() -> Cors {
     let allowed_origins = AllowedOrigins::some_exact(&[
-        // 4.
         "http://localhost:8080",
         "http://127.0.0.1:8080",
         "http://localhost:8000",
@@ -36,13 +29,12 @@ fn make_cors() -> Cors {
     ]);
 
     CorsOptions {
-        // 5.
         allowed_origins,
-        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(), // 1.
+        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(),
         allowed_headers: AllowedHeaders::some(&[
             "Authorization",
             "Accept",
-            "Access-Control-Allow-Origin", // 6.
+            "Access-Control-Allow-Origin",
         ]),
         allow_credentials: true,
         ..Default::default()
@@ -54,11 +46,10 @@ fn make_cors() -> Cors {
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
         .mount("/", routes![index])
-        .attach(make_cors()) // 7.
+        .attach(make_cors())
 }
 
 fn main() -> Result<(), Error> {
-    // 2.
     rocket().launch();
     Ok(())
 }
