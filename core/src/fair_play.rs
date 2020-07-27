@@ -101,6 +101,7 @@ where
 mod tests {
     use super::*;
     #[test]
+    /// TODO: Have as a doc test instead.
     fn score() {
         let fair_play = FairPlay::new(1, 2, 3, 4);
         assert_eq!(-39, fair_play.value().0);

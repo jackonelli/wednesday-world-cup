@@ -11,9 +11,9 @@ use std::convert::{TryFrom, TryInto};
 ///
 ///First step: Pursuant to the criteria listed in art. 32 (5) lit. a) to c) of the Competition Regulations.
 ///
-///1. Greatest number of points obtained in all group matches
-///2. Goal difference in all group matches
-///3. Greatest number of goals scored in all group matches.
+/// 1. Greatest number of points obtained in all group matches
+/// 2. Goal difference in all group matches
+/// 3. Greatest number of goals scored in all group matches.
 ///
 ///Second step: If two or more teams are equal on the basis of the first step (see example in Table 1), their ranking will be determined by applying to the group matches between the teams concerned the criteria listed in art. 32 (5) lit. d) to h) in the order of their listing.
 ///
@@ -27,20 +27,35 @@ use std::convert::{TryFrom, TryInto};
 ///     - Yellow card and direct red card: -5 points
 /// 8. Drawing of lots by the FIFA.
 ///
-/// TODO: Complete rules 4-8
+/// TODO: Complete rules 4-6, 8.
 pub fn fifa_2018() -> Rules<Random> {
     Rules {
         non_strict: vec![
+            // TODO: Having actually instantiated values is not nice.
             Box::new(GroupPoint::default()),
             Box::new(GoalDiff::default()),
             Box::new(GoalCount::default()),
-            // TODO Binary rules
+            // TODO: Binary rules
             Box::new(FairPlayValue::default()),
         ],
         tiebreaker: Random {},
     }
 }
 
+/// Group ordering rules
+///
+/// All ordering rules should have an ordered list (vec)
+/// of subrules.
+/// These subrules may define a non strict ordering,
+/// therefore a proper ordering rule must also define a tiebreaker
+/// which maps a (possibly) non strict ordering to a strict one.
+///
+/// E.g
+///
+/// - Fifa 2018 rules are an ordered list of 1-7 non-strict rules
+/// and then random choice as the tiebreaker.
+/// - Euro 2020 rules use a similar (but not the same) list of non-strict rules
+/// but instead lets the team rank define the tiebreaker.
 pub struct Rules<T: Tiebreaker> {
     non_strict: Vec<Box<dyn SubOrdering>>,
     tiebreaker: T,
@@ -51,6 +66,7 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder
     if !possibly_non_strict.is_strict() {
         rules.tiebreaker.order(group, possibly_non_strict)
     } else {
+        // Unwrap is okay since this match arm is checked to be strict.
         possibly_non_strict.try_into().unwrap()
     }
 }
@@ -60,7 +76,6 @@ fn ordering(
     rules: &[Box<dyn SubOrdering>],
     sub_order: NonStrictGroupOrder,
 ) -> NonStrictGroupOrder {
-    println!("Sub order: {:?}", sub_order);
     if sub_order.is_strict() || rules.len() < 1 {
         sub_order
     } else {
@@ -105,10 +120,11 @@ impl TryFrom<NonStrictGroupOrder> for GroupOrder {
     type Error = GroupError;
 
     fn try_from(value: NonStrictGroupOrder) -> Result<Self, Self::Error> {
-        if !value.is_strict() {
-            return Err(GroupError::NonStrictOrder);
+        if value.is_strict() {
+            Ok(GroupOrder(value.0.into_iter().map(|x| x[0]).collect()))
+        } else {
+            Err(GroupError::NonStrictOrder)
         }
-        Ok(GroupOrder(value.0.into_iter().map(|x| x[0]).collect()))
     }
 }
 
@@ -152,6 +168,8 @@ impl NonStrictGroupOrder {
 
 impl<T: UnaryStat + core::fmt::Debug> SubOrdering for T {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
+        // TODO: Not efficient to calc stats for all teams, but efficient is not very important
+        // here.
         let stats_all_teams = T::team_stats(group);
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
@@ -160,7 +178,6 @@ impl<T: UnaryStat + core::fmt::Debug> SubOrdering for T {
             .map(|(id, x)| (id, *x.unwrap()))
             .collect();
         team_stats.sort_by_key(|x| x.1);
-        println!("Team stats: {:?}", team_stats);
         let team_stats = team_stats;
         let (_, new_order) = team_stats.iter().rev().fold(
             (team_stats[0].1, NonStrictGroupOrder::empty()),
@@ -215,6 +232,20 @@ mod tests {
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![3, 1, 2, 0].iter().map(|x| TeamId(*x)).collect());
+        assert_eq!(true_order, group_order);
+    }
+
+    /// Different ordering based on points vs scored goals
+    #[test]
+    fn points_scored_goals_discrepancy() {
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 1), (0, 0), Date::dummy()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::dummy()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(2, 0, 2, (0, 0), (0, 0), Date::dummy()).unwrap();
+        let game_4 = PlayedGroupGame::try_new(3, 1, 3, (5, 5), (0, 0), Date::dummy()).unwrap();
+        let group = Group::try_new(vec![game_1, game_2, game_3, game_4], vec![]).unwrap();
+        let rules = fifa_2018();
+        let group_order = order_group(&group, &rules);
+        let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
