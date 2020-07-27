@@ -3,6 +3,9 @@ use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::UnaryStat;
 use crate::group::{Group, GroupError, GroupPoint};
 use crate::team::{Rank, TeamId};
+use rand::Rng;
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
 /// Fifa World Cup 2018 Order
@@ -91,7 +94,7 @@ fn ordering(
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct GroupRank(pub usize);
 
 #[derive(Debug, PartialEq)]
@@ -136,6 +139,10 @@ impl NonStrictGroupOrder {
         NonStrictGroupOrder(vec![])
     }
 
+    fn iter(&self) -> impl Iterator<Item = &Vec<TeamId>> {
+        self.0.iter()
+    }
+
     fn init(group: &Group) -> Self {
         NonStrictGroupOrder(vec![group.teams().collect()])
     }
@@ -146,7 +153,7 @@ impl NonStrictGroupOrder {
     /// Subgroup s with |s| > 1 => non-strict ordering
     /// Subgroup s with |s| < 1 (= 0) => Bug, trivial subgroups are not removed correctly.
     fn is_strict(&self) -> bool {
-        self.0.iter().all(|x| x.len() == 1)
+        self.iter().all(|x| x.len() == 1)
     }
 
     fn extend_sub_order(mut self, team: TeamId) -> Self {
@@ -194,20 +201,67 @@ impl<T: UnaryStat + core::fmt::Debug> SubOrdering for T {
 }
 
 pub trait Tiebreaker {
-    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder;
+    fn order(&self, group: &Group, non_strict: NonStrictGroupOrder) -> GroupOrder {
+        GroupOrder(non_strict.0.into_iter().fold(Vec::new(), |mut acc, x| {
+            if x.len() == 1 {
+                acc.push(x[0]);
+                acc
+            } else {
+                [acc, self.order_sub_group(group, &x).0].concat()
+            }
+        }))
+    }
+
+    fn order_sub_group(&self, _: &Group, order: &[TeamId]) -> GroupOrder {
+        //TODO: There must be a more efficient way to do this?
+        let mut tmp_order = order.to_vec();
+        tmp_order.sort_by(|a, b| self.cmp(*a, *b));
+        GroupOrder(tmp_order.into_iter().map(|x| x).rev().collect())
+    }
+
+    fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering;
+}
+
+///For actual tournaments some tiebreakers are out of our control,
+///e.g. the Fifa random tiebreaker where the lot is drawn externally,
+///This struct provides a manual tiebreaker in order to comply with actual events.
+pub struct Manual(HashMap<(TeamId, TeamId), Ordering>);
+
+impl Tiebreaker for Manual {
+    fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering {
+        *self
+            .0
+            .get(&(id_1, id_2))
+            .expect("Comparison does not exist")
+    }
 }
 
 pub struct Random;
 
 impl Tiebreaker for Random {
-    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder {
-        todo!();
+    fn cmp(&self, _id_1: TeamId, _id_2: TeamId) -> Ordering {
+        let mut rng = rand::thread_rng();
+        if rng.gen::<f32>() > 0.5 {
+            Ordering::Less
+        } else {
+            Ordering::Greater
+        }
     }
 }
 
-impl Tiebreaker for Rank {
-    fn order(&self, group: &Group, order: NonStrictGroupOrder) -> GroupOrder {
-        todo!();
+pub struct UefaRanking(HashMap<TeamId, Rank>);
+
+impl Tiebreaker for UefaRanking {
+    fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering {
+        let rank_1 = self
+            .0
+            .get(&id_1)
+            .expect(&format!("{:?} not in ranking list", id_1));
+        let rank_2 = self
+            .0
+            .get(&id_2)
+            .expect(&format!("{:?} not in ranking list", id_2));
+        rank_1.cmp(&rank_2)
     }
 }
 
