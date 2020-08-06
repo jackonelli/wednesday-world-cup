@@ -84,7 +84,6 @@ fn ordering(
     } else {
         let (current_rule, remaining_rules) = rules.split_at(1);
         let sub_order = sub_order
-            .0
             .into_iter()
             .fold(NonStrictGroupOrder::empty(), |acc, x| {
                 let new_order = current_rule[0].order(group, x);
@@ -107,9 +106,14 @@ impl GroupOrder {
     pub fn runner_up(&self) -> TeamId {
         self[GroupRank(1)]
     }
-    // TODO: Impl Into<Iterator> instead?
-    pub fn iter(&self) -> impl Iterator<Item = &TeamId> {
-        self.0.iter()
+}
+
+impl IntoIterator for GroupOrder {
+    type Item = TeamId;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -140,6 +144,7 @@ impl NonStrictGroupOrder {
         NonStrictGroupOrder(vec![])
     }
 
+    // TODO: Did not manage to impl w/ Iterator trait.
     fn iter(&self) -> impl Iterator<Item = &Vec<TeamId>> {
         self.0.iter()
     }
@@ -171,6 +176,15 @@ impl NonStrictGroupOrder {
 
     fn extend(self, sub_order: NonStrictGroupOrder) -> Self {
         NonStrictGroupOrder([&self.0[..], &sub_order.0[..]].concat())
+    }
+}
+
+impl IntoIterator for NonStrictGroupOrder {
+    type Item = Vec<TeamId>;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
     }
 }
 
@@ -254,11 +268,11 @@ pub struct UefaRanking(HashMap<TeamId, Rank>);
 
 impl UefaRanking {
     pub fn try_new(
-        group: &[Group],
+        groups: &[Group],
         ranking_map: HashMap<TeamId, Rank>,
     ) -> Result<Self, GroupError> {
         // TODO: Why does this need to be mut?
-        let mut all_teams = group.iter().flat_map(|x| x.teams());
+        let mut all_teams = groups.iter().flat_map(|x| x.teams());
         let exists = all_teams.all(|x| ranking_map.get(&x).is_some());
         if exists {
             Ok(UefaRanking(ranking_map))

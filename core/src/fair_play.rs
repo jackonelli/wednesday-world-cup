@@ -69,6 +69,9 @@ impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
 )]
 pub struct FairPlayValue(i8);
 
+// TODO: This trait impl is good for internal (test) ergonomics,
+// but I would rather not leak it to the pub API.
+// Private trait impl possible?
 impl From<u8> for FairPlayValue {
     fn from(magnitude: u8) -> Self {
         FairPlayValue(-(magnitude as i8))
