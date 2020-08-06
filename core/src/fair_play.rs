@@ -6,7 +6,7 @@ use std::ops::Mul;
 ///Indirect red card (second yellow card): –3 points;
 ///Direct red card: –4 points;
 ///Yellow card and direct red card: –5 points;
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct FairPlay {
     yellow: CardCount,
     indirect_red: CardCount,
@@ -66,7 +66,7 @@ impl From<u8> for FairPlayValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, Eq, PartialEq, From, Add, AddAssign)]
+#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, From, Add, AddAssign)]
 pub struct CardCount(u8);
 
 impl<T> Mul<T> for CardCount

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use thiserror::Error;
+use wwc_core::fair_play::FairPlay;
 use wwc_core::game::GoalCount;
 use wwc_core::group::game::{PlayedGroupGame, PreGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
@@ -77,6 +78,8 @@ pub struct ParseGame {
     away_result: GoalCount,
     home_penalty: Option<GoalCount>,
     away_penalty: Option<GoalCount>,
+    home_fair_play: Option<FairPlay>,
+    away_fair_play: Option<FairPlay>,
     finished: bool,
     date: Date,
 }
@@ -96,7 +99,10 @@ impl TryInto<PlayedGroupGame> for ParseGame {
             self.home_team,
             self.away_team,
             (self.home_result, self.away_result),
-            (0, 0),
+            (
+                self.home_fair_play.unwrap_or_default().value(),
+                self.away_fair_play.unwrap_or_default().value(),
+            ),
             self.date,
         )
     }

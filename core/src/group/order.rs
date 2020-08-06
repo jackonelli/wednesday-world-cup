@@ -49,6 +49,7 @@ impl GroupOrder {
     pub fn runner_up(&self) -> TeamId {
         self[GroupRank(1)]
     }
+    // TODO: Impl Into<Iterator> instead?
     pub fn iter(&self) -> impl Iterator<Item = &TeamId> {
         self.0.iter()
     }
@@ -72,8 +73,8 @@ mod tests {
     /// Strict order only on PrimaryStats
     #[test]
     fn simple_point_order() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::dummy()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::dummy()).unwrap();
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::mock()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::mock()).unwrap();
         let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
         let group_order = fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -85,8 +86,8 @@ mod tests {
     /// Is the sorting deterministic if the order is not strict?
     #[test]
     fn fair_play_order() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (1, 4), Date::dummy()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (0, 0), (0, 2), Date::dummy()).unwrap();
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (1, 4), Date::mock()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (0, 0), (0, 2), Date::mock()).unwrap();
         let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
         let group_order = fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -97,9 +98,9 @@ mod tests {
     /// The internal game decides
     #[test]
     fn internal_game() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::dummy()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::dummy()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::dummy()).unwrap();
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::mock()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
         let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
         let group_order = fifa_2018_rules(&group);
         let true_order = GroupOrder(vec![0, 1, 2].iter().map(|x| TeamId(*x)).collect());

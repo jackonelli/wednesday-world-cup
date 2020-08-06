@@ -116,7 +116,7 @@ impl PlayedGroupGame {
             Err(GroupError::GameTeamsNotUnique)
         }
     }
-    pub(crate) fn points(&self) -> (GroupPoint, GroupPoint) {
+    pub fn points(&self) -> (GroupPoint, GroupPoint) {
         points(self)
     }
 
@@ -190,7 +190,7 @@ mod tests {
     use super::*;
     #[test]
     fn home_win() {
-        let game = PlayedGroupGame::try_new(0, 0, 1, (3, 0), (0, 0), Date::dummy()).unwrap();
+        let game = PlayedGroupGame::try_new(0, 0, 1, (3, 0), (0, 0), Date::mock()).unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(3));
         assert_eq!(away, GroupPoint(0));
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn away_win() {
-        let game = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::dummy()).unwrap();
+        let game = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::mock()).unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(0));
         assert_eq!(away, GroupPoint(3));
@@ -206,7 +206,7 @@ mod tests {
 
     #[test]
     fn draw() {
-        let game = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (0, 0), Date::dummy()).unwrap();
+        let game = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (0, 0), Date::mock()).unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));

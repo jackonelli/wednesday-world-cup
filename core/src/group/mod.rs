@@ -40,10 +40,10 @@ pub struct Group {
 // Wasm API
 #[wasm_bindgen]
 impl Group {
-    pub fn dummy() -> Self {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::dummy()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::dummy()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::dummy()).unwrap();
+    pub fn mock() -> Self {
+        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::mock()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
         let group = Group::try_new(vec![game_1, game_2, game_3], vec![])
             .expect("This literal group construction should never fail");
         group
@@ -60,7 +60,7 @@ impl Group {
 impl Group {
     /// Fallible `Group` constructor
     ///
-    /// Creates a new group from a vec of played and upcoming games
+    /// Creates a new group from a vector of played and upcoming games.
     /// Imposes the following restrictions on the group type (more might come):
     ///
     /// - Every game (played or upcoming) must have a unique game id.
@@ -206,26 +206,26 @@ mod tests {
     use crate::Date;
     #[test]
     fn group_unique_game_ids_fail() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
-        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::dummy()).unwrap();
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
-        let game_3 = PlayedGroupGame::try_new(2, 2, 1, (1, 2), (0, 1), Date::dummy()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(2, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
         let played = vec![game_3];
         assert_eq!(Group::unique_game_ids(&played, &upcoming), false);
     }
     #[test]
     fn group_unique_game_ids_ok() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
-        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::dummy()).unwrap();
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
-        let game_3 = PlayedGroupGame::try_new(3, 2, 1, (1, 2), (0, 1), Date::dummy()).unwrap();
+        let game_3 = PlayedGroupGame::try_new(3, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
         let played = vec![game_3];
         assert_eq!(Group::unique_game_ids(&played, &upcoming), true);
     }
     #[test]
     fn test_team_from_game_vec() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
-        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::dummy()).unwrap();
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let parsed_teams: HashSet<TeamId> = team_set_from_game_vec(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
@@ -235,10 +235,10 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::try_new(3, 1, 2, Date::dummy())
+        let game_1 = PreGroupGame::try_new(3, 1, 2, Date::mock())
             .unwrap()
             .play(Score::new(2, 0), FairPlayScore::default());
-        let game_2 = PreGroupGame::try_new(1, 0, 1, Date::dummy()).unwrap();
+        let game_2 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .teams()

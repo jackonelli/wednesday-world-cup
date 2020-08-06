@@ -51,7 +51,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub struct Date(#[serde(with = "serde_date")] DateTime<FixedOffset>);
 
 impl Date {
-    pub(crate) fn dummy() -> Self {
+    pub(crate) fn mock() -> Self {
         let dt = FixedOffset::east(1 * 3600)
             .ymd(1632, 11, 06)
             .and_hms(10, 18, 36);

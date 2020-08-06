@@ -10,6 +10,6 @@ wwc_core = {path = "../core"}
 serde = {version = ">=1", features = ["derive"]}
 serde_json = ">=1"
 thiserror = ">=1"
-rocket = "0.4.4"
-rocket_contrib = "0.4.4"
+rocket = ">=0.4"
+rocket_contrib = ">=0.4"
 rocket_cors = "0.5.1"
