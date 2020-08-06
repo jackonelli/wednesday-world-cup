@@ -2,6 +2,8 @@ use derive_more::{Add, AddAssign, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
+/// Fifa World Cup 2018 Rules:
+///
 ///Yellow card: –1 points;
 ///Indirect red card (second yellow card): –3 points;
 ///Direct red card: –4 points;
@@ -15,7 +17,7 @@ pub struct FairPlay {
 }
 
 impl FairPlay {
-    pub(crate) fn new<C: Into<CardCount>>(
+    pub fn new<C: Into<CardCount>>(
         yellow: C,
         indirect_red: C,
         direct_red: C,
@@ -38,8 +40,8 @@ impl FairPlay {
 
 #[derive(Copy, Clone, Deserialize, Serialize, Debug, Default, Eq, PartialEq, Add, AddAssign)]
 pub struct FairPlayScore {
-    home: FairPlayValue,
-    away: FairPlayValue,
+    pub home: FairPlayValue,
+    pub away: FairPlayValue,
 }
 
 impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
@@ -51,14 +53,21 @@ impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, Default, Eq, PartialEq, Add, AddAssign)]
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Serialize,
+    Deserialize,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Add,
+    AddAssign,
+)]
 pub struct FairPlayValue(i8);
-
-impl FairPlayValue {
-    pub(crate) fn new(val: u8) -> Self {
-        FairPlayValue(-(val as i8))
-    }
-}
 
 impl From<u8> for FairPlayValue {
     fn from(magnitude: u8) -> Self {
@@ -66,7 +75,18 @@ impl From<u8> for FairPlayValue {
     }
 }
 
-#[derive(Debug, Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, From, Add, AddAssign)]
+impl num::Zero for FairPlayValue {
+    fn zero() -> Self {
+        FairPlayValue(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+
+#[derive(
+    Debug, Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, From, Add, AddAssign,
+)]
 pub struct CardCount(u8);
 
 impl<T> Mul<T> for CardCount
@@ -83,6 +103,7 @@ where
 mod tests {
     use super::*;
     #[test]
+    /// TODO: Have as a doc test instead.
     fn score() {
         let fair_play = FairPlay::new(1, 2, 3, 4);
         assert_eq!(-39, fair_play.value().0);

@@ -1,10 +1,10 @@
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::game::{PlayedGroupGame, PreGroupGame};
-use crate::group::order::GroupOrder;
-use crate::group::stats::{GroupPoint, PrimaryStats, Unary};
+use crate::group::order::{order_group, GroupOrder, Rules, Tiebreaker};
+use crate::group::stats::UnaryStat;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::From;
+use derive_more::{Add, AddAssign, From};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -103,78 +103,44 @@ impl Group {
             .unique()
     }
 
+    pub fn num_teams(&self) -> usize {
+        self.teams().count()
+    }
+
     /// Calculate group winner
     ///
     /// Order group according to `order_fn`
-    pub fn rank_teams(&self, order_fn: fn(&Group) -> GroupOrder) -> GroupOrder {
-        order_fn(self)
+    pub fn rank_teams<T: Tiebreaker>(&self, rules: &Rules<T>) -> GroupOrder {
+        order_group(self, rules)
     }
 
     /// Calculate group winner
     ///
     /// Order group according to `order_fn` and return first in order.
-    pub fn winner(&self, order_fn: fn(&Group) -> GroupOrder) -> TeamId {
-        (order_fn(self)).winner()
+    pub fn winner<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
+        order_group(self, rules).winner()
     }
 
     /// Calculate group runner up
     ///
     /// Order group according to `order_fn` and return second in order.
-    pub fn runner_up(&self, order_fn: fn(&Group) -> GroupOrder) -> TeamId {
-        (order_fn(self)).runner_up()
+    pub fn runner_up<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
+        order_group(self, rules).runner_up()
     }
 
     /// Calculate points for group teams
     pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
-        self.unary_stat(game::points)
+        GroupPoint::team_stats(self)
     }
 
     /// Calculate goal difference for group teams
     pub fn goal_diff(&self) -> HashMap<TeamId, GoalDiff> {
-        self.unary_stat(game::goal_diff)
+        GoalDiff::team_stats(self)
     }
 
     /// Calculate goals scored for group teams
     pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
-        self.unary_stat(game::goals_scored)
-    }
-
-    /// Calculate [Primary Stats](stats/struct.PrimaryStats.html) for group teams
-    pub fn primary_stats(&self) -> HashMap<TeamId, PrimaryStats> {
-        self.unary_stat(game::primary_stats)
-    }
-
-    fn unary_stat<T>(&self, stat: fn(&PlayedGroupGame) -> (T, T)) -> HashMap<TeamId, T>
-    where
-        T: Unary + num::Zero + std::ops::AddAssign,
-    {
-        let team_map = self.teams().map(|team| (team, T::zero())).collect();
-
-        self.team_stat_from_played_games(team_map, stat)
-    }
-
-    fn team_stat_from_played_games<T>(
-        &self,
-        default_map: HashMap<TeamId, T>,
-        stat: fn(&PlayedGroupGame) -> (T, T),
-    ) -> HashMap<TeamId, T>
-    where
-        T: std::ops::AddAssign,
-    {
-        self.played_games.iter().fold(default_map, |mut acc, game| {
-            let (delta_home_stat, delta_away_stat) = stat(game);
-
-            let stats = acc
-                .get_mut(&game.home)
-                .expect("TeamId will always be present");
-            *stats += delta_home_stat;
-
-            let stats = acc
-                .get_mut(&game.away)
-                .expect("TeamId will always be present");
-            *stats += delta_away_stat;
-            acc
-        })
+        GoalCount::team_stats(self)
     }
 }
 
@@ -187,12 +153,26 @@ fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> 
     teams.into_iter()
 }
 
+#[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
+pub struct GroupPoint(pub u8);
+
+impl num::Zero for GroupPoint {
+    fn zero() -> GroupPoint {
+        GroupPoint(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum GroupError {
     #[error("Teams in game not unique")]
     GameTeamsNotUnique,
     #[error("Game Id's in group not unique")]
     GameIdsNotUnique,
+    #[error("Group does not define a strict ordering")]
+    NonStrictOrder,
     #[error("Generic")]
     GenericError,
 }

@@ -1,8 +1,9 @@
 use crate::fair_play::FairPlayScore;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};
-use crate::group::stats::{GroupPoint, PrimaryStats};
+use crate::group::stats::UnaryStat;
 use crate::group::GroupError;
+use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
 use derive_more::{Add, AddAssign, From};
@@ -85,12 +86,12 @@ pub struct PlayedGroupGame {
     pub home: TeamId,
     pub away: TeamId,
     pub score: Score,
-    fair_play: FairPlayScore,
+    pub fair_play: FairPlayScore,
     date: Date,
 }
 
 impl PlayedGroupGame {
-    pub fn try_new<
+    pub(crate) fn try_new<
         G: Into<GroupGameId>,
         T: Into<TeamId> + Eq,
         S: Into<Score>,
@@ -117,15 +118,15 @@ impl PlayedGroupGame {
         }
     }
     pub fn points(&self) -> (GroupPoint, GroupPoint) {
-        points(self)
+        GroupPoint::stat(self)
     }
 
-    fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
-        goal_diff(self)
+    pub fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
+        GoalDiff::stat(self)
     }
 
-    fn goals_scored(&self) -> (GoalCount, GoalCount) {
-        goals_scored(self)
+    pub fn goals_scored(&self) -> (GoalCount, GoalCount) {
+        GoalCount::stat(self)
     }
 }
 
@@ -136,35 +137,6 @@ impl Game for PlayedGroupGame {
     fn away_team(&self) -> TeamId {
         self.away
     }
-}
-
-pub fn points(game: &PlayedGroupGame) -> (GroupPoint, GroupPoint) {
-    let score = &game.score;
-    if score.home > score.away {
-        (GroupPoint(3), GroupPoint(0))
-    } else if score.home < score.away {
-        (GroupPoint(0), GroupPoint(3))
-    } else {
-        (GroupPoint(1), GroupPoint(1))
-    }
-}
-
-pub fn goal_diff(game: &PlayedGroupGame) -> (GoalDiff, GoalDiff) {
-    let goal_diff = game.score.home - game.score.away;
-    (goal_diff, -goal_diff)
-}
-
-pub fn goals_scored(game: &PlayedGroupGame) -> (GoalCount, GoalCount) {
-    (game.score.home, game.score.away)
-}
-
-pub fn primary_stats(game: &PlayedGroupGame) -> (PrimaryStats, PrimaryStats) {
-    let (home_points, away_points) = game.points();
-    let (home_goal_diff, away_goal_diff) = game.goal_diff();
-    let (home_goals_scored, away_goals_scored) = game.goals_scored();
-    let prim_stats_home = PrimaryStats::new(home_points, home_goal_diff, home_goals_scored);
-    let prim_stats_away = PrimaryStats::new(away_points, away_goal_diff, away_goals_scored);
-    (prim_stats_home, prim_stats_away)
 }
 
 #[derive(

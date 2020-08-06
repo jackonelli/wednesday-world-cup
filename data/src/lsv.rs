@@ -7,11 +7,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use thiserror::Error;
-use wwc_core::fair_play::FairPlay;
+use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::GoalCount;
-use wwc_core::group::game::{PlayedGroupGame, PreGroupGame};
+use wwc_core::group::game::{PlayedGroupGame, PreGroupGame, Score};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Team, TeamId};
+use wwc_core::team::{Rank, Team, TeamId};
 use wwc_core::Date;
 
 pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
@@ -30,8 +30,35 @@ pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Data {
-    pub teams: Vec<Team>,
+    pub teams: Vec<ParseTeam>,
     pub groups: HashMap<GroupId, ParseGroup>,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct ParseTeam {
+    id: TeamId,
+    name: String,
+    #[serde(rename = "fifaCode")]
+    fifa_code: String,
+    iso2: String,
+    rank: Option<Rank>,
+}
+
+impl TryInto<Team> for ParseTeam {
+    type Error = LsvParseError;
+    fn try_into(self) -> Result<Team, Self::Error> {
+        if let Some(rank) = self.rank {
+            Ok(Team::new(
+                self.id,
+                self.name,
+                self.fifa_code,
+                self.iso2,
+                rank,
+            ))
+        } else {
+            Err(Self::Error::TeamError)
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -53,6 +80,7 @@ impl TryInto<Group> for ParseGroup {
                 game.try_into()
             })
             .collect::<Result<Vec<PreGroupGame>, GroupError>>()?;
+
         let played_games = self
             .games
             .iter()
@@ -94,17 +122,10 @@ impl TryInto<PreGroupGame> for ParseGame {
 impl TryInto<PlayedGroupGame> for ParseGame {
     type Error = GroupError;
     fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
-        PlayedGroupGame::try_new(
-            self.id,
-            self.home_team,
-            self.away_team,
-            (self.home_result, self.away_result),
-            (
-                self.home_fair_play.unwrap_or_default().value(),
-                self.away_fair_play.unwrap_or_default().value(),
-            ),
-            self.date,
-        )
+        let game = PreGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
+        let score = Score::from((self.home_result, self.away_result));
+        let fair_play_score = FairPlayScore::from((0, 0));
+        Ok(game.play(score, fair_play_score))
     }
 }
 
@@ -119,6 +140,8 @@ enum GameType {
 
 #[derive(Error, Debug)]
 pub enum LsvParseError {
+    #[error("Error parsing team")]
+    TeamError,
     #[error("Error parsing group")]
     GroupError,
 }
