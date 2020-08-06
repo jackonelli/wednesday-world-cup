@@ -251,6 +251,22 @@ impl Tiebreaker for Random {
 
 pub struct UefaRanking(HashMap<TeamId, Rank>);
 
+impl UefaRanking {
+    pub fn try_new(
+        group: &[Group],
+        ranking_map: HashMap<TeamId, Rank>,
+    ) -> Result<Self, GroupError> {
+        // TODO: Why does this need to be mut?
+        let mut all_teams = group.iter().flat_map(|x| x.teams());
+        let exists = all_teams.all(|x| ranking_map.get(&x).is_some());
+        if exists {
+            Ok(UefaRanking(ranking_map))
+        } else {
+            Err(GroupError::GenericError)
+        }
+    }
+}
+
 impl Tiebreaker for UefaRanking {
     fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering {
         let rank_1 = self
