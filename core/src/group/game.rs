@@ -38,7 +38,7 @@ pub struct PreGroupGame {
     pub id: GroupGameId,
     pub home: TeamId,
     pub away: TeamId,
-    date: Date,
+    pub date: Date,
 }
 
 impl PreGroupGame {

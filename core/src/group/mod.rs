@@ -2,7 +2,7 @@ use crate::game::{Game, GoalCount, GoalDiff};
 use crate::group::game::{PlayedGroupGame, PreGroupGame};
 use crate::group::order::{order_group, GroupOrder, Rules, Tiebreaker};
 use crate::group::stats::UnaryStat;
-use crate::team::TeamId;
+use crate::team::{Rank, Team, TeamId};
 use crate::Date;
 use derive_more::{Add, AddAssign, From};
 use itertools::Itertools;
@@ -175,6 +175,27 @@ pub enum GroupError {
     NonStrictOrder,
     #[error("Generic")]
     GenericError,
+}
+
+pub fn mock_data() -> (Vec<Group>, HashMap<TeamId, Team>) {
+    let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+    let game_2 = PreGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
+    let group_a = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+    let game_1 = PreGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
+    let game_2 = PreGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
+    let group_b = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+    let groups = vec![group_a, group_b];
+    let teams = vec![
+        Team::new(TeamId(0), "Sweden", "SWE", "se", Rank(0)),
+        Team::new(TeamId(1), "England", "ENG", "en", Rank(1)),
+        Team::new(TeamId(2), "France", "FRA", "fr", Rank(2)),
+        Team::new(TeamId(3), "Brazil", "BRA", "br", Rank(3)),
+        Team::new(TeamId(4), "Canada", "CAN", "ca", Rank(4)),
+        Team::new(TeamId(5), "Spain", "ESP", "sp", Rank(5)),
+        Team::new(TeamId(6), "Japan", "JAP", "ja", Rank(6)),
+    ];
+    let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
+    (groups, teams)
 }
 
 #[cfg(test)]

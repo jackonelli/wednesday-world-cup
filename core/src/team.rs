@@ -1,4 +1,4 @@
-use derive_more::From;
+use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 #[derive(
     Deserialize,
@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
     Debug,
     Clone,
     Copy,
+    Display,
     std::cmp::Eq,
     std::cmp::PartialEq,
     std::hash::Hash,
@@ -30,7 +31,7 @@ pub struct Rank(pub u8);
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Team {
-    id: TeamId,
+    pub id: TeamId,
     name: String,
     #[serde(rename = "fifaCode")]
     fifa_code: String,
@@ -39,12 +40,12 @@ pub struct Team {
 }
 
 impl Team {
-    pub fn new(id: TeamId, name: String, fifa_code: String, iso2: String, rank: Rank) -> Self {
+    pub fn new(id: TeamId, name: &str, fifa_code: &str, iso2: &str, rank: Rank) -> Self {
         Team {
             id,
-            name,
-            fifa_code,
-            iso2,
+            name: String::from(name),
+            fifa_code: String::from(fifa_code),
+            iso2: String::from(iso2),
             rank,
         }
     }

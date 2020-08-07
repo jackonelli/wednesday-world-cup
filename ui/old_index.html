@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{tournament._settings.name}}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css">
+
+    <link rel='stylesheet prefetch'
+          href='https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/2.3.1/css/flag-icon.min.css'>
+
+    <link rel='stylesheet prefetch'
+          href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css'>
+
+    <link rel="stylesheet" href="{{ url_for('static',filename='css/style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+    <!-- HEADER TODO: Move to sep. template -->
+    <h1>{{tournament._settings.name}}</h1>
+    <h2>{{tournament._settings.sub_name}}</h2>
+    <!-- GROUP -->
+    <div class="tournament-group tournament-group--rounded">
+        <div class="tournament-group__round tournament-group__round--group">
+            <h3 class="tournament-group__round-title">Gruppspel</h3>
+            <ul class="tournament-group__list">
+                {% for group in tournament.groups.values() %}
+                <li class="tournament-group__item">
+                    <div class="tournament-group_group" tabindex="0"> <!-- -->
+                        <table class="tournament-group__table">
+                            <caption class="tournament-group__caption">
+                                <h4 class="tournament-group__round-title">{{group.name}}</h4>
+                            </caption>
+                            <thead class="tournament-group__table-header">
+                            <tr>
+                                <th></th>
+                                <th>Pl</th>
+                                <th>+/-</th>
+                                <th>P</th>
+                            </tr>
+                            </thead>
+                            <tbody class="tournament-group__content">
+                            {% for team in group.teams %}
+                            <tr class="tournament-group__team">
+                                <td class="tournament-group__country">
+                                    <abbr class="tournament-group__code" title="{{ team.name }}">{{ team.fifa_code}}</abbr>
+                                    <span class="tournament-group__flag flag-icon flag-icon-{{team.iso2}}"
+                                          aria-label="Flag"></span>
+                                <td class="tournament-group__goaldiff">
+                                    <span class="tournament-group__number">{{ team.games_played }}</span>
+                                </td>
+                                </td>
+                                    <td class="tournament-group__goals">
+                                    <span class="tournament-group__number">{{ team.goal_diff }}</span>
+                                </td>
+                                <td class="tournament-group__score">
+                                    <span class="tournament-group__number">{{ team.points }}</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% for game in group.games %}
+                        {% set home, away = game.home_team, game.away_team %}
+                        {% if game.finished %}
+                            {% set home_result, away_result = game.home_result, game.away_result %}
+                            {% if game.home_result > game.away_result %}
+                                {% set home_result, away_result = game.home_result, game.away_result %}
+                            {% elif game.home_result < game.away_result %}
+                                {% set home_ext, away_ext = "", "tournament-bracket__team--winner" %}
+                            {% else %}
+                                {% set home_ext, away_ext = "", "" %}
+                            {% endif %}
+                        {% else %}
+                            {% set home_result, away_result = "-", "-" %}
+                        {% endif %}
+                    <div class="tournament-group__match" tabindex="0">
+                        <table class="tournament-bracket__table">
+                            <!--<caption class="tournament-bracket__caption">
+                                <time datetime="1998-02-18">18 February 1998</time>
+                            </caption> -->
+                            <thead class="sr-only">
+                            <tr>
+                                <th>Country</th>
+                                <th>Score</th>
+                            </tr>
+                            </thead>
+                            <tbody class="tournament-bracket__content">
+                            <tr class="tournament-bracket__team {{home_ext}}">
+                                <td class="tournament-bracket__country">
+                                    <abbr class="tournament-bracket__code" title="{{ home.name }}">
+                                        {{home.fifa_code}}</abbr>
+                                    <span class="tournament-bracket__flag flag-icon flag-icon-{{home.iso2}}"
+                                          aria-label="Flag"></span>
+                                </td>
+                                <td class="tournament-bracket__score">
+                                    <span class="tournament-bracket__number">{{home_result}}</span>
+                                </td>
+                            </tr>
+                            <tr class="tournament-bracket__team {{away_ext}}">
+                                <td class="tournament-bracket__country">
+                                    <abbr class="tournament-bracket__code" title="{{ away.name }}">
+                                        {{away.fifa_code}}</abbr>
+                                    <span class="tournament-bracket__flag flag-icon flag-icon-{{away.iso2}}"
+                                          aria-label="Flag"></span>
+                                </td>
+                                <td class="tournament-bracket__score">
+                                    <span class="tournament-bracket__number">{{away_result}}</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <!-- BRACKET -->
+    {% set playoff = tournament.playoff %}
+    <div class="tournament-bracket tournament-bracket--rounded">
+        {% for round in playoff.rounds %}
+        <div class="tournament-bracket__round tournament-bracket__round--{{round.order}}">
+            <h3 class="tournament-bracket__round-title">{{round.name}}</h3>
+            <ul class="tournament-bracket__list">
+                {% for game in round.games.values() %}
+                    {% set home, away = game.home_team, game.away_team %}
+                    {% if game.finished %}
+                        {% set home_result, away_result = game.home_result, game.away_result %}
+                        {% if game.home_result > game.away_result %}
+                            {% set home_ext, away_ext = "tournament-bracket__team--winner", "" %}
+                        {% elif game.home_result < game.away_result %}
+                            {% set home_ext, away_ext = "", "tournament-bracket__team--winner" %}
+                        {% else %}
+                            {% set home_ext, away_ext = "", "" %}
+                        {% endif %}
+                    {% else %}
+                        {% set home_result, away_result = "-", "-" %}
+                    {% endif %}
+                <li class="tournament-bracket__item">
+                    <div class="tournament-bracket__match" tabindex="0">
+                        <table class="tournament-bracket__table">
+                            <caption class="tournament-bracket__caption">
+                                <time datetime="{{game.date.strftime('%Y-%m-%d')}}">
+                                    {{game.date.strftime('%Y-%m-%d')}}
+                                </time>
+                            </caption>
+                            <thead class="sr-only">
+                            <tr>
+                                <th>Country</th>
+                                <th>Score</th>
+                            </tr>
+                            </thead>
+                            <tbody class="tournament-bracket__content">
+                            <tr class="tournament-bracket__team {{home_ext}}">
+                                <td class="tournament-bracket__country">
+                                    <abbr class="tournament-bracket__code" title="{{home.name}}">
+                                        {{home.fifa_code}}</abbr>
+                                    <span class="tournament-bracket__flag flag-icon flag-icon-{{home.iso2}}"
+                                          aria-label="Flag"></span>
+                                </td>
+                                <td class="tournament-bracket__score">
+                                    <span class="tournament-bracket__number">{{home_result}}</span>
+                                </td>
+                            </tr>
+                            <tr class="tournament-bracket__team {{away_ext}}">
+                                <td class="tournament-bracket__country">
+                                    <abbr class="tournament-bracket__code" title="{{away.name}}">
+                                        {{away.fifa_code}}</abbr>
+                                    <span class="tournament-bracket__flag flag-icon flag-icon-{{away.iso2}}"
+                                          aria-label="Flag"></span>
+                                </td>
+                                <td class="tournament-bracket__score">
+                                    <span class="tournament-bracket__number">{{away_result}}</span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+
+</html>

@@ -50,9 +50,9 @@ impl TryInto<Team> for ParseTeam {
         if let Some(rank) = self.rank {
             Ok(Team::new(
                 self.id,
-                self.name,
-                self.fifa_code,
-                self.iso2,
+                &self.name,
+                &self.fifa_code,
+                &self.iso2,
                 rank,
             ))
         } else {

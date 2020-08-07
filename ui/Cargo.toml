@@ -1,0 +1,18 @@
+[package]
+name = "ui"
+version = "0.1.0"
+authors = ["Jacko Jackonelli"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+serde = "1.0.112"
+ulid = {version = "0.4.0", features = ["serde"]}
+seed = ">=0.7"
+wasm-bindgen = "^0.2.50"
+web-sys = "^0.3.27"
+strum = "0.18.0"
+strum_macros = "0.18.0"
+wwc_core = {path = "../core"}
