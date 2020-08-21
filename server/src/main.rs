@@ -8,15 +8,18 @@ use rocket_contrib::json::Json;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions, Error};
 use wwc_data::lsv;
 
+/// LSV data
+///
+/// Deprecated, this will not be handled by the server.
+/// It will be handed by a database connection, but it is nice for mock data.
 #[get("/<file_name>")]
-fn index(file_name: String) -> Result<Json<lsv::Data>, NotFound<String>> {
+fn get_lsv_json(file_name: String) -> Result<Json<lsv::Data>, NotFound<String>> {
     let data_json =
         match wwc_data::file_io::read_json_file_to_str(&format!("server/data/{}", file_name)) {
             Ok(data) => data,
             Err(err) => return Err(NotFound(err.to_string())),
         };
     let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
-    println!("{:?}", &data);
     Ok(Json(data))
 }
 
@@ -45,7 +48,7 @@ fn make_cors() -> Cors {
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![index])
+        .mount("/", routes![get_lsv_json])
         .attach(make_cors())
 }
 
