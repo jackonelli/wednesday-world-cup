@@ -4,6 +4,5 @@ members = [
     "core",
     "data",
     "server",
-    "api",
     "ui"
 ]
