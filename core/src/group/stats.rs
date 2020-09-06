@@ -51,10 +51,10 @@ pub trait UnaryStat: Ord + Copy + num::Zero + ops::AddAssign {
         })
     }
 
-    fn internal_team_stats(group: &Group, team_filter: &HashSet<TeamId>) -> HashMap<TeamId, Self> {
+    fn internal_team_stats(group: &Group, team_filter: &HashSet<&TeamId>) -> HashMap<TeamId, Self> {
         let team_map = team_filter
             .iter()
-            .map(|team| (*team, Self::zero()))
+            .map(|team| (**team, Self::zero()))
             .collect();
         group
             .played_games

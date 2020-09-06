@@ -5,8 +5,9 @@ use crate::group::{Group, GroupError, GroupPoint};
 use crate::team::{Rank, TeamId};
 use rand::Rng;
 use std::cmp::Ordering;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
+use std::iter::FromIterator;
 
 /// Fifa World Cup 2018 Order
 ///
@@ -250,7 +251,7 @@ impl<T: UnaryStat> InternalGroupStat<T> {
 
 impl<T: UnaryStat> SubOrdering for InternalGroupStat<T> {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
-        let stats_all_teams = T::internal_team_stats(group, &order.clone().into_iter().collect());
+        let stats_all_teams = T::internal_team_stats(group, &HashSet::from_iter(&order));
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, stats_all_teams.get(&id)))
