@@ -1,3 +1,4 @@
+//! Group statistics
 use crate::fair_play::FairPlayValue;
 use crate::game::{GoalCount, GoalDiff, NumGames};
 use crate::group::game::PlayedGroupGame;
@@ -5,6 +6,7 @@ use crate::group::{Group, GroupPoint};
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign};
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::ops;
 
 fn team_stats<T: num::Zero + ops::AddAssign>(
@@ -189,6 +191,16 @@ impl num::Zero for TableStats {
             && self.wins.is_zero()
             && self.draws.is_zero()
             && self.losses.is_zero();
+    }
+}
+
+impl std::fmt::Display for TableStats {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}\t{}\t{}",
+            self.points, self.goal_diff, self.goals_scored
+        )
     }
 }
 

@@ -1,3 +1,4 @@
+//! # Wednesday world cup (*wwc*) core library
 #![forbid(unsafe_code)]
 #![feature(proc_macro_hygiene, decl_macro)]
 // Enable clippy if our Cargo.toml file asked us to do so.

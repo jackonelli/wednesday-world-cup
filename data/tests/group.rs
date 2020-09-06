@@ -1,6 +1,4 @@
 use wwc_core::group::order::fifa_2018;
-use wwc_core::group::GroupId;
-use wwc_core::team::TeamId;
 use wwc_data::file_io;
 use wwc_data::lsv;
 #[test]

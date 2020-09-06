@@ -1,3 +1,4 @@
+//! Tournament group play
 pub mod game;
 pub mod order;
 pub mod stats;

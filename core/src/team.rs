@@ -1,3 +1,4 @@
+//! Team
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -49,6 +50,12 @@ impl Team {
             iso2: Iso2(String::from(iso2)),
             rank,
         }
+    }
+}
+
+impl std::fmt::Display for Team {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.fifa_code)
     }
 }
 

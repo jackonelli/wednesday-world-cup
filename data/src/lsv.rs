@@ -28,7 +28,7 @@ pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Data {
     pub teams: Vec<ParseTeam>,
     pub groups: HashMap<GroupId, ParseGroup>,
@@ -44,9 +44,9 @@ impl Data {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct ParseTeam {
-    id: TeamId,
+    pub id: TeamId,
     name: String,
     #[serde(rename = "fifaCode")]
     fifa_code: String,
@@ -66,7 +66,15 @@ impl TryInto<Team> for ParseTeam {
                 rank,
             ))
         } else {
-            Err(Self::Error::TeamError)
+            //Err(Self::Error::TeamError)
+            //TODO: How to solve missing rank?
+            Ok(Team::new(
+                self.id,
+                &self.name,
+                &self.fifa_code,
+                &self.iso2,
+                Rank(0),
+            ))
         }
     }
 }

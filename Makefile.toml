@@ -1,0 +1,9 @@
+[workspace]
+members = ["./core", "./ui", "./server", "./data"]
+
+[tasks.default]
+dependencies = ["doc"]
+
+[tasks.doc]
+command = "cargo"
+args = ["doc", "--workspace", "--no-deps", "--document-private-items"]

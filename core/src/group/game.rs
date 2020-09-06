@@ -1,3 +1,4 @@
+//! Group game
 use crate::fair_play::FairPlayScore;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};

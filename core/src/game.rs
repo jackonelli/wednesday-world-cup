@@ -1,3 +1,8 @@
+//! General tournament game
+//!
+//! Specification and implementation in this module is strictly limited compared to what one would
+//! expect from data structures describing a game.
+//! More concrete implementations are found in the group and playoff modules respectively.
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign, Display, From, Neg};
 use serde::{Deserialize, Serialize};

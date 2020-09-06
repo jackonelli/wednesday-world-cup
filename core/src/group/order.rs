@@ -1,3 +1,4 @@
+//! Group ordering
 use crate::fair_play::FairPlayValue;
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::UnaryStat;
@@ -57,11 +58,10 @@ pub fn fifa_2018() -> Rules<Random> {
 
 /// Group ordering rules
 ///
-/// All ordering rules should have an ordered list (vec)
-/// of subrules.
-/// These subrules may define a non strict ordering,
-/// therefore a proper ordering rule must also define a tiebreaker
-/// which maps a (possibly) non strict ordering to a strict one.
+/// All ordering rules should have an ordered list (vector) of subrules.
+/// These subrules may define a non-strict ordering,
+/// therefore a proper ordering rule must also define a tiebreaker which maps a (possibly)
+/// non-strict ordering to a strict one.
 ///
 /// E.g
 ///
@@ -74,6 +74,10 @@ pub struct Rules<T: Tiebreaker> {
     tiebreaker: T,
 }
 
+/// Order group based on rules
+///
+/// First orders by a list of non-strict sub-orders.
+/// If the sub-order is not strict, the rules' tiebreaker is used.
 pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
     let possibly_non_strict = ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
     if !possibly_non_strict.is_strict() {
@@ -84,6 +88,10 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder
     }
 }
 
+/// Try ordering a NonStrictGroupOrder
+///
+/// Returns the input group order if it is strict or if there are no more rules left to apply.
+/// Otherwise recursively calls itself with the next rule.
 fn ordering(
     group: &Group,
     rules: &[Box<dyn SubOrdering>],
@@ -106,6 +114,9 @@ fn ordering(
 #[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct GroupRank(pub usize);
 
+/// List of TeamId's
+///
+/// Sorted from best to worst team.
 #[derive(Debug, PartialEq)]
 pub struct GroupOrder(Vec<TeamId>);
 
@@ -150,6 +161,9 @@ impl TryFrom<NonStrictGroupOrder> for GroupOrder {
     }
 }
 
+/// Intermediate group order representation
+///
+/// A non-strict group order is represented as a sorted vector of vectors of equal teams.
 #[derive(Debug, PartialEq)]
 pub struct NonStrictGroupOrder(Vec<Vec<TeamId>>);
 
@@ -163,6 +177,10 @@ impl NonStrictGroupOrder {
         self.0.iter()
     }
 
+    /// Initialise an equal order
+    ///
+    /// A group with all teams equal are represented as a vector with a single element,
+    /// where this element is a vector containing all the teams in the group.
     fn init(group: &Group) -> Self {
         NonStrictGroupOrder(vec![group.teams().collect()])
     }
@@ -202,10 +220,23 @@ impl IntoIterator for NonStrictGroupOrder {
     }
 }
 
+/// Total, but not strict order
+///
+/// A complete order of a group is defined by a prioritised list of orders
+/// which implements this trait. I.e. they can take a vector of teams and split them into a
+/// NonStrictGroupOrder.
 pub trait SubOrdering {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
 }
 
+/// Ordering stat based on all games in the group
+///
+/// SubOrdering which orders by a metric based on a UnaryStat.
+/// The metric is calculated from all games in the group, regardless of the subset of teams being
+/// ordered.
+///
+/// AllGroupStat sub-orderings based on points, goal difference and goals scored are commonly the
+/// first three sub-orderings in a group rule.
 struct AllGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
 
 impl<T: UnaryStat> AllGroupStat<T> {
@@ -241,6 +272,11 @@ impl<T: UnaryStat> SubOrdering for AllGroupStat<T> {
     }
 }
 
+/// Ordering stat based on the internal games in a teams subset
+///
+/// SubOrdering which orders by a metric based on a UnaryStat.
+/// The metric is calculated from the games in the group, where both teams involved are members of
+/// the subset of teams being ordered.
 struct InternalGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
 
 impl<T: UnaryStat> InternalGroupStat<T> {
@@ -296,9 +332,11 @@ pub trait Tiebreaker {
     fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering;
 }
 
-///For actual tournaments some tiebreakers are out of our control,
-///e.g. the Fifa random tiebreaker where the lot is drawn externally,
-///This struct provides a manual tiebreaker in order to comply with actual events.
+/// Manual tiebreaker
+///
+/// For actual tournaments some tiebreakers are out of our control,
+/// e.g. the Fifa random tiebreaker where the lot is drawn externally,
+/// This struct provides a manual tiebreaker in order to comply with actual events.
 pub struct Manual(HashMap<(TeamId, TeamId), Ordering>);
 
 impl Tiebreaker for Manual {

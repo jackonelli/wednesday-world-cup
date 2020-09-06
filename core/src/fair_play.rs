@@ -1,3 +1,4 @@
+//! Fair play scoring
 use derive_more::{Add, AddAssign, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
