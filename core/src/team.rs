@@ -1,5 +1,6 @@
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 #[derive(
     Deserialize,
     Serialize,
@@ -32,10 +33,10 @@ pub struct Rank(pub u8);
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Team {
     pub id: TeamId,
-    name: String,
+    pub name: TeamName,
     #[serde(rename = "fifaCode")]
-    fifa_code: String,
-    iso2: String,
+    fifa_code: FifaCode,
+    iso2: Iso2,
     rank: Rank,
 }
 
@@ -43,13 +44,20 @@ impl Team {
     pub fn new(id: TeamId, name: &str, fifa_code: &str, iso2: &str, rank: Rank) -> Self {
         Team {
             id,
-            name: String::from(name),
-            fifa_code: String::from(fifa_code),
-            iso2: String::from(iso2),
+            name: TeamName(String::from(name)),
+            fifa_code: FifaCode(String::from(fifa_code)),
+            iso2: Iso2(String::from(iso2)),
             rank,
         }
     }
 }
+
+#[derive(Display, Debug, Deserialize, Serialize, PartialEq)]
+pub struct TeamName(pub(crate) String);
+#[derive(Display, Debug, Deserialize, Serialize, PartialEq)]
+pub struct FifaCode(String);
+#[derive(Display, Debug, Deserialize, Serialize, PartialEq)]
+pub struct Iso2(String);
 
 #[cfg(test)]
 mod tests {
@@ -66,13 +74,7 @@ mod tests {
             "rank": 14
         }"#;
         let parsed_team: Team = serde_json::from_str(data).unwrap();
-        let true_team = Team {
-            id: 0.into(),
-            name: "Sweden".into(),
-            fifa_code: "SWE".into(),
-            iso2: "se".into(),
-            rank: 14.into(),
-        };
+        let true_team = Team::new(0.into(), "Sweden", "SWE", "se", 14.into());
         assert_eq!(parsed_team, true_team);
     }
 }

@@ -6,7 +6,7 @@ use crate::group::GroupError;
 use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::{Add, AddAssign, From};
+use derive_more::{Add, AddAssign, Display, From};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -142,6 +142,7 @@ impl Game for PlayedGroupGame {
 #[derive(
     Default,
     Debug,
+    Display,
     Deserialize,
     Serialize,
     Clone,

@@ -1,11 +1,12 @@
 use crate::team::TeamId;
-use derive_more::{Add, AddAssign, From, Neg};
+use derive_more::{Add, AddAssign, Display, From, Neg};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
 #[derive(
     Default,
     Debug,
+    Display,
     Deserialize,
     Serialize,
     Clone,
@@ -39,6 +40,7 @@ impl num::Zero for GoalCount {
 #[derive(
     Default,
     Debug,
+    Display,
     Deserialize,
     Serialize,
     Clone,
@@ -79,6 +81,15 @@ impl num::Zero for GoalDiff {
     AddAssign,
 )]
 pub struct NumGames(pub u8);
+
+impl num::Zero for NumGames {
+    fn zero() -> NumGames {
+        NumGames(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+}
 
 pub trait Game {
     fn home_team(&self) -> TeamId;

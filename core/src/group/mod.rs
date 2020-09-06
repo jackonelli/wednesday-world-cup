@@ -1,18 +1,19 @@
-use crate::game::{Game, GoalCount, GoalDiff};
-use crate::group::game::{PlayedGroupGame, PreGroupGame};
-use crate::group::order::{order_group, GroupOrder, Rules, Tiebreaker};
-use crate::group::stats::UnaryStat;
-use crate::team::{Rank, Team, TeamId};
-use crate::Date;
-use derive_more::{Add, AddAssign, From};
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use thiserror::Error;
-use wasm_bindgen::prelude::*;
 pub mod game;
 pub mod order;
 pub mod stats;
+use crate::fair_play::FairPlayScore;
+use crate::game::{Game, GoalCount, GoalDiff};
+use crate::team::{Rank, Team, TeamId};
+use crate::Date;
+use derive_more::{Add, AddAssign, Display, From};
+use game::{PlayedGroupGame, PreGroupGame, Score};
+use itertools::Itertools;
+pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
+use serde::{Deserialize, Serialize};
+use stats::UnaryStat;
+use std::collections::{HashMap, HashSet};
+use thiserror::Error;
+use wasm_bindgen::prelude::*;
 
 pub type Groups = HashMap<GroupId, Group>;
 
@@ -21,6 +22,7 @@ pub type Groups = HashMap<GroupId, Group>;
     Deserialize,
     Serialize,
     Debug,
+    Display,
     Clone,
     Copy,
     std::cmp::Eq,
@@ -35,26 +37,6 @@ pub struct GroupId(pub char);
 pub struct Group {
     upcoming_games: Vec<PreGroupGame>,
     played_games: Vec<PlayedGroupGame>,
-}
-
-// Wasm API
-#[wasm_bindgen]
-impl Group {
-    pub fn mock() -> Self {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::mock()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3], vec![])
-            .expect("This literal group construction should never fail");
-        group
-    }
-    pub fn repr(&self) -> String {
-        format!(
-            "Group:\n\tPlayed games: {}\n\tUpcoming games: {}",
-            self.played_games.len(),
-            self.upcoming_games.len()
-        )
-    }
 }
 
 impl Group {
@@ -101,6 +83,14 @@ impl Group {
         team_set_from_game_vec(&self.played_games)
             .chain(team_set_from_game_vec(&self.upcoming_games))
             .unique()
+    }
+
+    pub fn upcoming_games(&self) -> impl Iterator<Item = &PreGroupGame> {
+        self.upcoming_games.iter()
+    }
+
+    pub fn played_games(&self) -> impl Iterator<Item = &PlayedGroupGame> {
+        self.played_games.iter()
     }
 
     pub fn num_teams(&self) -> usize {
@@ -153,7 +143,9 @@ fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> 
     teams.into_iter()
 }
 
-#[derive(Default, Debug, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign)]
+#[derive(
+    Default, Debug, Display, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign,
+)]
 pub struct GroupPoint(pub u8);
 
 impl num::Zero for GroupPoint {
@@ -177,14 +169,18 @@ pub enum GroupError {
     GenericError,
 }
 
-pub fn mock_data() -> (Vec<Group>, HashMap<TeamId, Team>) {
-    let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+pub fn mock_data() -> (HashMap<GroupId, Group>, HashMap<TeamId, Team>) {
+    let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock())
+        .unwrap()
+        .play(Score::from((2, 1)), FairPlayScore::from((0, 1)));
     let game_2 = PreGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
-    let group_a = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+    let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
     let game_1 = PreGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
     let game_2 = PreGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
     let group_b = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
-    let groups = vec![group_a, group_b];
+    let mut groups = HashMap::new();
+    groups.insert(GroupId('A'), group_a);
+    groups.insert(GroupId('B'), group_b);
     let teams = vec![
         Team::new(TeamId(0), "Sweden", "SWE", "se", Rank(0)),
         Team::new(TeamId(1), "England", "ENG", "en", Rank(1)),
@@ -193,6 +189,7 @@ pub fn mock_data() -> (Vec<Group>, HashMap<TeamId, Team>) {
         Team::new(TeamId(4), "Canada", "CAN", "ca", Rank(4)),
         Team::new(TeamId(5), "Spain", "ESP", "sp", Rank(5)),
         Team::new(TeamId(6), "Japan", "JAP", "ja", Rank(6)),
+        Team::new(TeamId(7), "Norway", "NOR", "no", Rank(6)),
     ];
     let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
     (groups, teams)
@@ -203,8 +200,16 @@ mod tests {
     use super::*;
     use crate::fair_play::FairPlayScore;
     use crate::group::game::{PreGroupGame, Score};
-    use crate::team::TeamId;
+    use crate::team::{TeamId, TeamName};
     use crate::Date;
+    #[test]
+    fn mock_data_access() {
+        let (_, mock_teams) = mock_data();
+        assert_eq!(
+            mock_teams.get(&TeamId(0)).unwrap().name,
+            TeamName(String::from("Sweden"))
+        );
+    }
     #[test]
     fn group_unique_game_ids_fail() {
         let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();

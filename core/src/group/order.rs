@@ -106,6 +106,10 @@ impl GroupOrder {
     pub fn runner_up(&self) -> TeamId {
         self[GroupRank(1)]
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = &TeamId> {
+        self.0.iter()
+    }
 }
 
 impl IntoIterator for GroupOrder {

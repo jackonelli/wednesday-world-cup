@@ -1,19 +1,24 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(dead_code, unused_variables)]
 use seed::{prelude::*, *};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::mem;
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-use ulid::Ulid;
+use std::convert::From;
 use wwc_core::{
-    group::{mock_data, Group},
+    group::{
+        mock_data,
+        order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
+        Group, GroupId, GroupPoint,
+    },
     team::{Team, TeamId},
 };
+
+mod table;
+use table::{DisplayTable, DisplayTableRow};
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
+
+type Teams = HashMap<TeamId, Team>;
+type Groups = HashMap<GroupId, Group>;
 
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
     let (mock_groups, mock_teams) = mock_data();
@@ -21,13 +26,15 @@ fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
         groups: mock_groups,
         teams: mock_teams,
         base_url: Url::new(),
+        group_rules: fifa_2018(),
     }
 }
 
 struct Model {
-    groups: Vec<Group>,
-    teams: HashMap<TeamId, Team>,
+    groups: Groups,
+    teams: Teams,
     base_url: Url,
+    group_rules: Rules<Random>,
 }
 
 enum Msg {
@@ -37,30 +44,77 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {}
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
-    nodes![view_header(), view_group_play(&model.groups, &model.teams),]
+    nodes![
+        view_header(),
+        view_group_play(&model.groups, &model.teams, &model.group_rules),
+    ]
 }
 
 fn view_header() -> Node<Msg> {
     header![C!["header"], h1!["Group"],]
 }
 
-fn view_group_play(groups: &[Group], teams: &HashMap<TeamId, Team>) -> Node<Msg> {
+fn view_group_play<T: Tiebreaker>(groups: &Groups, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {
     section![
-        C!["main"],
-        groups.iter().map(|group| { view_group(group, teams) })
+        C!["group_play"],
+        groups
+            .iter()
+            .map(|(group_id, group)| { view_group(group_id, group, teams, rules) })
     ]
 }
 
-fn view_group(group: &Group, teams: &HashMap<TeamId, Team>) -> Node<Msg> {
-    ul![
+fn view_group<T: Tiebreaker>(
+    id: &GroupId,
+    group: &Group,
+    teams: &Teams,
+    rules: &Rules<T>,
+) -> Node<Msg> {
+    div![
+        //C![format!("group_{}", id).to_ascii_lowercase()],
         C!["group"],
-        group.teams().map(|team_id| {
+        h2!(format!("{}", id)),
+        format_group_table(group, teams, rules),
+        format_group_games(group, teams),
+    ]
+}
+
+fn format_group_table<T: Tiebreaker>(group: &Group, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {
+    let group_order = order_group(group, rules);
+    let stats = DisplayTable::new(group, &group_order);
+    div![ul![stats.iter().map(|(team_id, stat)| {
+        let team = teams.get(&team_id).unwrap();
+        li![C!["group-team"], el_key(&team_id), stat.format(&team)]
+    })]]
+}
+
+fn format_group_games(group: &Group, teams: &Teams) -> Node<Msg> {
+    div![
+        C!["games"],
+        h3!("Games"),
+        ul![group.played_games().map(|game| {
             li![
-                C!["group-team"],
-                el_key(&team_id),
-                div![format!("Team {}", team_id)],
+                C!["played_game"],
+                el_key(&game.id),
+                format!(
+                    "{} {} - {} {}",
+                    teams.get(&game.home).unwrap().name,
+                    game.score.home,
+                    game.score.away,
+                    teams.get(&game.away).unwrap().name
+                )
             ]
-        })
+        })],
+        ul![group.upcoming_games().map(|game| {
+            li![
+                C!["upcoming_game"],
+                el_key(&game.id),
+                format!(
+                    "{}   -   {}",
+                    teams.get(&game.home).unwrap().name,
+                    teams.get(&game.away).unwrap().name
+                )
+            ]
+        })]
     ]
 }
 
