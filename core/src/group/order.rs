@@ -30,16 +30,25 @@ use std::convert::{TryFrom, TryInto};
 ///     - Yellow card and direct red card: -5 points
 /// 8. Drawing of lots by the FIFA.
 ///
-/// TODO: Complete rules 4-6, 8.
+/// TODO: Complete rule 8.
 pub fn fifa_2018() -> Rules<Random> {
+    let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
+    let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
+    let goal_count: AllGroupStat<GoalCount> = AllGroupStat::new();
+    let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
+    let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
+    let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
+    let fair_play: InternalGroupStat<FairPlayValue> = InternalGroupStat::new();
     Rules {
         non_strict: vec![
-            // TODO: Having actually instantiated values is not nice.
-            Box::new(GroupPoint::default()),
-            Box::new(GoalDiff::default()),
-            Box::new(GoalCount::default()),
-            // TODO: Binary rules
-            Box::new(FairPlayValue::default()),
+            Box::new(group_point),
+            Box::new(goal_diff),
+            Box::new(goal_count),
+            Box::new(int_group_point),
+            Box::new(int_goal_diff),
+            Box::new(int_goal_count),
+            Box::new(fair_play),
+            //TODO: Random Tiebreaker.
         ],
         tiebreaker: Random {},
     }
@@ -192,11 +201,56 @@ impl IntoIterator for NonStrictGroupOrder {
     }
 }
 
-impl<T: UnaryStat + core::fmt::Debug> SubOrdering for T {
+pub trait SubOrdering {
+    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
+}
+
+struct AllGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
+
+impl<T: UnaryStat> AllGroupStat<T> {
+    fn new() -> Self {
+        AllGroupStat(std::marker::PhantomData::<T>)
+    }
+}
+
+impl<T: UnaryStat> SubOrdering for AllGroupStat<T> {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
         // here.
         let stats_all_teams = T::team_stats(group);
+        let mut team_stats: Vec<(TeamId, T)> = order
+            .into_iter()
+            .map(|id| (id, stats_all_teams.get(&id)))
+            .filter(|(_, x)| x.is_some())
+            .map(|(id, x)| (id, *x.unwrap()))
+            .collect();
+        team_stats.sort_by_key(|x| x.1);
+        let team_stats = team_stats;
+        let (_, new_order) = team_stats.iter().rev().fold(
+            (team_stats[0].1, NonStrictGroupOrder::empty()),
+            |acc, x| {
+                if acc.0 == x.1 {
+                    (x.1, acc.1.extend_sub_order(x.0))
+                } else {
+                    (x.1, acc.1.add_sub_order(x.0))
+                }
+            },
+        );
+        new_order
+    }
+}
+
+struct InternalGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
+
+impl<T: UnaryStat> InternalGroupStat<T> {
+    fn new() -> Self {
+        InternalGroupStat(std::marker::PhantomData::<T>)
+    }
+}
+
+impl<T: UnaryStat> SubOrdering for InternalGroupStat<T> {
+    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
+        let stats_all_teams = T::internal_team_stats(group, &order.clone().into_iter().collect());
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, stats_all_teams.get(&id)))
@@ -300,10 +354,6 @@ impl Tiebreaker for UefaRanking {
     }
 }
 
-pub trait SubOrdering {
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -367,15 +417,19 @@ mod tests {
 
     /// Two teams with same points, diff and score.
     /// The internal game decides
+    /// 0: 6, 2, 2
+    /// 1: 6, 1, 2
     #[test]
     fn internal_game() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::mock()).unwrap();
+        let game_1 = PlayedGroupGame::try_new(0, 0, 2, (1, 0), (0, 0), Date::mock()).unwrap();
+        let game_2 = PlayedGroupGame::try_new(1, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
         let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
+        let game_4 = PlayedGroupGame::try_new(3, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
+        let game_5 = PlayedGroupGame::try_new(4, 0, 3, (0, 1), (0, 0), Date::mock()).unwrap();
+        let group = Group::try_new(vec![game_1, game_2, game_3, game_4, game_5], vec![]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![0, 1, 2].iter().map(|x| TeamId(*x)).collect());
+        let true_order = GroupOrder(vec![0, 1, 3, 2].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 }

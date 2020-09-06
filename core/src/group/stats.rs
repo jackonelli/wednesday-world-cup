@@ -4,7 +4,7 @@ use crate::group::game::PlayedGroupGame;
 use crate::group::{Group, GroupPoint};
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops;
 
 fn team_stats<T: num::Zero + ops::AddAssign>(
@@ -32,7 +32,50 @@ pub trait UnaryStat: Ord + Copy + num::Zero + ops::AddAssign {
     fn stat(game: &PlayedGroupGame) -> (Self, Self);
 
     fn team_stats(group: &Group) -> HashMap<TeamId, Self> {
-        team_stats(group, Self::stat)
+        let team_map = group.teams().map(|team| (team, Self::zero())).collect();
+        group.played_games.iter().fold(team_map, |mut acc, game| {
+            let (delta_home_stat, delta_away_stat) = Self::stat(game);
+
+            let stats = acc
+                .get_mut(&game.home)
+                // TeamId will always be present, checked in Group constructor
+                .unwrap();
+            *stats += delta_home_stat;
+
+            let stats = acc
+                .get_mut(&game.away)
+                // TeamId will always be present, checked in Group constructor
+                .unwrap();
+            *stats += delta_away_stat;
+            acc
+        })
+    }
+
+    fn internal_team_stats(group: &Group, team_filter: &HashSet<TeamId>) -> HashMap<TeamId, Self> {
+        let team_map = team_filter
+            .iter()
+            .map(|team| (*team, Self::zero()))
+            .collect();
+        group
+            .played_games
+            .iter()
+            .filter(|game| team_filter.contains(&game.home) && team_filter.contains(&game.away))
+            .fold(team_map, |mut acc, game| {
+                let (delta_home_stat, delta_away_stat) = Self::stat(game);
+
+                let stats = acc
+                    .get_mut(&game.home)
+                    // TeamId will always be present, checked in Group constructor
+                    .unwrap();
+                *stats += delta_home_stat;
+
+                let stats = acc
+                    .get_mut(&game.away)
+                    // TeamId will always be present, checked in Group constructor
+                    .unwrap();
+                *stats += delta_away_stat;
+                acc
+            })
     }
 }
 

@@ -67,8 +67,8 @@ impl Group {
     fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
         let unique_game_ids: Vec<_> = played_games
             .iter()
-            .map(|x| x.id.clone())
-            .chain(upcoming_games.iter().map(|x| x.id.clone()))
+            .map(|x| x.id)
+            .chain(upcoming_games.iter().map(|x| x.id))
             .unique()
             .collect();
         unique_game_ids.len() == played_games.len() + upcoming_games.len()
