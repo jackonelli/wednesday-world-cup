@@ -32,14 +32,18 @@ use std::convert::{TryFrom, TryInto};
 ///
 /// TODO: Complete rules 4-6, 8.
 pub fn fifa_2018() -> Rules<Random> {
+    let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
+    let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
+    let goal_count: AllGroupStat<GoalCount> = AllGroupStat::new();
+    let fair_play: AllGroupStat<FairPlayValue> = AllGroupStat::new();
     Rules {
         non_strict: vec![
             // TODO: Having actually instantiated values is not nice.
-            Box::new(GroupPoint::default()),
-            Box::new(GoalDiff::default()),
-            Box::new(GoalCount::default()),
+            Box::new(group_point),
+            Box::new(goal_diff),
+            Box::new(goal_count),
             // TODO: Binary rules
-            Box::new(FairPlayValue::default()),
+            Box::new(fair_play),
         ],
         tiebreaker: Random {},
     }
@@ -188,6 +192,45 @@ impl IntoIterator for NonStrictGroupOrder {
     }
 }
 
+pub trait SubOrdering {
+    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
+}
+
+struct AllGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
+
+impl<T: UnaryStat> AllGroupStat<T> {
+    fn new() -> Self {
+        AllGroupStat(std::marker::PhantomData::<T>)
+    }
+}
+
+impl<T: UnaryStat> SubOrdering for AllGroupStat<T> {
+    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
+        // TODO: Not efficient to calc stats for all teams, but efficient is not very important
+        // here.
+        let stats_all_teams = T::team_stats(group);
+        let mut team_stats: Vec<(TeamId, T)> = order
+            .into_iter()
+            .map(|id| (id, stats_all_teams.get(&id)))
+            .filter(|(_, x)| x.is_some())
+            .map(|(id, x)| (id, *x.unwrap()))
+            .collect();
+        team_stats.sort_by_key(|x| x.1);
+        let team_stats = team_stats;
+        let (_, new_order) = team_stats.iter().rev().fold(
+            (team_stats[0].1, NonStrictGroupOrder::empty()),
+            |acc, x| {
+                if acc.0 == x.1 {
+                    (x.1, acc.1.extend_sub_order(x.0))
+                } else {
+                    (x.1, acc.1.add_sub_order(x.0))
+                }
+            },
+        );
+        new_order
+    }
+}
+
 impl<T: UnaryStat + core::fmt::Debug> SubOrdering for T {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
@@ -294,10 +337,6 @@ impl Tiebreaker for UefaRanking {
             .expect(&format!("{:?} not in ranking list", id_2));
         rank_1.cmp(&rank_2)
     }
-}
-
-pub trait SubOrdering {
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
 }
 
 #[cfg(test)]

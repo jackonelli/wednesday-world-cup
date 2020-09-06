@@ -37,26 +37,6 @@ pub struct Group {
     played_games: Vec<PlayedGroupGame>,
 }
 
-// Wasm API
-#[wasm_bindgen]
-impl Group {
-    pub fn mock() -> Self {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 0, 2, (0, 1), (0, 0), Date::mock()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3], vec![])
-            .expect("This literal group construction should never fail");
-        group
-    }
-    pub fn repr(&self) -> String {
-        format!(
-            "Group:\n\tPlayed games: {}\n\tUpcoming games: {}",
-            self.played_games.len(),
-            self.upcoming_games.len()
-        )
-    }
-}
-
 impl Group {
     /// Fallible `Group` constructor
     ///
@@ -85,8 +65,8 @@ impl Group {
     fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
         let unique_game_ids: Vec<_> = played_games
             .iter()
-            .map(|x| x.id.clone())
-            .chain(upcoming_games.iter().map(|x| x.id.clone()))
+            .map(|x| x.id)
+            .chain(upcoming_games.iter().map(|x| x.id))
             .unique()
             .collect();
         unique_game_ids.len() == played_games.len() + upcoming_games.len()
