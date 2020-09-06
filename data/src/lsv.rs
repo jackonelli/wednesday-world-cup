@@ -34,6 +34,16 @@ pub struct Data {
     pub groups: HashMap<GroupId, ParseGroup>,
 }
 
+impl Data {
+    pub fn group_winners(&self) -> impl Iterator<Item = (&GroupId, &TeamId)> {
+        self.groups.iter().map(|(id, group)| (id, &group.winner))
+    }
+
+    pub fn group_runner_ups(&self) -> impl Iterator<Item = (&GroupId, &TeamId)> {
+        self.groups.iter().map(|(id, group)| (id, &group.runner_up))
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct ParseTeam {
     id: TeamId,
@@ -64,6 +74,9 @@ impl TryInto<Team> for ParseTeam {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ParseGroup {
     name: String,
+    winner: TeamId,
+    #[serde(rename = "runnerup")]
+    runner_up: TeamId,
     #[serde(rename = "matches")]
     games: Vec<ParseGame>,
 }

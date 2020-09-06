@@ -9,17 +9,20 @@ fn group_ordering() {
     let data_json = file_io::read_json_file_to_str("tests/data/wc-2018.json")
         .expect("Could not read from file");
     let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
+
     let groups = lsv::try_groups_from_data(&data).expect("Could not parse groups from data");
 
-    let id = GroupId('a');
-    let group = groups
-        .get(&id)
-        .expect(&format!("No group '{:?}' in parsed groups", &id));
-    assert_eq!(group.winner(&rules), TeamId(4));
+    for (id, true_winner) in data.group_winners() {
+        let group = groups
+            .get(&id)
+            .expect(&format!("No group '{:?}' in parsed groups", &id));
+        assert_eq!(group.winner(&rules), *true_winner);
+    }
 
-    let id = GroupId('d');
-    let group = groups
-        .get(&id)
-        .expect(&format!("No group '{:?}' in parsed groups", &id));
-    assert_eq!(group.runner_up(&rules), TeamId(13));
+    for (id, true_runner_up) in data.group_runner_ups() {
+        let group = groups
+            .get(&id)
+            .expect(&format!("No group '{:?}' in parsed groups", &id));
+        assert_eq!(group.runner_up(&rules), *true_runner_up);
+    }
 }
