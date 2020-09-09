@@ -245,7 +245,7 @@ impl<T: UnaryStat> AllGroupStat<T> {
     }
 }
 
-impl<T: UnaryStat> SubOrdering for AllGroupStat<T> {
+impl<T: UnaryStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
         // here.
@@ -285,7 +285,7 @@ impl<T: UnaryStat> InternalGroupStat<T> {
     }
 }
 
-impl<T: UnaryStat> SubOrdering for InternalGroupStat<T> {
+impl<T: UnaryStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         let stats_all_teams = T::internal_team_stats(group, &HashSet::from_iter(&order));
         let mut team_stats: Vec<(TeamId, T)> = order

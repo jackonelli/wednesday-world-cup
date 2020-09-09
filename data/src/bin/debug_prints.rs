@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 use wwc_core::group::order::fifa_2018;
-use wwc_core::group::stats::TableStats;
+use wwc_core::group::stats::{TableStats, UnaryStat};
 use wwc_core::group::GroupId;
 use wwc_core::team::{Team, TeamId};
 use wwc_data::file_io;

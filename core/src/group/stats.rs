@@ -9,48 +9,15 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops;
 
-fn team_stats<T: num::Zero + ops::AddAssign>(
-    group: &Group,
-    stat: fn(&PlayedGroupGame) -> (T, T),
-) -> HashMap<TeamId, T> {
-    let team_map = group.teams().map(|team| (team, T::zero())).collect();
-    group.played_games.iter().fold(team_map, |mut acc, game| {
-        let (delta_home_stat, delta_away_stat) = stat(game);
-
-        let stats = acc
-            .get_mut(&game.home)
-            .expect("TeamId will always be present");
-        *stats += delta_home_stat;
-
-        let stats = acc
-            .get_mut(&game.away)
-            .expect("TeamId will always be present");
-        *stats += delta_away_stat;
-        acc
-    })
-}
-
-pub trait UnaryStat: Ord + Copy + num::Zero + ops::AddAssign {
+pub trait UnaryStat: num::Zero + ops::AddAssign {
     fn stat(game: &PlayedGroupGame) -> (Self, Self);
 
     fn team_stats(group: &Group) -> HashMap<TeamId, Self> {
         let team_map = group.teams().map(|team| (team, Self::zero())).collect();
-        group.played_games.iter().fold(team_map, |mut acc, game| {
-            let (delta_home_stat, delta_away_stat) = Self::stat(game);
-
-            let stats = acc
-                .get_mut(&game.home)
-                // TeamId will always be present, checked in Group constructor
-                .unwrap();
-            *stats += delta_home_stat;
-
-            let stats = acc
-                .get_mut(&game.away)
-                // TeamId will always be present, checked in Group constructor
-                .unwrap();
-            *stats += delta_away_stat;
-            acc
-        })
+        group
+            .played_games
+            .iter()
+            .fold(team_map, |acc, game| calc_and_assign_stat(acc, game))
     }
 
     fn internal_team_stats(group: &Group, team_filter: &HashSet<&TeamId>) -> HashMap<TeamId, Self> {
@@ -62,23 +29,33 @@ pub trait UnaryStat: Ord + Copy + num::Zero + ops::AddAssign {
             .played_games
             .iter()
             .filter(|game| team_filter.contains(&game.home) && team_filter.contains(&game.away))
-            .fold(team_map, |mut acc, game| {
-                let (delta_home_stat, delta_away_stat) = Self::stat(game);
-
-                let stats = acc
-                    .get_mut(&game.home)
-                    // TeamId will always be present, checked in Group constructor
-                    .unwrap();
-                *stats += delta_home_stat;
-
-                let stats = acc
-                    .get_mut(&game.away)
-                    // TeamId will always be present, checked in Group constructor
-                    .unwrap();
-                *stats += delta_away_stat;
-                acc
-            })
+            .fold(team_map, |acc, game| calc_and_assign_stat(acc, game))
     }
+}
+
+fn calc_and_assign_stat<T: UnaryStat>(
+    mut acc: HashMap<TeamId, T>,
+    game: &PlayedGroupGame,
+) -> HashMap<TeamId, T> {
+    let (delta_home_stat, delta_away_stat) = T::stat(game);
+
+    let stats = acc
+        .get_mut(&game.home)
+        // TODO: when calling this from `team_stats`
+        // TeamId will always be present, checked in Group constructor
+        // When calling this from `internal_team_stats` it's internally sound since the filter is
+        // always generated from an order.
+        // However, since `UnaryStat` is a public trait you could miscreate the filter and make
+        // this function panic.
+        .unwrap();
+    *stats += delta_home_stat;
+
+    let stats = acc
+        .get_mut(&game.away)
+        // TeamId will always be present, checked in Group constructor
+        .unwrap();
+    *stats += delta_away_stat;
+    acc
 }
 
 impl UnaryStat for GroupPoint {
@@ -129,11 +106,7 @@ pub struct TableStats {
     pub draws: NumGames,
 }
 
-impl TableStats {
-    pub fn team_stats(group: &Group) -> HashMap<TeamId, Self> {
-        team_stats(group, Self::stat)
-    }
-
+impl UnaryStat for TableStats {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let (points_home, points_away) = GroupPoint::stat(game);
         let (goal_diff_away, goal_diff_home) = GoalDiff::stat(game);
