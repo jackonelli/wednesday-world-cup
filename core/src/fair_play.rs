@@ -5,10 +5,15 @@ use std::ops::Mul;
 
 /// Fifa World Cup 2018 Rules:
 ///
-///Yellow card: –1 points;
-///Indirect red card (second yellow card): –3 points;
-///Direct red card: –4 points;
-///Yellow card and direct red card: –5 points;
+/// - Yellow card: –1 points;
+/// - Indirect red card (second yellow card): –3 points;
+/// - Direct red card: –4 points;
+/// - Yellow card and direct red card: –5 points;
+/// ```
+/// # use wwc_core::fair_play::{FairPlay, FairPlayValue};
+/// let fair_play = FairPlay::new(1, 2, 3, 4);
+/// assert_eq!(FairPlayValue::from(39), fair_play.value());
+/// ```
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct FairPlay {
     yellow: CardCount,
@@ -100,16 +105,5 @@ where
     type Output = FairPlayValue;
     fn mul(self, rhs: T) -> Self::Output {
         FairPlayValue(self.0 as i8 * rhs.into())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    /// TODO: Have as a doc test instead.
-    fn score() {
-        let fair_play = FairPlay::new(1, 2, 3, 4);
-        assert_eq!(-39, fair_play.value().0);
     }
 }

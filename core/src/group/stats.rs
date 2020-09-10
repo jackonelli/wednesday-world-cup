@@ -72,6 +72,24 @@ fn calc_and_assign_stat<T: UnaryStat>(
 }
 
 impl UnaryStat for GroupPoint {
+    /// Group points from played game.
+    ///
+    /// ```
+    /// # use wwc_core::group::stats::UnaryStat;
+    /// # use wwc_core::group::game::{GroupGameId, PreGroupGame, Score};
+    /// # use wwc_core::group::GroupPoint;
+    /// # use wwc_core::team::TeamId;
+    /// # use wwc_core::Date;
+    /// # use wwc_core::fair_play::FairPlayScore;
+    /// let score = Score::new(1, 0);
+    /// let fair_play_score = FairPlayScore::from((1, 0));
+    /// let game = PreGroupGame::try_new(GroupGameId(0), TeamId(1), TeamId(2), Date::mock())
+    ///     .unwrap()
+    ///     .play(score, fair_play_score);
+    /// let (home, away) = GroupPoint::stat(&game);
+    /// assert_eq!(home, GroupPoint(3));
+    /// assert_eq!(away, GroupPoint(0));
+    /// ```
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let score = &game.score;
         if score.home > score.away {

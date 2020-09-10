@@ -77,13 +77,13 @@ pub struct Rules<T: Tiebreaker> {
 ///
 /// First orders by a list of non-strict sub-orders.
 /// If the sub-order is not strict, the rules' tiebreaker is used.
+/// Does not panic since the unwrapping match arm is checked to be strict.
 pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
     let possibly_non_strict =
         non_strict_ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
     if !possibly_non_strict.is_strict() {
         rules.tiebreaker.order(group, possibly_non_strict)
     } else {
-        // Unwrap is okay since this match arm is checked to be strict.
         possibly_non_strict.try_into().unwrap()
     }
 }
@@ -462,8 +462,6 @@ mod ordering_tests {
 
     /// Two teams with same points, diff and score.
     /// The internal game decides
-    /// 0: 6, 2, 2
-    /// 1: 6, 1, 2
     #[test]
     fn internal_game() {
         let game_1 = PlayedGroupGame::try_new(0, 0, 2, (1, 0), (0, 0), Date::mock()).unwrap();

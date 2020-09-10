@@ -16,8 +16,13 @@ use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 
+/// Type alias for a mapping of `GroupId` to `Group`
 pub type Groups = HashMap<GroupId, Group>;
 
+/// Group Id
+///
+/// Uses a `char` as an identifier.
+/// At least in football, groups are often labelled with an upper case character.
 #[wasm_bindgen]
 #[derive(
     Deserialize,
@@ -34,6 +39,11 @@ pub type Groups = HashMap<GroupId, Group>;
 pub struct GroupId(pub char);
 
 /// Single group data structure
+///
+/// The only data that group holds is the games, played and unplayed.
+/// Intuitively, one might expect it to hold, group points, if it is finished, a ranked list of the
+/// teams et c.
+/// Fundamentally though, the only data are the games. Everything else can be derived from them.
 #[wasm_bindgen]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
@@ -62,39 +72,28 @@ impl Group {
         }
     }
 
-    /// Check games for unique id's.
-    ///
-    /// Extract and combine Game Id's from played and upcoming games.
-    /// Compare the number of unique id's with the total number of games
-    fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
-        let unique_game_ids: Vec<_> = played_games
-            .iter()
-            .map(|x| x.id)
-            .chain(upcoming_games.iter().map(|x| x.id))
-            .unique()
-            .collect();
-        unique_game_ids.len() == played_games.len() + upcoming_games.len()
-    }
-
     /// Get teams in group
     ///
     /// Finds all team id's in the group games
     /// (played and upcoming).
     /// Returns an iterator over unique team id's
     pub fn teams(&self) -> impl Iterator<Item = TeamId> {
-        team_set_from_game_vec(&self.played_games)
-            .chain(team_set_from_game_vec(&self.upcoming_games))
+        Group::team_set_from_game_vec(&self.played_games)
+            .chain(Group::team_set_from_game_vec(&self.upcoming_games))
             .unique()
     }
 
+    /// Games accessor
     pub fn upcoming_games(&self) -> impl Iterator<Item = &PreGroupGame> {
         self.upcoming_games.iter()
     }
 
+    /// Games accessor
     pub fn played_games(&self) -> impl Iterator<Item = &PlayedGroupGame> {
         self.played_games.iter()
     }
 
+    /// Group size by teams
     pub fn num_teams(&self) -> usize {
         self.teams().count()
     }
@@ -134,17 +133,40 @@ impl Group {
     pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
         GoalCount::team_stats(self)
     }
+
+    /// Check games for unique id's
+    ///
+    /// Extract and combine Game Id's from played and upcoming games.
+    /// Compare the number of unique id's with the total number of games
+    fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
+        let unique_game_ids: Vec<_> = played_games
+            .iter()
+            .map(|x| x.id)
+            .chain(upcoming_games.iter().map(|x| x.id))
+            .unique()
+            .collect();
+        unique_game_ids.len() == played_games.len() + upcoming_games.len()
+    }
+
+    /// Iterator over all group teams, derived from all the games
+    fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> {
+        let teams: HashSet<TeamId> = games.iter().fold(HashSet::default(), |mut acc, game| {
+            acc.insert(game.home_team());
+            acc.insert(game.away_team());
+            acc
+        });
+        teams.into_iter()
+    }
 }
 
-fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> {
-    let teams: HashSet<TeamId> = games.iter().fold(HashSet::default(), |mut acc, game| {
-        acc.insert(game.home_team());
-        acc.insert(game.away_team());
-        acc
-    });
-    teams.into_iter()
-}
-
+/// Group point
+///
+/// Represents the primary score of a team in a group, either accumulated over multiple games or
+/// the outcome of a single game.
+/// Commonly, but not necessarily, defined like:
+/// - Win: 3 group points
+/// - Draw: 1 group point
+/// - Loss: 0 group points
 #[derive(
     Default, Debug, Display, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign,
 )]
@@ -171,7 +193,7 @@ pub enum GroupError {
     GenericError,
 }
 
-pub fn mock_data() -> (HashMap<GroupId, Group>, HashMap<TeamId, Team>) {
+pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
     let game_1 = PreGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
     let game_2 = PreGroupGame::try_new(1, 0, 1, Date::mock())
         .unwrap()
@@ -234,7 +256,8 @@ mod tests {
     fn test_team_from_game_vec() {
         let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
-        let parsed_teams: HashSet<TeamId> = team_set_from_game_vec(&vec![game_1, game_2]).collect();
+        let parsed_teams: HashSet<TeamId> =
+            Group::team_set_from_game_vec(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
         true_teams.insert(TeamId(1));
