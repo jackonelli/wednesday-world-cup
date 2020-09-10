@@ -9,9 +9,21 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops;
 
+/// Statistic calculated from a single game.
+///
+/// Implentor needs to provide the actual `stat` function,
+/// the trait provides default methods to calculate the statistic on group level.
 pub trait UnaryStat: num::Zero + ops::AddAssign {
+    /// Calculate statistic for a game.
+    ///
+    /// Unary statistics are necessarily symmetric: the game is the basis for the statistic for
+    /// both home and away team.
+    /// The tuple returned is (Home team stat, Away team stat).
     fn stat(game: &PlayedGroupGame) -> (Self, Self);
 
+    /// Calculate statistic for all played games in a group.
+    ///
+    /// Statistics for all games are summed up and stored in a map of the teams.
     fn team_stats(group: &Group) -> HashMap<TeamId, Self> {
         let team_map = group.teams().map(|team| (team, Self::zero())).collect();
         group
@@ -20,6 +32,10 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
             .fold(team_map, |acc, game| calc_and_assign_stat(acc, game))
     }
 
+    /// Calculate statistic for filtered played games in a group.
+    ///
+    /// Only games where both home and away teams are members of the `team_filter` set.
+    /// Statistics for the games are summed up and stored in a map of the teams.
     fn internal_team_stats(group: &Group, team_filter: &HashSet<&TeamId>) -> HashMap<TeamId, Self> {
         let team_map = team_filter
             .iter()
@@ -33,27 +49,24 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
     }
 }
 
+/// Calculate stat for a game and assign to team map.
+///
+/// Unwrap's does not panic if TeamId's of `game.home` and `game.away` are members of `acc`:
+/// - Calling this from [`team_stats`](trait.UnaryStat.html#method.team_stats), TeamId's will always be present, checked in Group constructor.
+/// - Calling this from [`internal_team_stats`](trait.UnaryStat.html#method.internal_team_stats) is ok since the unwrap's would panic iff `acc` would
+///   not contain `game.home` or `game.away`, which is exactly the predicate that the
+///   `group.played_games` is filtered by.
+/// - Other calls do not exist (private fn), when adding a call: Take care to uphold this invariant!
 fn calc_and_assign_stat<T: UnaryStat>(
     mut acc: HashMap<TeamId, T>,
     game: &PlayedGroupGame,
 ) -> HashMap<TeamId, T> {
     let (delta_home_stat, delta_away_stat) = T::stat(game);
 
-    let stats = acc
-        .get_mut(&game.home)
-        // TODO: when calling this from `team_stats`
-        // TeamId will always be present, checked in Group constructor
-        // When calling this from `internal_team_stats` it's internally sound since the filter is
-        // always generated from an order.
-        // However, since `UnaryStat` is a public trait you could miscreate the filter and make
-        // this function panic.
-        .unwrap();
+    let stats = acc.get_mut(&game.home).unwrap();
     *stats += delta_home_stat;
 
-    let stats = acc
-        .get_mut(&game.away)
-        // TeamId will always be present, checked in Group constructor
-        .unwrap();
+    let stats = acc.get_mut(&game.away).unwrap();
     *stats += delta_away_stat;
     acc
 }
