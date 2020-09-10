@@ -10,6 +10,9 @@ use crate::Date;
 use derive_more::{Add, AddAssign, Display, From};
 use serde::{Deserialize, Serialize};
 
+/// Score associated with [`PlayedGroupGame`](struct.PlayedGroupGame.html)
+///
+/// Determines the outcome of a game which can be, win, loss or draw.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Score {
     pub home: GoalCount,
@@ -34,6 +37,7 @@ impl Score {
     }
 }
 
+/// Not yet played group game
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PreGroupGame {
     pub id: GroupGameId,
@@ -81,6 +85,9 @@ impl Game for PreGroupGame {
     }
 }
 
+/// Played group game
+///
+/// Can only be constructed by invoking the `.play` method on a [`PreGroupGame`](struct.PreGroupGame.html)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
     pub id: GroupGameId,
