@@ -33,11 +33,12 @@ pub type Groups = HashMap<GroupId, Group>;
 )]
 pub struct GroupId(pub char);
 
+/// Single group data structure
 #[wasm_bindgen]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
-    upcoming_games: Vec<PreGroupGame>,
     played_games: Vec<PlayedGroupGame>,
+    upcoming_games: Vec<PreGroupGame>,
 }
 
 impl Group {
@@ -48,8 +49,8 @@ impl Group {
     ///
     /// - Every game (played or upcoming) must have a unique game id.
     pub fn try_new(
-        played_games: Vec<PlayedGroupGame>,
         upcoming_games: Vec<PreGroupGame>,
+        played_games: Vec<PlayedGroupGame>,
     ) -> Result<Self, GroupError> {
         if Self::unique_game_ids(&played_games, &upcoming_games) {
             Ok(Self {
@@ -171,14 +172,14 @@ pub enum GroupError {
 }
 
 pub fn mock_data() -> (HashMap<GroupId, Group>, HashMap<TeamId, Team>) {
-    let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock())
+    let game_1 = PreGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
+    let game_2 = PreGroupGame::try_new(1, 0, 1, Date::mock())
         .unwrap()
         .play(Score::from((2, 1)), FairPlayScore::from((0, 1)));
-    let game_2 = PreGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
     let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
     let game_1 = PreGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
     let game_2 = PreGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
-    let group_b = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+    let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
     let mut groups = HashMap::new();
     groups.insert(GroupId('A'), group_a);
     groups.insert(GroupId('B'), group_b);
@@ -242,10 +243,10 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::try_new(3, 1, 2, Date::mock())
+        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = PreGroupGame::try_new(3, 1, 2, Date::mock())
             .unwrap()
             .play(Score::new(2, 0), FairPlayScore::default());
-        let game_2 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .teams()

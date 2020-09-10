@@ -50,7 +50,6 @@ pub fn fifa_2018() -> Rules<Random> {
             Box::new(int_goal_diff),
             Box::new(int_goal_count),
             Box::new(fair_play),
-            //TODO: Random Tiebreaker.
         ],
         tiebreaker: Random {},
     }
@@ -79,7 +78,8 @@ pub struct Rules<T: Tiebreaker> {
 /// First orders by a list of non-strict sub-orders.
 /// If the sub-order is not strict, the rules' tiebreaker is used.
 pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
-    let possibly_non_strict = ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
+    let possibly_non_strict =
+        non_strict_ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
     if !possibly_non_strict.is_strict() {
         rules.tiebreaker.order(group, possibly_non_strict)
     } else {
@@ -92,7 +92,7 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder
 ///
 /// Returns the input group order if it is strict or if there are no more rules left to apply.
 /// Otherwise recursively calls itself with the next rule.
-fn ordering(
+fn non_strict_ordering(
     group: &Group,
     rules: &[Box<dyn SubOrdering>],
     sub_order: NonStrictGroupOrder,
@@ -107,7 +107,7 @@ fn ordering(
                 let new_order = current_rule[0].order(group, x);
                 acc.extend(new_order)
             });
-        ordering(group, remaining_rules, sub_order)
+        non_strict_ordering(group, remaining_rules, sub_order)
     }
 }
 
@@ -406,7 +406,7 @@ mod tests {
         let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::mock()).unwrap();
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 1), (0, 0), Date::mock()).unwrap();
         let game_3 = PlayedGroupGame::try_new(2, 0, 3, (0, 1), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3], vec![]).unwrap();
+        let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![3, 1, 2, 0].iter().map(|x| TeamId(*x)).collect());
@@ -420,7 +420,7 @@ mod tests {
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::mock()).unwrap();
         let game_3 = PlayedGroupGame::try_new(2, 0, 2, (0, 0), (0, 0), Date::mock()).unwrap();
         let game_4 = PlayedGroupGame::try_new(3, 1, 3, (5, 5), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3, game_4], vec![]).unwrap();
+        let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -433,7 +433,7 @@ mod tests {
     fn prim_stats_orders() {
         let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::mock()).unwrap();
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
+        let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
@@ -447,7 +447,7 @@ mod tests {
     fn fair_play_order() {
         let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (1, 4), Date::mock()).unwrap();
         let game_2 = PlayedGroupGame::try_new(1, 2, 3, (0, 0), (0, 2), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
+        let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![2, 0, 3, 1].iter().map(|x| TeamId(*x)).collect());
@@ -465,7 +465,7 @@ mod tests {
         let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
         let game_4 = PlayedGroupGame::try_new(3, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
         let game_5 = PlayedGroupGame::try_new(4, 0, 3, (0, 1), (0, 0), Date::mock()).unwrap();
-        let group = Group::try_new(vec![game_1, game_2, game_3, game_4, game_5], vec![]).unwrap();
+        let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4, game_5]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![0, 1, 3, 2].iter().map(|x| TeamId(*x)).collect());

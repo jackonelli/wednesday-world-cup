@@ -111,7 +111,7 @@ impl TryInto<Group> for ParseGroup {
                 game.try_into()
             })
             .collect::<Result<Vec<PlayedGroupGame>, GroupError>>()?;
-        Group::try_new(played_games, upcoming_games)
+        Group::try_new(upcoming_games, played_games)
     }
 }
 
