@@ -1,7 +1,7 @@
 //! Group ordering
 use crate::fair_play::FairPlayValue;
 use crate::game::{GoalCount, GoalDiff};
-use crate::group::stats::UnaryStat;
+use crate::group::stats::{NumWins, UnaryStat};
 use crate::group::{Group, GroupError, GroupPoint};
 use crate::team::{Rank, TeamId};
 use rand::Rng;
@@ -9,51 +9,6 @@ use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
-
-/// Fifa World Cup 2018 Order
-///
-/// https://www.fifa.com/worldcup/news/tie-breakers-for-russia-2018-groups
-///
-///First step: Pursuant to the criteria listed in art. 32 (5) lit. a) to c) of the Competition Regulations.
-///
-/// 1. Greatest number of points obtained in all group matches
-/// 2. Goal difference in all group matches
-/// 3. Greatest number of goals scored in all group matches.
-///
-///Second step: If two or more teams are equal on the basis of the first step (see example in Table 1), their ranking will be determined by applying to the group matches between the teams concerned the criteria listed in art. 32 (5) lit. d) to h) in the order of their listing.
-///
-/// 4. Greatest number of points obtained in the group matches between the teams concerned
-/// 5. Goal difference resulting from the group matches between the teams concerned
-/// 6. Greater number of goals scored in all group matches between the teams concerned
-/// 7. Greater number of points obtained in the fair play conduct of the teams based on yellow and red cards received in all group matches
-///     - Yellow card: -1 points
-///     - Indirect red card (second yellow card): -3 points
-///     - Direct red card: -4 points
-///     - Yellow card and direct red card: -5 points
-/// 8. Drawing of lots by the FIFA.
-///
-/// TODO: Complete rule 8.
-pub fn fifa_2018() -> Rules<Random> {
-    let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
-    let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
-    let goal_count: AllGroupStat<GoalCount> = AllGroupStat::new();
-    let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
-    let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
-    let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
-    let fair_play: InternalGroupStat<FairPlayValue> = InternalGroupStat::new();
-    Rules {
-        non_strict: vec![
-            Box::new(group_point),
-            Box::new(goal_diff),
-            Box::new(goal_count),
-            Box::new(int_group_point),
-            Box::new(int_goal_diff),
-            Box::new(int_goal_count),
-            Box::new(fair_play),
-        ],
-        tiebreaker: Random {},
-    }
-}
 
 /// Group ordering rules
 ///
@@ -399,8 +354,104 @@ impl Tiebreaker for UefaRanking {
     }
 }
 
+/// Fifa World Cup 2018 Order
+///
+/// https://www.fifa.com/worldcup/news/tie-breakers-for-russia-2018-groups
+///
+///First step: Pursuant to the criteria listed in art. 32 (5) lit. a) to c) of the Competition Regulations.
+///
+/// 1. Greatest number of points obtained in all group matches
+/// 2. Goal difference in all group matches
+/// 3. Greatest number of goals scored in all group matches.
+///
+///Second step: If two or more teams are equal on the basis of the first step (see example in Table 1), their ranking will be determined by applying to the group matches between the teams concerned the criteria listed in art. 32 (5) lit. d) to h) in the order of their listing.
+///
+/// 4. Greatest number of points obtained in the group matches between the teams concerned
+/// 5. Goal difference resulting from the group matches between the teams concerned
+/// 6. Greater number of goals scored in all group matches between the teams concerned
+/// 7. Greater number of points obtained in the fair play conduct of the teams based on yellow and red cards received in all group matches
+///     - Yellow card: -1 points
+///     - Indirect red card (second yellow card): -3 points
+///     - Direct red card: -4 points
+///     - Yellow card and direct red card: -5 points
+/// 8. Drawing of lots by the FIFA.
+pub fn fifa_2018() -> Rules<Random> {
+    let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
+    let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
+    let goal_count: AllGroupStat<GoalCount> = AllGroupStat::new();
+    let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
+    let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
+    let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
+    let fair_play: InternalGroupStat<FairPlayValue> = InternalGroupStat::new();
+    Rules {
+        non_strict: vec![
+            Box::new(group_point),
+            Box::new(goal_diff),
+            Box::new(goal_count),
+            Box::new(int_group_point),
+            Box::new(int_goal_diff),
+            Box::new(int_goal_count),
+            Box::new(fair_play),
+        ],
+        tiebreaker: Random {},
+    }
+}
+
+/// Uefa Euro 2020 Order
+///
+/// https://www.uefa.com/MultimediaFiles/Download/Regulations/uefaorg/Regulations/02/54/36/05/2543605_DOWNLOAD.pdf
+///
+/// If two or more teams are equal on points on completion of the group matches, the following tie-breaking criteria are applied:
+///
+/// 1. Higher number of points obtained in the matches played between the teams in question;
+/// 2. Superior goal difference resulting from the matches played between the teams in question;
+/// 3. Higher number of goals scored in the matches played between the teams in question;
+///
+/// 4. If, after having applied criteria 1 to 3, teams still have an equal ranking, criteria 1 to 3 are reapplied exclusively to the matches between the teams who are still level to determine their final rankings.
+///    (If there is a three-way tie on points, the application of the first three criteria may only break the tie for one of the teams, leaving the other two teams still tied.
+///    In this case, the tiebreaking procedure is resumed, from the beginning, for the two teams that are still tied.)
+///    If this procedure does not lead to a decisionr criteria 5 to 10 apply;
+///
+/// 5. Superior goal difference in all group matches;
+/// 6. Higher number of goals scored in all group matches;
+/// 7. Higher number of wins in all group matches (this criterion could only break a tie if a point deduction were to occur, as multiple teams in the same group cannot otherwise be tied on points but have a different number of wins.);
+/// 8. If on the last round of the group stage, two teams are facing each other and each has the same number of points, as well as the same number of goals scored and conceded,
+///    and the score finishes level in their match, their ranking is determined by a penalty shoot-out. (This criterion is not used if more than two teams have the same number of points.);
+/// 9. Lower disciplinary points total in all group matches:
+///     - Yellow card: -1 points
+///     - Indirect red card (second yellow card): -3 points
+///     - Direct red card: -3 points
+///     - Yellow card and direct red card: -5 points
+/// 10. Higher position in the European Qualifiers overall ranking.
+/// TODO: Remaining suborderings:
+/// - How to reapply 1-3 with yet another subset is unclear. I think I need to resort to impl. 1-3
+/// as its own rule.
+/// - The penalty shootout in 9 is pretty straightforward but needs manual data.
+/// - The FairPlayValue is incorrectly calculated (of course Fifa and Uefa have different weights.)
+pub fn euro_2020(ranking: UefaRanking) -> Rules<UefaRanking> {
+    let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
+    let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
+    let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
+    let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
+    let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
+    let num_wins: AllGroupStat<NumWins> = AllGroupStat::new();
+    let fair_play: InternalGroupStat<FairPlayValue> = InternalGroupStat::new();
+    Rules {
+        non_strict: vec![
+            Box::new(group_point),
+            Box::new(int_group_point),
+            Box::new(int_goal_diff),
+            Box::new(int_goal_count),
+            Box::new(goal_diff),
+            Box::new(num_wins),
+            Box::new(fair_play),
+        ],
+        tiebreaker: ranking,
+    }
+}
+
 #[cfg(test)]
-mod ordering_tests {
+mod fifa_2018_ordering_tests {
     use super::*;
     use crate::group::game::PlayedGroupGame;
     use crate::group::Group;

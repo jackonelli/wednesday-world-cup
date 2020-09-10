@@ -121,6 +121,28 @@ impl UnaryStat for FairPlayValue {
     }
 }
 
+#[derive(Add, AddAssign, Eq, PartialEq, Ord, PartialOrd, Debug, Clone, Copy)]
+pub struct NumWins(NumGames);
+
+impl UnaryStat for NumWins {
+    fn stat(game: &PlayedGroupGame) -> (Self, Self) {
+        let (points_home, points_away) = GroupPoint::stat(game);
+        let wins_home = NumWins(NumGames((points_home == GroupPoint(3)) as u8));
+        let wins_away = NumWins(NumGames((points_away == GroupPoint(3)) as u8));
+        (wins_home, wins_away)
+    }
+}
+
+impl num::Zero for NumWins {
+    fn zero() -> Self {
+        NumWins(NumGames::zero())
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+}
+
 ///Convenience struct for combining all common stats
 ///
 ///Does not impl UnaryStat even though it could in principle do it.
@@ -142,10 +164,9 @@ impl UnaryStat for TableStats {
         let (points_home, points_away) = GroupPoint::stat(game);
         let (goal_diff_away, goal_diff_home) = GoalDiff::stat(game);
         let (goals_scored_home, goals_scored_away) = GoalCount::stat(game);
-        let wins_home = NumGames((points_home == GroupPoint(3)) as u8);
+        let (wins_home, wins_away) = NumWins::stat(game);
         let losses_home = NumGames((points_home == GroupPoint(0)) as u8);
         let draws_home = NumGames((points_home == GroupPoint(1)) as u8);
-        let wins_away = NumGames((points_away == GroupPoint(3)) as u8);
         let losses_away = NumGames((points_away == GroupPoint(0)) as u8);
         let draws_away = NumGames((points_away == GroupPoint(1)) as u8);
         let home = TableStats {
@@ -154,7 +175,7 @@ impl UnaryStat for TableStats {
             goals_scored: goals_scored_home,
             goals_conceded: goals_scored_away,
             games_played: NumGames(1),
-            wins: wins_home,
+            wins: wins_home.0,
             losses: losses_home,
             draws: draws_home,
         };
@@ -164,7 +185,7 @@ impl UnaryStat for TableStats {
             goals_scored: goals_scored_away,
             goals_conceded: goals_scored_home,
             games_played: NumGames(1),
-            wins: wins_away,
+            wins: wins_away.0,
             losses: losses_away,
             draws: draws_away,
         };

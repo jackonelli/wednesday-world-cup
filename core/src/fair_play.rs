@@ -3,12 +3,15 @@ use derive_more::{Add, AddAssign, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
-/// Fifa World Cup 2018 Rules:
+/// Fair play data
 ///
-/// - Yellow card: –1 points;
-/// - Indirect red card (second yellow card): –3 points;
-/// - Direct red card: –4 points;
-/// - Yellow card and direct red card: –5 points;
+/// Currently based on the Fifa World Cup 2018 Rules:
+///
+/// - Yellow card: -1 points;
+/// - Indirect red card (second yellow card): -3 points;
+/// - Direct red card: -4 points;
+/// - Yellow card and direct red card: -5 points;
+///
 /// ```
 /// # use wwc_core::fair_play::{FairPlay, FairPlayValue};
 /// let fair_play = FairPlay::new(1, 2, 3, 4);
@@ -36,6 +39,7 @@ impl FairPlay {
             yellow_and_direct: yellow_and_direct.into(),
         }
     }
+    /// Calculate fair play value based on Fifa rules.
     pub fn value(&self) -> FairPlayValue {
         self.yellow * -1
             + self.indirect_red * -3
