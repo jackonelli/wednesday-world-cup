@@ -310,6 +310,7 @@ impl<T: UnaryStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     }
 }
 
+/// Associated with [`Rules`](struct.Rules.html) to ensure strict total order.
 pub trait Tiebreaker {
     fn order(&self, group: &Group, non_strict: NonStrictGroupOrder) -> GroupOrder {
         GroupOrder(non_strict.0.into_iter().fold(Vec::new(), |mut acc, x| {
@@ -329,6 +330,9 @@ pub trait Tiebreaker {
         GroupOrder(tmp_order.into_iter().map(|x| x).rev().collect())
     }
 
+    /// Answers a comparison posed like this:
+    /// "Compare id_1 to id_2". I.e. if the return value is `Ordering::Greater` it means that id_1
+    /// is greater than id_2.
     fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering;
 }
 
@@ -348,6 +352,7 @@ impl Tiebreaker for Manual {
     }
 }
 
+/// Random tiebreaker
 pub struct Random;
 
 impl Tiebreaker for Random {
@@ -361,6 +366,7 @@ impl Tiebreaker for Random {
     }
 }
 
+/// Rank tiebreaker
 pub struct UefaRanking(HashMap<TeamId, Rank>);
 
 impl UefaRanking {
@@ -380,21 +386,21 @@ impl UefaRanking {
 }
 
 impl Tiebreaker for UefaRanking {
+    /// Comparison by Uefa ranking
+    ///
+    /// Panics if the team id's are not in `self.ranking_map`
+    /// Internally ok since the fallible constructor [`try_new`](struct.UefaRanking.html#method.try_new) ensures that the teams in the groups are a subset of the `ranking_map`.
     fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering {
-        let rank_1 = self
-            .0
-            .get(&id_1)
-            .expect(&format!("{:?} not in ranking list", id_1));
-        let rank_2 = self
-            .0
-            .get(&id_2)
-            .expect(&format!("{:?} not in ranking list", id_2));
-        rank_1.cmp(&rank_2)
+        let rank_1 = self.0.get(&id_1).unwrap();
+        let rank_2 = self.0.get(&id_2).unwrap();
+        // Switch the order of comparison here so that a small rank is considered better than a
+        // large one.
+        rank_2.cmp(&rank_1)
     }
 }
 
 #[cfg(test)]
-mod tests {
+mod ordering_tests {
     use super::*;
     use crate::group::game::PlayedGroupGame;
     use crate::group::Group;
@@ -470,5 +476,19 @@ mod tests {
         let group_order = order_group(&group, &rules);
         let true_order = GroupOrder(vec![0, 1, 3, 2].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
+    }
+}
+
+#[cfg(test)]
+mod tiebreaker_test {
+    use super::*;
+    use std::collections::HashMap;
+    #[test]
+    fn uefa_rank() {
+        let mut ranking = HashMap::new();
+        ranking.insert(TeamId(0), Rank(1));
+        ranking.insert(TeamId(1), Rank(2));
+        let ranking = UefaRanking(ranking);
+        assert_eq!(ranking.cmp(TeamId(0), TeamId(1)), Ordering::Greater);
     }
 }
