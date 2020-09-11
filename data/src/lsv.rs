@@ -9,7 +9,7 @@ use std::convert::TryInto;
 use thiserror::Error;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::GoalCount;
-use wwc_core::group::game::{PlayedGroupGame, PreGroupGame, Score};
+use wwc_core::group::game::{PlayedGroupGame, Score, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{Rank, Team, TeamId};
 use wwc_core::Date;
@@ -100,7 +100,7 @@ impl TryInto<Group> for ParseGroup {
                 let game = *game;
                 game.try_into()
             })
-            .collect::<Result<Vec<PreGroupGame>, GroupError>>()?;
+            .collect::<Result<Vec<UnplayedGroupGame>, GroupError>>()?;
 
         let played_games = self
             .games
@@ -133,17 +133,17 @@ pub struct ParseGame {
     date: Date,
 }
 
-impl TryInto<PreGroupGame> for ParseGame {
+impl TryInto<UnplayedGroupGame> for ParseGame {
     type Error = GroupError;
-    fn try_into(self) -> Result<PreGroupGame, Self::Error> {
-        PreGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)
+    fn try_into(self) -> Result<UnplayedGroupGame, Self::Error> {
+        UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)
     }
 }
 
 impl TryInto<PlayedGroupGame> for ParseGame {
     type Error = GroupError;
     fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
-        let game = PreGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
+        let game = UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
         let score = Score::from((self.home_result, self.away_result));
         let fair_play_score = FairPlayScore::from((0, 0));
         Ok(game.play(score, fair_play_score))

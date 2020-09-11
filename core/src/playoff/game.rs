@@ -1,7 +1,21 @@
-use crate::game::{Game, GoalCount};
+use crate::game::GoalCount;
 use crate::team::TeamId;
-use crate::Date;
 use thiserror::Error;
+
+pub enum PlayoffGame {
+    FirstRound(Game),
+    Final(Game),
+    Bronze(Game),
+    Other(Game),
+}
+
+impl PlayoffGame {}
+
+pub struct Game {
+    home: Option<TeamId>,
+    away: Option<TeamId>,
+    score: Option<Score>,
+}
 
 #[derive(Clone)]
 pub struct Score {
@@ -30,27 +44,6 @@ impl Score {
                 _ => todo!(),
             }
         }
-    }
-}
-
-pub struct PrePlayoffGame {
-    home: TeamId,
-    away: TeamId,
-    date: Date,
-}
-
-impl PrePlayoffGame {
-    pub fn new(home: TeamId, away: TeamId, date: Date) -> Self {
-        Self { home, away, date }
-    }
-}
-
-impl Game for PrePlayoffGame {
-    fn home_team(&self) -> TeamId {
-        self.home
-    }
-    fn away_team(&self) -> TeamId {
-        self.away
     }
 }
 

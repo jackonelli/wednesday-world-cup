@@ -4,7 +4,7 @@ use serde::{self, Deserialize, Deserializer, Serializer};
 
 /// The signature of a serialize_with function must follow the pattern:
 ///
-///```
+///```not_rust
 ///fn serialize<S>(&T, S) -> Result<S::Ok, S::Error>
 ///where
 ///    S: Serializer
@@ -21,7 +21,7 @@ where
 
 /// The signature of a deserialize_with function must follow the pattern:
 ///
-///```
+///```not_rust
 ///fn deserialize<'de, D>(D) -> Result<T, D::Error>
 ///where
 ///    D: Deserializer<'de>

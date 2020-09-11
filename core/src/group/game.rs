@@ -39,14 +39,14 @@ impl Score {
 
 /// Not yet played group game
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct PreGroupGame {
+pub struct UnplayedGroupGame {
     pub id: GroupGameId,
     pub home: TeamId,
     pub away: TeamId,
     pub date: Date,
 }
 
-impl PreGroupGame {
+impl UnplayedGroupGame {
     pub fn try_new<G: Into<GroupGameId>, T: Into<TeamId> + Eq>(
         id: G,
         home: T,
@@ -76,7 +76,7 @@ impl PreGroupGame {
     }
 }
 
-impl Game for PreGroupGame {
+impl Game for UnplayedGroupGame {
     fn home_team(&self) -> TeamId {
         self.home
     }
@@ -87,7 +87,8 @@ impl Game for PreGroupGame {
 
 /// Played group game
 ///
-/// Can only be constructed by invoking the `.play` method on a [`PreGroupGame`](struct.PreGroupGame.html)
+/// Can only be constructed by invoking the [`.play`](struct.UnplayedGroupGame.html#method.play) method on a
+/// [`UnplayedGroupGame`](struct.UnplayedGroupGame.html)
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
     pub id: GroupGameId,
@@ -99,6 +100,22 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
+    pub fn points(&self) -> (GroupPoint, GroupPoint) {
+        GroupPoint::stat(self)
+    }
+
+    pub fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
+        GoalDiff::stat(self)
+    }
+
+    pub fn goals_scored(&self) -> (GoalCount, GoalCount) {
+        GoalCount::stat(self)
+    }
+
+    /// Fallible constructor for a played group game
+    ///
+    /// Used in-crate only for easier test setup.
+    #[cfg(test)]
     pub(crate) fn try_new<
         G: Into<GroupGameId>,
         T: Into<TeamId> + Eq,
@@ -124,17 +141,6 @@ impl PlayedGroupGame {
         } else {
             Err(GroupError::GameTeamsNotUnique)
         }
-    }
-    pub fn points(&self) -> (GroupPoint, GroupPoint) {
-        GroupPoint::stat(self)
-    }
-
-    pub fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
-        GoalDiff::stat(self)
-    }
-
-    pub fn goals_scored(&self) -> (GoalCount, GoalCount) {
-        GoalCount::stat(self)
     }
 }
 

@@ -7,7 +7,7 @@ use crate::game::{Game, GoalCount, GoalDiff};
 use crate::team::{Rank, Team, TeamId};
 use crate::Date;
 use derive_more::{Add, AddAssign, Display, From};
-use game::{PlayedGroupGame, PreGroupGame, Score};
+use game::{PlayedGroupGame, Score, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
 use serde::{Deserialize, Serialize};
@@ -40,15 +40,15 @@ pub struct GroupId(pub char);
 
 /// Single group data structure
 ///
-/// The only data that group holds is the games, played and unplayed.
-/// Intuitively, one might expect it to hold, group points, if it is finished, a ranked list of the
+/// The only data that group holds are the games, played and unplayed.
+/// Intuitively, one might expect it to hold group stats, whether it is finished, a ranked list of the
 /// teams et c.
 /// Fundamentally though, the only data are the games. Everything else can be derived from them.
 #[wasm_bindgen]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
     played_games: Vec<PlayedGroupGame>,
-    upcoming_games: Vec<PreGroupGame>,
+    upcoming_games: Vec<UnplayedGroupGame>,
 }
 
 impl Group {
@@ -59,7 +59,7 @@ impl Group {
     ///
     /// - Every game (played or upcoming) must have a unique game id.
     pub fn try_new(
-        upcoming_games: Vec<PreGroupGame>,
+        upcoming_games: Vec<UnplayedGroupGame>,
         played_games: Vec<PlayedGroupGame>,
     ) -> Result<Self, GroupError> {
         if Self::unique_game_ids(&played_games, &upcoming_games) {
@@ -84,7 +84,7 @@ impl Group {
     }
 
     /// Games accessor
-    pub fn upcoming_games(&self) -> impl Iterator<Item = &PreGroupGame> {
+    pub fn upcoming_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
         self.upcoming_games.iter()
     }
 
@@ -138,7 +138,10 @@ impl Group {
     ///
     /// Extract and combine Game Id's from played and upcoming games.
     /// Compare the number of unique id's with the total number of games
-    fn unique_game_ids(played_games: &[PlayedGroupGame], upcoming_games: &[PreGroupGame]) -> bool {
+    fn unique_game_ids(
+        played_games: &[PlayedGroupGame],
+        upcoming_games: &[UnplayedGroupGame],
+    ) -> bool {
         let unique_game_ids: Vec<_> = played_games
             .iter()
             .map(|x| x.id)
@@ -194,13 +197,13 @@ pub enum GroupError {
 }
 
 pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
-    let game_1 = PreGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
-    let game_2 = PreGroupGame::try_new(1, 0, 1, Date::mock())
+    let game_1 = UnplayedGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock())
         .unwrap()
         .play(Score::from((2, 1)), FairPlayScore::from((0, 1)));
     let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
-    let game_1 = PreGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
-    let game_2 = PreGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
+    let game_1 = UnplayedGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
     let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
     let mut groups = HashMap::new();
     groups.insert(GroupId('A'), group_a);
@@ -223,7 +226,7 @@ pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
 mod tests {
     use super::*;
     use crate::fair_play::FairPlayScore;
-    use crate::group::game::{PreGroupGame, Score};
+    use crate::group::game::{Score, UnplayedGroupGame};
     use crate::team::{TeamId, TeamName};
     use crate::Date;
     #[test]
@@ -236,8 +239,8 @@ mod tests {
     }
     #[test]
     fn group_unique_game_ids_fail() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
-        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
+        let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
         let game_3 = PlayedGroupGame::try_new(2, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
         let played = vec![game_3];
@@ -245,8 +248,8 @@ mod tests {
     }
     #[test]
     fn group_unique_game_ids_ok() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
-        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
+        let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
         let game_3 = PlayedGroupGame::try_new(3, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
         let played = vec![game_3];
@@ -254,8 +257,8 @@ mod tests {
     }
     #[test]
     fn test_team_from_game_vec() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
-        let game_2 = PreGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
+        let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let parsed_teams: HashSet<TeamId> =
             Group::team_set_from_game_vec(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
@@ -266,8 +269,8 @@ mod tests {
     }
     #[test]
     fn test_group_teams() {
-        let game_1 = PreGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
-        let game_2 = PreGroupGame::try_new(3, 1, 2, Date::mock())
+        let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
+        let game_2 = UnplayedGroupGame::try_new(3, 1, 2, Date::mock())
             .unwrap()
             .play(Score::new(2, 0), FairPlayScore::default());
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])

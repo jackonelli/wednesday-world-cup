@@ -2,18 +2,17 @@
 #![allow(dead_code, unused_variables)]
 use seed::{prelude::*, *};
 use std::collections::HashMap;
-use std::convert::From;
 use wwc_core::{
     group::{
         mock_data,
         order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
-        Group, GroupId, GroupPoint,
+        Group, GroupId,
     },
     team::{Team, TeamId},
 };
 
 mod table;
-use table::{DisplayTable, DisplayTableRow};
+use table::DisplayTable;
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
 
