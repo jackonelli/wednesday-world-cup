@@ -272,7 +272,7 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(3, 1, 2, Date::mock())
             .unwrap()
-            .play(Score::new(2, 0), FairPlayScore::default());
+            .play(Score::from((2, 0)), FairPlayScore::default());
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .teams()

@@ -1,4 +1,12 @@
 //! Group game
+//!
+//! Data and functionality related to games in the group stage of the tournament.
+//! This group is less restricted than a `PlayoffGame` since the `Score` is freer,
+//! e.g. draws are allowed and there are no additional penalty shoot-out score.
+//!
+//! The two game structs [`UnplayedGroupGame`](struct.UnPlayedGroupGame.html) and [`PlayedGroupGame`](struct.PlayedGroupGame.html)
+//! are the fundamental datastructure for the group; all other properties and statistics are
+//! derived from them.
 use crate::fair_play::FairPlayScore;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};
@@ -24,15 +32,6 @@ impl<T: Into<GoalCount>> From<(T, T)> for Score {
         Self {
             home: x.0.into(),
             away: x.1.into(),
-        }
-    }
-}
-
-impl Score {
-    pub fn new<T: Into<GoalCount>>(home: T, away: T) -> Self {
-        Score {
-            home: home.into(),
-            away: away.into(),
         }
     }
 }
