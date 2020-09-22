@@ -15,7 +15,6 @@ use stats::UnaryStat;
 use std::collections::HashMap;
 use std::iter;
 use thiserror::Error;
-use wasm_bindgen::prelude::*;
 
 /// Type alias for a mapping of `GroupId` to `Group`
 pub type Groups = HashMap<GroupId, Group>;
@@ -24,7 +23,6 @@ pub type Groups = HashMap<GroupId, Group>;
 ///
 /// Uses a `char` as an identifier.
 /// At least in football, groups are often labelled with an upper case character.
-#[wasm_bindgen]
 #[derive(
     Deserialize,
     Serialize,
@@ -45,7 +43,6 @@ pub struct GroupId(pub char);
 /// Intuitively, one might expect it to hold group stats, whether it is finished, a ranked list of the
 /// teams et c.
 /// Fundamentally though, the only data are the games. Everything else can be derived from them.
-#[wasm_bindgen]
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
     played_games: Vec<PlayedGroupGame>,
