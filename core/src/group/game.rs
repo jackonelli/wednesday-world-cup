@@ -29,9 +29,10 @@ pub struct Score {
 
 impl<T: Into<GoalCount>> From<(T, T)> for Score {
     fn from(x: (T, T)) -> Self {
+        let (home, away) = x;
         Self {
-            home: x.0.into(),
-            away: x.1.into(),
+            home: home.into(),
+            away: away.into(),
         }
     }
 }
@@ -46,23 +47,32 @@ pub struct UnplayedGroupGame {
 }
 
 impl UnplayedGroupGame {
-    pub fn try_new<G: Into<GroupGameId>, T: Into<TeamId> + Eq>(
+    /// Fallible constructor.
+    ///
+    /// Fails if `TeamId`'s are not different for home and away team.
+    pub fn try_new<G: Into<GroupGameId>, T: Into<TeamId>>(
         id: G,
         home: T,
         away: T,
         date: Date,
     ) -> Result<Self, GroupError> {
+        let home = home.into();
+        let away = away.into();
         if home != away {
             Ok(Self {
                 id: id.into(),
-                home: home.into(),
-                away: away.into(),
+                home,
+                away,
                 date,
             })
         } else {
             Err(GroupError::GameTeamsNotUnique)
         }
     }
+
+    /// Transform unplayed game to played.
+    ///
+    /// Only (public) way of constructing a [`PlayedGroupGame`](struct.PlayedGroupGame.html).
     pub fn play(self, score: Score, fair_play: FairPlayScore) -> PlayedGroupGame {
         PlayedGroupGame {
             id: self.id,
@@ -99,14 +109,17 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
+    /// Points awarded to (home, away) teams respectively.
     pub fn points(&self) -> (GroupPoint, GroupPoint) {
         GroupPoint::stat(self)
     }
 
+    /// Goal difference for (home, away) teams respectively.
     pub fn goal_diff(&self) -> (GoalDiff, GoalDiff) {
         GoalDiff::stat(self)
     }
 
+    /// Goals scored for (home, away) teams respectively.
     pub fn goals_scored(&self) -> (GoalCount, GoalCount) {
         GoalCount::stat(self)
     }
@@ -117,7 +130,7 @@ impl PlayedGroupGame {
     #[cfg(test)]
     pub(crate) fn try_new<
         G: Into<GroupGameId>,
-        T: Into<TeamId> + Eq,
+        T: Into<TeamId>,
         S: Into<Score>,
         F: Into<FairPlayScore>,
     >(
@@ -128,11 +141,13 @@ impl PlayedGroupGame {
         fair_play: F,
         date: Date,
     ) -> Result<Self, GroupError> {
+        let home = home.into();
+        let away = away.into();
         if home != away {
             Ok(Self {
                 id: id.into(),
-                home: home.into(),
-                away: away.into(),
+                home,
+                away,
                 score: score.into(),
                 fair_play: fair_play.into(),
                 date,
@@ -153,7 +168,6 @@ impl Game for PlayedGroupGame {
 }
 
 #[derive(
-    Default,
     Debug,
     Display,
     Deserialize,
