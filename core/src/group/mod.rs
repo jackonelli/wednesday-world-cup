@@ -12,7 +12,8 @@ use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
 use serde::{Deserialize, Serialize};
 use stats::UnaryStat;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::iter;
 use thiserror::Error;
 use wasm_bindgen::prelude::*;
 
@@ -62,7 +63,7 @@ impl Group {
         upcoming_games: Vec<UnplayedGroupGame>,
         played_games: Vec<PlayedGroupGame>,
     ) -> Result<Self, GroupError> {
-        if Self::unique_game_ids(&played_games, &upcoming_games) {
+        if Self::game_ids_unique(&played_games, &upcoming_games) {
             Ok(Self {
                 upcoming_games,
                 played_games,
@@ -77,9 +78,9 @@ impl Group {
     /// Finds all team id's in the group games
     /// (played and upcoming).
     /// Returns an iterator over unique team id's
-    pub fn teams(&self) -> impl Iterator<Item = TeamId> {
-        Group::team_set_from_game_vec(&self.played_games)
-            .chain(Group::team_set_from_game_vec(&self.upcoming_games))
+    pub fn teams(&self) -> impl Iterator<Item = TeamId> + '_ {
+        Group::unique_teams_in_games(&self.played_games)
+            .chain(Group::unique_teams_in_games(&self.upcoming_games))
             .unique()
     }
 
@@ -138,27 +139,22 @@ impl Group {
     ///
     /// Extract and combine Game Id's from played and upcoming games.
     /// Compare the number of unique id's with the total number of games
-    fn unique_game_ids(
+    fn game_ids_unique(
         played_games: &[PlayedGroupGame],
-        upcoming_games: &[UnplayedGroupGame],
+        unplayed_games: &[UnplayedGroupGame],
     ) -> bool {
-        let unique_game_ids: Vec<_> = played_games
-            .iter()
-            .map(|x| x.id)
-            .chain(upcoming_games.iter().map(|x| x.id))
-            .unique()
-            .collect();
-        unique_game_ids.len() == played_games.len() + upcoming_games.len()
+        let played_ids = played_games.iter().map(|x| x.id);
+        let unplayed_ids = unplayed_games.iter().map(|x| x.id);
+        let unique_game_ids = played_ids.chain(unplayed_ids).unique();
+        unique_game_ids.count() == played_games.len() + unplayed_games.len()
     }
 
-    /// Iterator over all group teams, derived from all the games
-    fn team_set_from_game_vec<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> {
-        let teams: HashSet<TeamId> = games.iter().fold(HashSet::default(), |mut acc, game| {
-            acc.insert(game.home_team());
-            acc.insert(game.away_team());
-            acc
-        });
-        teams.into_iter()
+    /// Iterator over unique group teams from list of games
+    fn unique_teams_in_games<T: Game>(games: &[T]) -> impl Iterator<Item = TeamId> + '_ {
+        games
+            .iter()
+            .flat_map(|game| iter::once(game.home_team()).chain(iter::once(game.away_team())))
+            .unique()
     }
 }
 
@@ -229,6 +225,7 @@ mod tests {
     use crate::group::game::{Score, UnplayedGroupGame};
     use crate::team::{TeamId, TeamName};
     use crate::Date;
+    use std::collections::HashSet;
     #[test]
     fn mock_data_access() {
         let (_, mock_teams) = mock_data();
@@ -244,7 +241,7 @@ mod tests {
         let upcoming = vec![game_1, game_2];
         let game_3 = PlayedGroupGame::try_new(2, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
         let played = vec![game_3];
-        assert_eq!(Group::unique_game_ids(&played, &upcoming), false);
+        assert_eq!(Group::game_ids_unique(&played, &upcoming), false);
     }
     #[test]
     fn group_unique_game_ids_ok() {
@@ -253,14 +250,14 @@ mod tests {
         let upcoming = vec![game_1, game_2];
         let game_3 = PlayedGroupGame::try_new(3, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
         let played = vec![game_3];
-        assert_eq!(Group::unique_game_ids(&played, &upcoming), true);
+        assert_eq!(Group::game_ids_unique(&played, &upcoming), true);
     }
     #[test]
     fn test_team_from_game_vec() {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let parsed_teams: HashSet<TeamId> =
-            Group::team_set_from_game_vec(&vec![game_1, game_2]).collect();
+            Group::unique_teams_in_games(&vec![game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
         true_teams.insert(TeamId(1));
