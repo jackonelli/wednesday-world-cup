@@ -70,7 +70,7 @@ impl Group {
     /// Creates a new group from a vector of played and upcoming games.
     /// Imposes the following restrictions on the group type (more might come):
     ///
-    /// - Every game (played or upcoming) must have a unique game id.
+    /// - Every game (played and upcoming) must have a unique game id.
     pub fn try_new(
         upcoming_games: Vec<UnplayedGroupGame>,
         played_games: Vec<PlayedGroupGame>,

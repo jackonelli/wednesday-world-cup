@@ -163,7 +163,7 @@ pub struct TableStats {
 impl UnaryStat for TableStats {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let (points_home, points_away) = GroupPoint::stat(game);
-        let (goal_diff_away, goal_diff_home) = GoalDiff::stat(game);
+        let (goal_diff_home, goal_diff_away) = GoalDiff::stat(game);
         let (goals_scored_home, goals_scored_away) = GoalCount::stat(game);
         let (wins_home, wins_away) = NumWins::stat(game);
         let losses_home = NumGames((points_home == GroupPoint(0)) as u8);

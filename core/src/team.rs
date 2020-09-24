@@ -1,6 +1,7 @@
 //! Team
 use derive_more::{Display, From};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fmt;
 #[derive(
     Deserialize,
@@ -15,6 +16,8 @@ use std::fmt;
     From,
 )]
 pub struct TeamId(pub u8);
+
+pub type Teams = HashMap<TeamId, Team>;
 
 #[derive(
     Deserialize,
