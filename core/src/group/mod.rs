@@ -12,12 +12,12 @@ use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
 use serde::{Deserialize, Serialize};
 use stats::UnaryStat;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::iter;
 use thiserror::Error;
 
 /// Type alias for a mapping of `GroupId` to `Group`
-pub type Groups = HashMap<GroupId, Group>;
+pub type Groups = BTreeMap<GroupId, Group>;
 
 /// Group Id
 ///
@@ -32,6 +32,8 @@ pub type Groups = HashMap<GroupId, Group>;
     Copy,
     std::cmp::Eq,
     std::cmp::PartialEq,
+    std::cmp::Ord,
+    std::cmp::PartialOrd,
     std::hash::Hash,
     From,
 )]
@@ -198,7 +200,7 @@ pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
     let game_1 = UnplayedGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
     let game_2 = UnplayedGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
     let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
-    let mut groups = HashMap::new();
+    let mut groups = BTreeMap::new();
     groups.insert(GroupId('A'), group_a);
     groups.insert(GroupId('B'), group_b);
     let teams = vec![

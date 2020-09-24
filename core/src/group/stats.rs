@@ -51,16 +51,17 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
 
 /// Calculate stat for a game and assign to team map.
 ///
-/// Unwrap's does not panic if TeamId's of `game.home` and `game.away` are members of `acc`:
+/// Unwrap's do not panic if TeamId's of `game.home` and `game.away` are members of `acc`:
 /// - Calling this from [`team_stats`](trait.UnaryStat.html#method.team_stats), TeamId's will always be present, checked in Group constructor.
 /// - Calling this from [`internal_team_stats`](trait.UnaryStat.html#method.internal_team_stats) is ok since the unwrap's would panic iff `acc` would
 ///   not contain `game.home` or `game.away`, which is exactly the predicate that the
-///   `group.played_games` is filtered by.
+///   `group.played_games` are filtered by.
 /// - Other calls do not exist (private fn), when adding a call: Take care to uphold this invariant!
 fn calc_and_assign_stat<T: UnaryStat>(
-    mut acc: HashMap<TeamId, T>,
+    acc: HashMap<TeamId, T>,
     game: &PlayedGroupGame,
 ) -> HashMap<TeamId, T> {
+    let mut acc = acc;
     let (delta_home_stat, delta_away_stat) = T::stat(game);
 
     let stats = acc.get_mut(&game.home).unwrap();

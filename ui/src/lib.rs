@@ -6,7 +6,7 @@ use wwc_core::{
     group::{
         mock_data,
         order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
-        Group, GroupId,
+        Group, GroupId, Groups,
     },
     team::{Team, TeamId},
 };
@@ -17,7 +17,6 @@ const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
 
 type Teams = HashMap<TeamId, Team>;
-type Groups = HashMap<GroupId, Group>;
 
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
     let (mock_groups, mock_teams) = mock_data();
