@@ -23,6 +23,9 @@ pub type Groups = BTreeMap<GroupId, Group>;
 ///
 /// Uses a `char` as an identifier.
 /// At least in football, groups are often labelled with an upper case character.
+/// The char is currently limited to ascii alphabetic char's, i.e. A-Z, a-z.
+/// This restriction is totally arbitrary and could be lifted, but for now I think it's nice to
+/// have it.
 #[derive(
     Deserialize,
     Serialize,
@@ -37,7 +40,17 @@ pub type Groups = BTreeMap<GroupId, Group>;
     std::hash::Hash,
     From,
 )]
-pub struct GroupId(pub char);
+pub struct GroupId(char);
+
+impl GroupId {
+    pub fn try_new(id: char) -> Result<Self, GroupError> {
+        if id.is_ascii_alphabetic() {
+            Ok(GroupId(id))
+        } else {
+            Err(GroupError::InvalidGroupId(id))
+        }
+    }
+}
 
 /// Single group data structure
 ///
@@ -187,6 +200,8 @@ pub enum GroupError {
     GameIdsNotUnique,
     #[error("Group does not define a strict ordering")]
     NonStrictOrder,
+    #[error("Group Id '{0}' not an ascii letter (A-Z, a-z)")]
+    InvalidGroupId(char),
     #[error("Generic")]
     GenericError,
 }
