@@ -13,9 +13,9 @@ use std::ops::Mul;
 /// - Yellow card and direct red card: -5 points;
 ///
 /// ```
-/// # use wwc_core::fair_play::{FairPlay, FairPlayValue};
+/// # use wwc_core::fair_play::{FairPlay, FifaFairPlayValue, FairPlayValue};
 /// let fair_play = FairPlay::new(1, 2, 3, 4);
-/// assert_eq!(FairPlayValue::from(39), fair_play.value());
+/// assert_eq!(FifaFairPlayValue::from(39), FifaFairPlayValue::from_fair_play(&fair_play));
 /// ```
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct FairPlay {
@@ -39,27 +39,62 @@ impl FairPlay {
             yellow_and_direct: yellow_and_direct.into(),
         }
     }
-    /// Calculate fair play value based on Fifa rules.
-    pub fn value(&self) -> FairPlayValue {
-        self.yellow * -1
-            + self.indirect_red * -3
-            + self.direct_red * -4
-            + self.yellow_and_direct * -5
+}
+
+#[derive(Copy, Clone, Deserialize, Serialize, Debug, Default)]
+pub struct FairPlayScore {
+    pub home: FairPlay,
+    pub away: FairPlay,
+}
+
+impl FairPlayScore {
+    pub fn new(home: FairPlay, away: FairPlay) -> Self {
+        Self { home, away }
     }
 }
 
-#[derive(Copy, Clone, Deserialize, Serialize, Debug, Default, Eq, PartialEq, Add, AddAssign)]
-pub struct FairPlayScore {
-    pub home: FairPlayValue,
-    pub away: FairPlayValue,
+pub trait FairPlayValue {
+    fn from_fair_play(fp: &FairPlay) -> Self;
 }
 
-impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
-    fn from(x: (T, T)) -> Self {
-        Self {
-            home: x.0.into(),
-            away: x.1.into(),
-        }
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    Serialize,
+    Deserialize,
+    Default,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Add,
+    AddAssign,
+)]
+pub struct FifaFairPlayValue(i8);
+
+impl FairPlayValue for FifaFairPlayValue {
+    /// Calculate fair play value based on Fifa rules.
+    fn from_fair_play(fp: &FairPlay) -> Self {
+        Self(fp.yellow * -1 + fp.indirect_red * -3 + fp.direct_red * -4 + fp.yellow_and_direct * -5)
+    }
+}
+
+// TODO: This trait impl is good for internal (test) ergonomics,
+// but I would rather not leak it to the pub API.
+// Private trait impl possible?
+impl From<u8> for FifaFairPlayValue {
+    fn from(magnitude: u8) -> Self {
+        FifaFairPlayValue(-(magnitude as i8))
+    }
+}
+
+impl num::Zero for FifaFairPlayValue {
+    fn zero() -> Self {
+        FifaFairPlayValue(0)
+    }
+    fn is_zero(&self) -> bool {
+        self.0 == 0
     }
 }
 
@@ -77,20 +112,27 @@ impl<T: Into<FairPlayValue>> From<(T, T)> for FairPlayScore {
     Add,
     AddAssign,
 )]
-pub struct FairPlayValue(i8);
+pub struct UefaFairPlayValue(i8);
+
+impl FairPlayValue for UefaFairPlayValue {
+    /// Calculate fair play value based on Fifa rules.
+    fn from_fair_play(fp: &FairPlay) -> Self {
+        Self(fp.yellow * -1 + fp.indirect_red * -3 + fp.direct_red * -3 + fp.yellow_and_direct * -5)
+    }
+}
 
 // TODO: This trait impl is good for internal (test) ergonomics,
 // but I would rather not leak it to the pub API.
 // Private trait impl possible?
-impl From<u8> for FairPlayValue {
+impl From<u8> for UefaFairPlayValue {
     fn from(magnitude: u8) -> Self {
-        FairPlayValue(-(magnitude as i8))
+        UefaFairPlayValue(-(magnitude as i8))
     }
 }
 
-impl num::Zero for FairPlayValue {
+impl num::Zero for UefaFairPlayValue {
     fn zero() -> Self {
-        FairPlayValue(0)
+        UefaFairPlayValue(0)
     }
     fn is_zero(&self) -> bool {
         self.0 == 0
@@ -102,12 +144,9 @@ impl num::Zero for FairPlayValue {
 )]
 pub struct CardCount(u8);
 
-impl<T> Mul<T> for CardCount
-where
-    T: Into<i8>,
-{
-    type Output = FairPlayValue;
-    fn mul(self, rhs: T) -> Self::Output {
-        FairPlayValue(self.0 as i8 * rhs.into())
+impl Mul<i8> for CardCount {
+    type Output = i8;
+    fn mul(self, rhs: i8) -> Self::Output {
+        self.0 as i8 * rhs
     }
 }

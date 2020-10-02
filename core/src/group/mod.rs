@@ -210,7 +210,7 @@ pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
     let game_1 = UnplayedGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
     let game_2 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock())
         .unwrap()
-        .play(Score::from((2, 1)), FairPlayScore::from((0, 1)));
+        .play(Score::from((2, 1)), FairPlayScore::default());
     let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
     let game_1 = UnplayedGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
     let game_2 = UnplayedGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
@@ -253,7 +253,9 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
-        let game_3 = PlayedGroupGame::try_new(2, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
+        let game_3 =
+            PlayedGroupGame::try_new(2, 2, 1, (1, 2), FairPlayScore::default(), Date::mock())
+                .unwrap();
         let played = vec![game_3];
         assert_eq!(Group::game_ids_unique(&played, &upcoming), false);
     }
@@ -262,7 +264,9 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
-        let game_3 = PlayedGroupGame::try_new(3, 2, 1, (1, 2), (0, 1), Date::mock()).unwrap();
+        let game_3 =
+            PlayedGroupGame::try_new(3, 2, 1, (1, 2), FairPlayScore::default(), Date::mock())
+                .unwrap();
         let played = vec![game_3];
         assert_eq!(Group::game_ids_unique(&played, &upcoming), true);
     }

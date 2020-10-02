@@ -1,5 +1,5 @@
 //! Group ordering
-use crate::fair_play::FairPlayValue;
+use crate::fair_play::{FifaFairPlayValue, UefaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::{NumWins, UnaryStat};
 use crate::group::{Group, GroupError, GroupPoint};
@@ -382,7 +382,7 @@ pub fn fifa_2018() -> Rules<Random> {
     let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
     let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
     let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
-    let fair_play: InternalGroupStat<FairPlayValue> = InternalGroupStat::new();
+    let fair_play: InternalGroupStat<FifaFairPlayValue> = InternalGroupStat::new();
     Rules {
         non_strict: vec![
             Box::new(group_point),
@@ -435,7 +435,7 @@ pub fn euro_2020(ranking: UefaRanking) -> Rules<UefaRanking> {
     let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
     let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
     let num_wins: AllGroupStat<NumWins> = AllGroupStat::new();
-    let fair_play: InternalGroupStat<FairPlayValue> = InternalGroupStat::new();
+    let fair_play: InternalGroupStat<UefaFairPlayValue> = InternalGroupStat::new();
     Rules {
         non_strict: vec![
             Box::new(group_point),
@@ -453,6 +453,7 @@ pub fn euro_2020(ranking: UefaRanking) -> Rules<UefaRanking> {
 #[cfg(test)]
 mod fifa_2018_ordering_tests {
     use super::*;
+    use crate::fair_play::{FairPlay, FairPlayScore};
     use crate::group::game::PlayedGroupGame;
     use crate::group::Group;
     use crate::Date;
@@ -460,9 +461,15 @@ mod fifa_2018_ordering_tests {
     /// Strict order only on PrimaryStats
     #[test]
     fn new_point_order() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 1), (0, 0), Date::mock()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 0, 3, (0, 1), (0, 0), Date::mock()).unwrap();
+        let game_1 =
+            PlayedGroupGame::try_new(0, 0, 1, (0, 2), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_2 =
+            PlayedGroupGame::try_new(1, 2, 3, (1, 1), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_3 =
+            PlayedGroupGame::try_new(2, 0, 3, (0, 1), FairPlayScore::default(), Date::mock())
+                .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
@@ -473,10 +480,18 @@ mod fifa_2018_ordering_tests {
     /// Different ordering based on points vs scored goals
     #[test]
     fn points_scored_goals_discrepancy() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 1), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 0, 2, (0, 0), (0, 0), Date::mock()).unwrap();
-        let game_4 = PlayedGroupGame::try_new(3, 1, 3, (5, 5), (0, 0), Date::mock()).unwrap();
+        let game_1 =
+            PlayedGroupGame::try_new(0, 0, 1, (0, 1), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_2 =
+            PlayedGroupGame::try_new(1, 2, 3, (1, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_3 =
+            PlayedGroupGame::try_new(2, 0, 2, (0, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_4 =
+            PlayedGroupGame::try_new(3, 1, 3, (5, 5), FairPlayScore::default(), Date::mock())
+                .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
@@ -488,8 +503,12 @@ mod fifa_2018_ordering_tests {
     /// Strict order only on PrimaryStats
     #[test]
     fn prim_stats_orders() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 2), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (1, 0), (0, 0), Date::mock()).unwrap();
+        let game_1 =
+            PlayedGroupGame::try_new(0, 0, 1, (0, 2), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_2 =
+            PlayedGroupGame::try_new(1, 2, 3, (1, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
@@ -502,8 +521,28 @@ mod fifa_2018_ordering_tests {
     /// NB: The sorting is not deterministic if the order is not strict.
     #[test]
     fn fair_play_order() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 1, (0, 0), (1, 4), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 2, 3, (0, 0), (0, 2), Date::mock()).unwrap();
+        let fair_play_home = FairPlay::new(1, 0, 0, 0);
+        let fair_play_away = FairPlay::new(4, 0, 0, 0);
+        let game_1 = PlayedGroupGame::try_new(
+            0,
+            0,
+            1,
+            (0, 0),
+            FairPlayScore::new(fair_play_home, fair_play_away),
+            Date::mock(),
+        )
+        .unwrap();
+        let fair_play_home = FairPlay::new(0, 0, 0, 0);
+        let fair_play_away = FairPlay::new(2, 0, 0, 0);
+        let game_2 = PlayedGroupGame::try_new(
+            1,
+            2,
+            3,
+            (0, 0),
+            FairPlayScore::new(fair_play_home, fair_play_away),
+            Date::mock(),
+        )
+        .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
@@ -515,11 +554,21 @@ mod fifa_2018_ordering_tests {
     /// The internal game decides
     #[test]
     fn internal_game() {
-        let game_1 = PlayedGroupGame::try_new(0, 0, 2, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_2 = PlayedGroupGame::try_new(1, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_3 = PlayedGroupGame::try_new(2, 1, 2, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_4 = PlayedGroupGame::try_new(3, 0, 1, (1, 0), (0, 0), Date::mock()).unwrap();
-        let game_5 = PlayedGroupGame::try_new(4, 0, 3, (0, 1), (0, 0), Date::mock()).unwrap();
+        let game_1 =
+            PlayedGroupGame::try_new(0, 0, 2, (1, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_2 =
+            PlayedGroupGame::try_new(1, 1, 2, (1, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_3 =
+            PlayedGroupGame::try_new(2, 1, 2, (1, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_4 =
+            PlayedGroupGame::try_new(3, 0, 1, (1, 0), FairPlayScore::default(), Date::mock())
+                .unwrap();
+        let game_5 =
+            PlayedGroupGame::try_new(4, 0, 3, (0, 1), FairPlayScore::default(), Date::mock())
+                .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4, game_5]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);

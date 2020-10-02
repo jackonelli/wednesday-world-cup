@@ -81,9 +81,9 @@ impl UnaryStat for GroupPoint {
     /// # use wwc_core::group::GroupPoint;
     /// # use wwc_core::team::TeamId;
     /// # use wwc_core::Date;
-    /// # use wwc_core::fair_play::FairPlayScore;
+    /// # use wwc_core::fair_play::{FairPlay, FairPlayScore};
     /// let score = Score::from((1, 0));
-    /// let fair_play_score = FairPlayScore::from((1, 0));
+    /// let fair_play_score = FairPlayScore::new(FairPlay::new(1, 0, 0, 0), FairPlay::new(0, 0, 0, 0));
     /// let game = UnplayedGroupGame::try_new(GroupGameId(0), TeamId(1), TeamId(2), Date::mock())
     ///     .unwrap()
     ///     .play(score, fair_play_score);
@@ -116,9 +116,15 @@ impl UnaryStat for GoalCount {
     }
 }
 
-impl UnaryStat for FairPlayValue {
-    fn stat(game: &PlayedGroupGame) -> (Self, Self) {
-        (game.fair_play.home, game.fair_play.away)
+impl<T> UnaryStat for T
+where
+    T: FairPlayValue + num::Zero + ops::AddAssign,
+{
+    fn stat(game: &PlayedGroupGame) -> (T, T) {
+        (
+            T::from_fair_play(&game.fair_play.home),
+            T::from_fair_play(&game.fair_play.away),
+        )
     }
 }
 

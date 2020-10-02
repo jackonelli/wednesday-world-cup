@@ -145,7 +145,7 @@ impl TryInto<PlayedGroupGame> for ParseGame {
     fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
         let game = UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
         let score = Score::from((self.home_result, self.away_result));
-        let fair_play_score = FairPlayScore::from((0, 0));
+        let fair_play_score = FairPlayScore::default();
         Ok(game.play(score, fair_play_score))
     }
 }
