@@ -1,2 +1,2 @@
 //! Utilities
-pub mod serde_date;
+pub mod date;

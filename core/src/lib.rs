@@ -1,4 +1,15 @@
 //! # Wednesday world cup (*wwc*) core library
+//!
+//! ## Functional
+//! The library use functional paradigms wherever possible.
+//! The actual data structures are very simple. Derived values, metrics et c. are calculated from
+//! simpler data and is not represented in itself. A good example of this is the
+//! [`Group`](group/struct.Group.html) struct which only stores data about the score in each group
+//! game. Teams, winner, the points of a certain team is not stored, or even cached, but rather
+//! derived from the played games.
+//! This makes for a very clean and composable API with consistent results. The down-side is of course that calculations
+//! are repeated unecessarily, but then again, the size of the average tournament is very small and
+//! the overhead will be miniscule.
 #![forbid(unsafe_code)]
 #![feature(proc_macro_hygiene, decl_macro)]
 // Enable clippy if our Cargo.toml file asked us to do so.
@@ -10,6 +21,7 @@
 #![warn(
     //missing_copy_implementations,
     //missing_debug_implementations,
+    //TODO Enable
     //missing_docs,
     trivial_numeric_casts,
     unused_extern_crates,
@@ -32,30 +44,18 @@
 #![cfg_attr(feature = "clippy", warn(unseparated_literal_suffix))]
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
-use crate::utils::serde_date;
-use chrono::{DateTime, FixedOffset, TimeZone};
-use serde::{Deserialize, Serialize};
 pub mod fair_play;
 pub mod game;
 pub mod group;
 // pub mod playoff;
 pub mod team;
 pub mod utils;
+pub use utils::date::Date;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
+// TODO: Is this necessary in the core crate? I'd rather move this to webass. crates which includes
+// this. I think it should work that way but I'm not sure.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
-
-#[derive(Deserialize, Serialize, Clone, Copy, Debug)]
-pub struct Date(#[serde(with = "serde_date")] DateTime<FixedOffset>);
-
-impl Date {
-    pub fn mock() -> Self {
-        let dt = FixedOffset::east(1 * 3600)
-            .ymd(1632, 11, 06)
-            .and_hms(10, 18, 36);
-        Self(dt)
-    }
-}

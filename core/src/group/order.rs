@@ -1,4 +1,21 @@
 //! Group ordering
+//!
+//! A group is ordered by a list of sub-orders, see [`Rules`](struct.Rules.html) followed
+//! by a final [`Tiebreaker`](trait.Tiebreaker.html).
+//! The ordering is greedy in the sense that the next sub-order is only applied if the ordering is non-strict.
+//! If there are no more sub-orders to apply, a tiebreaker ensures a strict ordering.
+//!
+//! A system of greedy, atomic sub-orders is flexible since new rules can easily be composed from them.
+//! The [`SubOrdering`](trait.SubOrdering.html) trait is auto-implemented for every struct that
+//! implements [`UnaryStat`](../stats/trait.UnaryStat.html) + `Ord` + `Copy`, making the
+//! composition of new rules straightforward, see ([`euro_2020`](fn.euro_2020.html), [`fifa_2018`](fn.fifa_2018.html)).
+//!
+//! Smaller sub-orders can also be grouped together. E.g., you could group points, goal diff.
+//! and goals scored into one struct, implement `UnaryStat` and `Ord` for it and use that as a
+//! sub-order. This might be more efficient since you would avoid iterating over the played games
+//! once for each stat. This would be better in the worst case scenario but if it is likely that teams are
+//! separable by points alone, then it would be wasteful not to take advantage of the greedy
+//! approach.
 use crate::fair_play::{FifaFairPlayValue, UefaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::{NumWins, UnaryStat};
