@@ -1,3 +1,5 @@
+use crate::format::Format;
+use crate::format_team_flag;
 use crate::Msg;
 use seed::{prelude::*, *};
 use std::convert::From;
@@ -7,22 +9,6 @@ use wwc_core::group::{GroupOrder, GroupPoint};
 use wwc_core::team::{Team, TeamId, Teams};
 
 pub struct DisplayTable(Vec<(TeamId, DisplayTableRow)>);
-
-impl DisplayTable {
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &(TeamId, DisplayTableRow)> {
-        self.0.iter()
-    }
-
-    pub(crate) fn format(&self, teams: &Teams) -> Node<Msg> {
-        table![
-            tr![th![""], th![""], th!["pl"], th!["+/-"], th!["p"]],
-            self.iter().map(|(team_id, stat)| {
-                let team = teams.get(&team_id).unwrap();
-                stat.format(team)
-            })
-        ]
-    }
-}
 
 impl DisplayTable {
     pub fn new(group: &Group, group_order: &GroupOrder) -> Self {
@@ -38,6 +24,26 @@ impl DisplayTable {
             .collect();
         DisplayTable(tmp)
     }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &(TeamId, DisplayTableRow)> {
+        self.0.iter()
+    }
+}
+
+impl Format<'_> for DisplayTable {
+    type Context = Teams;
+    fn format(&self, cxt: &Teams) -> Node<Msg> {
+        div![
+            C!["group-table"],
+            table![
+                tr![th![""], th![""], th!["pl"], th!["+/-"], th!["p"]],
+                self.iter().map(|(team_id, stat)| {
+                    let team = cxt.get(&team_id).unwrap();
+                    stat.format(team)
+                })
+            ]
+        ]
+    }
 }
 
 pub(crate) struct DisplayTableRow {
@@ -46,23 +52,17 @@ pub(crate) struct DisplayTableRow {
     goal_diff: GoalDiff,
 }
 
-impl DisplayTableRow {
-    pub(crate) fn format(&self, team: &Team) -> Node<Msg> {
+impl Format<'_> for DisplayTableRow {
+    type Context = Team;
+    fn format(&self, cxt: &Team) -> Node<Msg> {
         tr![
-            td![team.fifa_code.to_string()],
-            td![format_team_flag(team)],
+            td![cxt.fifa_code.to_string()],
+            td![format_team_flag(cxt)],
             td![self.games_played.to_string()],
             td![self.goal_diff.to_string()],
             td![self.points.to_string()]
         ]
     }
-}
-
-fn format_team_flag(team: &Team) -> Node<Msg> {
-    span![C![format!(
-        "tournament-group__flag flag-icon flag-icon-{}",
-        team.iso2
-    )]]
 }
 
 impl From<TableStats> for DisplayTableRow {

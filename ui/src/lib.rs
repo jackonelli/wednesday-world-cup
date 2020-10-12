@@ -1,7 +1,10 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(dead_code, unused_variables)]
+use crate::format::Format;
+use crate::game::ScoreInput;
 use seed::{prelude::*, *};
 use std::collections::HashMap;
+use wwc_core::game::GoalCount;
 use wwc_core::{
     group::{
         mock_data,
@@ -11,12 +14,21 @@ use wwc_core::{
     team::{Team, TeamId},
 };
 
+mod format;
+mod game;
 mod table;
 use table::DisplayTable;
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
 
 type Teams = HashMap<TeamId, Team>;
+
+fn format_team_flag(team: &Team) -> Node<Msg> {
+    span![C![format!(
+        "tournament-group__flag flag-icon flag-icon-{}",
+        team.iso2
+    )]]
+}
 
 fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
     let (mock_groups, mock_teams) = mock_data();
@@ -37,9 +49,18 @@ struct Model {
 
 pub(crate) enum Msg {
     UrlChanged(subs::UrlChanged),
+    PlayGame(ScoreInput),
 }
 
-fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {}
+fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
+    match msg {
+        Msg::PlayGame(input) => {
+            let group = model.groups.get_mut(&input.group_id).unwrap();
+            group.play_game(input.game_id, input.score);
+        }
+        _ => {}
+    }
+}
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
@@ -72,44 +93,26 @@ fn view_group<T: Tiebreaker>(
         C!["group"],
         h2!(format!("{}", id)),
         format_group_table(group, teams, rules),
-        format_group_games(group, teams),
+        format_group_games(id, group, teams),
     ]
 }
 
 fn format_group_table<T: Tiebreaker>(group: &Group, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {
     let group_order = order_group(group, rules);
     let stats = DisplayTable::new(group, &group_order);
-    div![stats.format(teams)]
+    stats.format(teams)
 }
 
-fn format_group_games(group: &Group, teams: &Teams) -> Node<Msg> {
+fn format_group_games(group_id: &GroupId, group: &Group, teams: &Teams) -> Node<Msg> {
     div![
         C!["games"],
         h3!("Games"),
-        ul![group.played_games().map(|game| {
-            li![
-                C!["played_game"],
-                el_key(&game.id),
-                format!(
-                    "{} {} - {} {}",
-                    teams.get(&game.home).unwrap().name,
-                    game.score.home,
-                    game.score.away,
-                    teams.get(&game.away).unwrap().name
-                )
-            ]
-        })],
-        ul![group.upcoming_games().map(|game| {
-            li![
-                C!["upcoming_game"],
-                el_key(&game.id),
-                format!(
-                    "{}   -   {}",
-                    teams.get(&game.home).unwrap().name,
-                    teams.get(&game.away).unwrap().name
-                )
-            ]
-        })]
+        table![
+            group.played_games().map(|game| { game.format(teams) }),
+            group
+                .upcoming_games()
+                .map(|game| { game.format(&(teams, *group_id)) })
+        ]
     ]
 }
 

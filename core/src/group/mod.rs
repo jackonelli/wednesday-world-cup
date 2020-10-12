@@ -7,7 +7,7 @@ use crate::game::{Game, GoalCount, GoalDiff};
 use crate::team::{Rank, Team, TeamId};
 use crate::Date;
 use derive_more::{Add, AddAssign, Display, From};
-use game::{PlayedGroupGame, Score, UnplayedGroupGame};
+use game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
 use serde::{Deserialize, Serialize};
@@ -61,7 +61,7 @@ impl GroupId {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Group {
     played_games: Vec<PlayedGroupGame>,
-    upcoming_games: Vec<UnplayedGroupGame>,
+    unplayed_games: Vec<UnplayedGroupGame>,
 }
 
 impl Group {
@@ -77,7 +77,7 @@ impl Group {
     ) -> Result<Self, GroupError> {
         if Self::game_ids_unique(&played_games, &upcoming_games) {
             Ok(Self {
-                upcoming_games,
+                unplayed_games: upcoming_games,
                 played_games,
             })
         } else {
@@ -92,18 +92,31 @@ impl Group {
     /// Returns an iterator over unique team id's
     pub fn teams(&self) -> impl Iterator<Item = TeamId> + '_ {
         Group::unique_teams_in_games(&self.played_games)
-            .chain(Group::unique_teams_in_games(&self.upcoming_games))
+            .chain(Group::unique_teams_in_games(&self.unplayed_games))
             .unique()
     }
 
     /// Games accessor
     pub fn upcoming_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
-        self.upcoming_games.iter()
+        self.unplayed_games.iter()
     }
 
     /// Games accessor
     pub fn played_games(&self) -> impl Iterator<Item = &PlayedGroupGame> {
         self.played_games.iter()
+    }
+
+    pub fn play_game(&mut self, game_id: GroupGameId, score: Score) {
+        let idx = self
+            .unplayed_games
+            .iter()
+            .position(|game| game.id == game_id)
+            .unwrap();
+        let game = self
+            .unplayed_games
+            .swap_remove(idx)
+            .play(score, FairPlayScore::default());
+        self.played_games.push(game);
     }
 
     /// Group size by teams

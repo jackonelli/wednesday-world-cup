@@ -17,6 +17,7 @@ use crate::team::TeamId;
 use crate::Date;
 use derive_more::{Add, AddAssign, Display, From};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Score associated with [`PlayedGroupGame`](struct.PlayedGroupGame.html)
 ///
@@ -34,6 +35,22 @@ impl<T: Into<GoalCount>> From<(T, T)> for Score {
             home: home.into(),
             away: away.into(),
         }
+    }
+}
+
+// TODO test.
+impl FromStr for Score {
+    type Err = GroupError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let score_split: Vec<&str> = s.split('-').collect();
+        let (home, away) = if score_split.len() != 2 {
+            return Err(GroupError::GenericError);
+        } else {
+            (score_split[0], score_split[1])
+        };
+        let home = home.parse::<u8>().map_err(|err| GroupError::GenericError)?;
+        let away = away.parse::<u8>().map_err(|err| GroupError::GenericError)?;
+        Ok(Score::from((home, away)))
     }
 }
 
