@@ -73,6 +73,7 @@ impl num::Zero for GoalDiff {
 #[derive(
     Default,
     Debug,
+    Display,
     Deserialize,
     Serialize,
     Clone,

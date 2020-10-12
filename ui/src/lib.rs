@@ -35,7 +35,7 @@ struct Model {
     group_rules: Rules<Random>,
 }
 
-enum Msg {
+pub(crate) enum Msg {
     UrlChanged(subs::UrlChanged),
 }
 
@@ -79,10 +79,7 @@ fn view_group<T: Tiebreaker>(
 fn format_group_table<T: Tiebreaker>(group: &Group, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {
     let group_order = order_group(group, rules);
     let stats = DisplayTable::new(group, &group_order);
-    div![ul![stats.iter().map(|(team_id, stat)| {
-        let team = teams.get(&team_id).unwrap();
-        li![C!["group-team"], el_key(&team_id), stat.format(&team)]
-    })]]
+    div![stats.format(teams)]
 }
 
 fn format_group_games(group: &Group, teams: &Teams) -> Node<Msg> {
