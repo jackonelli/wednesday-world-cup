@@ -39,8 +39,8 @@ pub struct Team {
     pub id: TeamId,
     pub name: TeamName,
     #[serde(rename = "fifaCode")]
-    fifa_code: FifaCode,
-    iso2: Iso2,
+    pub fifa_code: FifaCode,
+    pub iso2: Iso2,
     rank: Rank,
 }
 
