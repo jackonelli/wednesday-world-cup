@@ -21,11 +21,9 @@ fn establish_connection() -> SqliteConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn get_posts() -> Vec<Game> {
+pub fn get_games() -> Vec<Game> {
     let connection = establish_connection();
     games
-        .filter(played.eq(true))
-        .limit(5)
         .load::<Game>(&connection)
         .expect("Error loading posts")
 }
