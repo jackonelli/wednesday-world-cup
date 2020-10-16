@@ -1,6 +1,4 @@
 #[macro_use]
-extern crate serde_derive;
-#[macro_use]
 extern crate diesel;
 
 extern crate dotenv;
@@ -13,8 +11,7 @@ use dotenv::dotenv;
 use std::env;
 
 use crate::models::*;
-use crate::schema::posts;
-use crate::schema::posts::dsl::*;
+use crate::schema::games::dsl::*;
 
 fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -24,11 +21,11 @@ fn establish_connection() -> SqliteConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn get_posts() -> Vec<Post> {
+pub fn get_posts() -> Vec<Game> {
     let connection = establish_connection();
-    posts
-        .filter(published.eq(true))
+    games
+        .filter(played.eq(true))
         .limit(5)
-        .load::<Post>(&connection)
+        .load::<Game>(&connection)
         .expect("Error loading posts")
 }
