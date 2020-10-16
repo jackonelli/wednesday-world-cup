@@ -6,5 +6,4 @@ members = [
     "server",
     "ui",
     "db",
-    "test_db",
 ]
