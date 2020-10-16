@@ -1,4 +1,4 @@
-use super::schema::posts;
+use crate::schema::posts;
 #[derive(Debug, Serialize, Queryable)]
 pub struct Post {
     pub id: String,
