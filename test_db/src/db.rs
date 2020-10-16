@@ -5,9 +5,9 @@ use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
-use models::*;
-use schema::posts;
-use schema::posts::dsl::*;
+use crate::db::models::*;
+use crate::db::schema::posts;
+use crate::db::schema::posts::dsl::*;
 
 fn establish_connection() -> SqliteConnection {
     dotenv().ok();
