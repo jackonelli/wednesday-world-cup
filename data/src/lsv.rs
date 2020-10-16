@@ -123,8 +123,8 @@ pub struct ParseGame {
     type_: GameType,
     home_team: TeamId,
     away_team: TeamId,
-    home_result: GoalCount,
-    away_result: GoalCount,
+    home_result: Option<GoalCount>,
+    away_result: Option<GoalCount>,
     home_penalty: Option<GoalCount>,
     away_penalty: Option<GoalCount>,
     home_fair_play: Option<FairPlay>,
@@ -144,7 +144,10 @@ impl TryInto<PlayedGroupGame> for ParseGame {
     type Error = GroupError;
     fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
         let game = UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
-        let score = Score::from((self.home_result, self.away_result));
+        let score = match (self.home_result, self.away_result) {
+            (Some(home), Some(away)) => Score::from((home, away)),
+            _ => return Err(GroupError::GenericError),
+        };
         let fair_play_score = FairPlayScore::default();
         Ok(game.play(score, fair_play_score))
     }
