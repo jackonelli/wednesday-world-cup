@@ -4,5 +4,7 @@ members = [
     "core",
     "data",
     "server",
-    "ui"
+    "ui",
+    "db",
+    "test_db",
 ]
