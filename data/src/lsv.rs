@@ -148,7 +148,10 @@ impl TryInto<PlayedGroupGame> for ParseGame {
             (Some(home), Some(away)) => Score::from((home, away)),
             _ => return Err(GroupError::GenericError),
         };
-        let fair_play_score = FairPlayScore::default();
+        let fair_play_score = match (self.home_fair_play, self.away_fair_play) {
+            (Some(home), Some(away)) => FairPlayScore::new(home, away),
+            _ => FairPlayScore::default(),
+        };
         Ok(game.play(score, fair_play_score))
     }
 }

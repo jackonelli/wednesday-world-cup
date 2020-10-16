@@ -1,5 +1,5 @@
 //! Fair play scoring
-use derive_more::{Add, AddAssign, From};
+use derive_more::{Add, AddAssign, Display, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
@@ -60,6 +60,7 @@ pub trait FairPlayValue {
 #[derive(
     Copy,
     Clone,
+    Display,
     Debug,
     Serialize,
     Deserialize,

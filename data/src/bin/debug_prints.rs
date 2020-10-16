@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
-use wwc_core::game::GoalDiff;
 use wwc_core::group::game::PlayedGroupGame;
 use wwc_core::group::order::fifa_2018;
 use wwc_core::group::stats::{TableStats, UnaryStat};

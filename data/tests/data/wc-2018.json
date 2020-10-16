@@ -1537,6 +1537,18 @@
                     "away_team": 30,
                     "home_result": 1,
                     "away_result": 2,
+                    "home_fair_play": {
+                      "yellow": 0,
+                      "indirect_red": 0,
+                      "direct_red": 0,
+                      "yellow_and_direct": 0
+                    },
+                    "away_fair_play": {
+                      "yellow": 1,
+                      "indirect_red": 0,
+                      "direct_red": 0,
+                      "yellow_and_direct": 0
+                    },
                     "date": "2018-06-19T18:00:00+03:00",
                     "stadium": 2,
                     "channels": [
