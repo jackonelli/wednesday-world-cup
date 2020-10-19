@@ -399,7 +399,7 @@ pub fn fifa_2018() -> Rules<Random> {
     let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
     let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
     let int_goal_count: InternalGroupStat<GoalCount> = InternalGroupStat::new();
-    let fair_play: InternalGroupStat<FifaFairPlayValue> = InternalGroupStat::new();
+    let fair_play: AllGroupStat<FifaFairPlayValue> = AllGroupStat::new();
     Rules {
         non_strict: vec![
             Box::new(group_point),
