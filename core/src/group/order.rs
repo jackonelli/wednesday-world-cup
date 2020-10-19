@@ -539,7 +539,7 @@ mod fifa_2018_ordering_tests {
     #[test]
     fn fair_play_order() {
         let fair_play_home = FairPlay::new(1, 0, 0, 0);
-        let fair_play_away = FairPlay::new(4, 0, 0, 0);
+        let fair_play_away = FairPlay::new(0, 0, 0, 0);
         let game_1 = PlayedGroupGame::try_new(
             0,
             0,
@@ -549,21 +549,10 @@ mod fifa_2018_ordering_tests {
             Date::mock(),
         )
         .unwrap();
-        let fair_play_home = FairPlay::new(0, 0, 0, 0);
-        let fair_play_away = FairPlay::new(2, 0, 0, 0);
-        let game_2 = PlayedGroupGame::try_new(
-            1,
-            2,
-            3,
-            (0, 0),
-            FairPlayScore::new(fair_play_home, fair_play_away),
-            Date::mock(),
-        )
-        .unwrap();
-        let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
+        let group = Group::try_new(vec![], vec![game_1]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![2, 0, 3, 1].iter().map(|x| TeamId(*x)).collect());
+        let true_order = GroupOrder(vec![1, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
