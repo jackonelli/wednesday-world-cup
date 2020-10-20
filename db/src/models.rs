@@ -1,7 +1,17 @@
-use crate::schema::games;
+use crate::schema::{games, teams};
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Queryable)]
+#[derive(Debug, Serialize, Queryable, Identifiable)]
+pub struct Team {
+    pub id: i32,
+    pub name: String,
+    pub fifa_code: String,
+    pub iso2: String,
+    pub rank_: i32,
+}
+
+#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+#[belongs_to(parent = "Team", foreign_key = "id")]
 pub struct Game {
     pub id: i32,
     pub type_: String,

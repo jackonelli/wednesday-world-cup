@@ -4,7 +4,6 @@ use crate::format::Format;
 use crate::game::ScoreInput;
 use seed::{prelude::*, *};
 use std::collections::HashMap;
-use wwc_core::game::GoalCount;
 use wwc_core::{
     group::{
         mock_data,

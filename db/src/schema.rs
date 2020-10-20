@@ -13,3 +13,15 @@ table! {
         played -> Bool,
     }
 }
+
+table! {
+    teams (id) {
+        id -> Integer,
+        name -> Text,
+        fifa_code -> Text,
+        iso2 -> Text,
+        rank_ -> Integer,
+    }
+}
+
+allow_tables_to_appear_in_same_query!(games, teams,);
