@@ -25,11 +25,12 @@ pub fn get_games() -> Vec<Game> {
         .expect("Error loading posts")
 }
 
-pub fn get_teams() -> Vec<Team> {
+pub fn get_teams() -> impl Iterator<Item = wwc_core::Team> {
     let connection = establish_connection();
-    teams
+    let db_teams = teams
         .load::<Team>(&connection)
-        .expect("Error loading posts")
+        .expect("Error loading posts");
+    db_teams.into_iter().map(|team| team.into())
 }
 
 pub fn insert_team(team: &wwc_core::Team) {

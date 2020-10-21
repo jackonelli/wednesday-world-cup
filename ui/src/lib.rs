@@ -10,7 +10,7 @@ use wwc_core::{
         order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
         Group, GroupId, Groups,
     },
-    team::{Team, TeamId},
+    team::{Team, TeamId, Teams},
 };
 
 mod format;
@@ -20,8 +20,6 @@ use table::DisplayTable;
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
 
-type Teams = HashMap<TeamId, Team>;
-
 fn format_team_flag(team: &Team) -> Node<Msg> {
     span![C![format!(
         "tournament-group__flag flag-icon flag-icon-{}",
@@ -29,8 +27,14 @@ fn format_team_flag(team: &Team) -> Node<Msg> {
     )]]
 }
 
-fn init(_: Url, _: &mut impl Orders<Msg>) -> Model {
+//async fn get_teams() -> Futur {
+//    let response = fetch("/foo").await?.check_status()?;
+//    let body: Vec<Team> = response.json().await?;
+//}
+
+fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
     let (mock_groups, mock_teams) = mock_data();
+    orders.perform_cmd(async { Msg::SendRequest });
     Model {
         groups: mock_groups,
         teams: mock_teams,
@@ -48,11 +52,28 @@ struct Model {
 
 pub(crate) enum Msg {
     UrlChanged(subs::UrlChanged),
+    Fetched(fetch::Result<Teams>),
+    SendRequest,
     PlayGame(ScoreInput),
 }
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
+        Msg::SendRequest => {
+            log!(model.teams);
+            orders.skip().perform_cmd({
+                async { Msg::Fetched(get_teams().await) }
+            });
+        }
+
+        Msg::Fetched(Ok(teams)) => {
+            model.teams = teams;
+            log!(model.teams);
+        }
+
+        Msg::Fetched(Err(fetch_error)) => {
+        }
+
         Msg::PlayGame(input) => {
             let group = model.groups.get_mut(&input.group_id).unwrap();
             group.play_game(input.game_id, input.score);
@@ -60,16 +81,32 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         _ => {}
     }
 }
+async fn get_teams() -> fetch::Result<Teams> {
+    Request::new("http://localhost:8000/get_teams")
+        .fetch()
+        .await?
+        .check_status()?
+        .json()
+        .await
+}
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
         view_header(),
+        view_teams(&model.teams),
         view_group_play(&model.groups, &model.teams, &model.group_rules),
     ]
 }
 
 fn view_header() -> Node<Msg> {
     header![C!["header"], h1!["Group"],]
+}
+
+fn view_teams(teams: &Teams) -> Node<Msg>{
+    div![
+        C!["teams"],
+        h1![format!("Num teams: {}", teams.len())]
+    ]
 }
 
 fn view_group_play<T: Tiebreaker>(groups: &Groups, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {

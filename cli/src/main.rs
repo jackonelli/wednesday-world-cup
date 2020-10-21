@@ -15,7 +15,7 @@ fn main() {
 
 fn list_teams() {
     let teams = wwc_db::get_teams();
-    teams.iter().for_each(|team| println!("{:?}", team));
+    teams.for_each(|team| println!("{:?}", team));
 }
 
 fn add_teams() {

@@ -1,5 +1,7 @@
 use crate::schema::{games, teams};
 use serde::Serialize;
+use std::convert::TryFrom;
+use wwc_core::team::{FifaCode, Iso2, Rank, TeamId, TeamName};
 
 #[derive(Debug, Serialize, Queryable, Identifiable)]
 pub struct Team {
@@ -10,7 +12,22 @@ pub struct Team {
     pub rank_: i32,
 }
 
-// TODO: impl Into<wwc_core::Team>
+impl Into<wwc_core::Team> for Team {
+    fn into(self) -> wwc_core::Team {
+        let id = TeamId(u8::try_from(self.id).unwrap());
+        let name = TeamName::from(self.name);
+        let fifa_code = FifaCode::from(self.fifa_code);
+        let iso2 = Iso2::from(self.iso2);
+        let rank = Rank(u8::try_from(self.rank_).unwrap());
+        wwc_core::Team {
+            id,
+            name,
+            fifa_code,
+            iso2,
+            rank,
+        }
+    }
+}
 
 #[derive(Insertable)]
 #[table_name = "teams"]

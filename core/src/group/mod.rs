@@ -220,26 +220,26 @@ pub enum GroupError {
 }
 
 pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
-    let game_1 = UnplayedGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
-    let game_2 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock())
+    let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
         .unwrap()
         .play(Score::from((2, 1)), FairPlayScore::default());
     let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
-    let game_1 = UnplayedGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
-    let game_2 = UnplayedGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
+    let game_1 = UnplayedGroupGame::try_new(3, 5, 6, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(4, 7, 8, Date::mock()).unwrap();
     let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
     let mut groups = BTreeMap::new();
     groups.insert(GroupId('A'), group_a);
     groups.insert(GroupId('B'), group_b);
     let teams = vec![
-        Team::new(TeamId(0), "Sweden", "SWE", "se", Rank(0)),
-        Team::new(TeamId(1), "England", "ENG", "gb-eng", Rank(1)),
-        Team::new(TeamId(2), "France", "FRA", "fr", Rank(2)),
-        Team::new(TeamId(3), "Brazil", "BRA", "br", Rank(3)),
-        Team::new(TeamId(4), "Canada", "CAN", "ca", Rank(4)),
-        Team::new(TeamId(5), "Spain", "ESP", "es", Rank(5)),
-        Team::new(TeamId(6), "Japan", "JAP", "jp", Rank(6)),
-        Team::new(TeamId(7), "Norway", "NOR", "no", Rank(6)),
+        Team::new(TeamId(1), "Sweden", "SWE", "se", Rank(0)),
+        Team::new(TeamId(2), "England", "ENG", "gb-eng", Rank(1)),
+        Team::new(TeamId(3), "France", "FRA", "fr", Rank(2)),
+        Team::new(TeamId(4), "Brazil", "BRA", "br", Rank(3)),
+        Team::new(TeamId(5), "Canada", "CAN", "ca", Rank(4)),
+        Team::new(TeamId(6), "Spain", "ESP", "es", Rank(5)),
+        Team::new(TeamId(7), "Japan", "JAP", "jp", Rank(6)),
+        Team::new(TeamId(8), "Norway", "NOR", "no", Rank(6)),
     ];
     let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
     (groups, teams)
