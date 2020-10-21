@@ -6,6 +6,7 @@ pub mod schema;
 
 use crate::models::*;
 use crate::schema::games::dsl::*;
+use crate::schema::teams::dsl::*;
 use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
@@ -22,6 +23,30 @@ pub fn get_games() -> Vec<Game> {
     games
         .load::<Game>(&connection)
         .expect("Error loading posts")
+}
+
+pub fn get_teams() -> Vec<Team> {
+    let connection = establish_connection();
+    teams
+        .load::<Team>(&connection)
+        .expect("Error loading posts")
+}
+
+pub fn insert_team(team: &wwc_core::Team) {
+    let team = NewTeam {
+        id: u8::from(team.id).into(),
+        name: &String::from(team.name.clone()),
+        fifa_code: &String::from(team.fifa_code.clone()),
+        iso2: &String::from(team.iso2.clone()),
+        rank_: u8::from(team.rank).into(),
+    };
+
+    let connection = establish_connection();
+
+    diesel::insert_into(teams)
+        .values(&team)
+        .execute(&connection)
+        .expect("Error saving new post");
 }
 
 pub fn insert_game<'a, T: Into<NewGame<'a>>>(game: T) {

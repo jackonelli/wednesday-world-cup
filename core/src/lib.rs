@@ -50,6 +50,9 @@ pub mod group;
 // pub mod playoff;
 pub mod team;
 pub mod utils;
+
+// Exports
+pub use team::Team;
 pub use utils::date::Date;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global

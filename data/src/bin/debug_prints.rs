@@ -5,14 +5,11 @@ use wwc_core::group::order::fifa_2018;
 use wwc_core::group::stats::{TableStats, UnaryStat};
 use wwc_core::group::{GroupId, GroupOrder};
 use wwc_core::team::{Team, TeamId, Teams};
-use wwc_data::file_io;
 use wwc_data::lsv;
 
 fn main() {
     let rules = fifa_2018();
-    let data_json = file_io::read_json_file_to_str("data/tests/data/wc-2018.json")
-        .expect("Could not read from file");
-    let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
+    let data = lsv::lsv_data_from_file("data/tests/data/wc-2018.json");
 
     let teams: HashMap<TeamId, Team> = data
         .teams

@@ -10,6 +10,18 @@ pub struct Team {
     pub rank_: i32,
 }
 
+// TODO: impl Into<wwc_core::Team>
+
+#[derive(Insertable)]
+#[table_name = "teams"]
+pub struct NewTeam<'a> {
+    pub id: i32,
+    pub name: &'a str,
+    pub fifa_code: &'a str,
+    pub iso2: &'a str,
+    pub rank_: i32,
+}
+
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Team", foreign_key = "id")]
 pub struct Game {

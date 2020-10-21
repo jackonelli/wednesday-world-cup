@@ -24,4 +24,7 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(games, teams,);
+allow_tables_to_appear_in_same_query!(
+    games,
+    teams,
+);

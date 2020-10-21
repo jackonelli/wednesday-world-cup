@@ -14,6 +14,13 @@ use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{Rank, Team, TeamId};
 use wwc_core::Date;
 
+pub fn lsv_data_from_file(filename: &str) -> Data {
+    let data_json =
+        crate::file_io::read_json_file_to_str(filename).expect("Could not read from file");
+    let data: Data = serde_json::from_str(&data_json).expect("JSON format error.");
+    data
+}
+
 pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
     let groups_with_err = data.groups.iter().map(|(id, group)| {
         let group: Result<Group, GroupError> = (group.clone()).try_into();
