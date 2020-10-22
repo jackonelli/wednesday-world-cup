@@ -6,16 +6,17 @@ use rocket::http::Method;
 use rocket::response::status::NotFound;
 use rocket_contrib::json::Json;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions, Error};
+use wwc_core::team::Teams;
 
 #[get("/get_teams")]
-fn get_teams() -> Result<Json<Vec<wwc_core::Team>>, NotFound<String>> {
-    let teams: Vec<wwc_core::Team> = wwc_db::get_teams().collect();
+fn get_teams() -> Result<Json<Teams>, NotFound<String>> {
+    let teams: Teams = wwc_db::get_teams().map(|x| (x.id, x)).collect();
     Ok(Json(teams))
 }
 
 fn make_cors() -> Cors {
     let allowed_origins = AllowedOrigins::some_exact(&[
-        "http://localhost:8080",
+        "http://localhost:8000",
         "http://127.0.0.1:8888",
         "http://localhost:8888",
         "http://0.0.0.0:8888",
