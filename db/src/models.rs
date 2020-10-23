@@ -1,6 +1,8 @@
-use crate::schema::{games, teams};
+use crate::schema::{games, groups, teams};
 use serde::Serialize;
 use std::convert::TryFrom;
+use wwc_core::group::game::{GroupGameId, PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::group::GroupId;
 use wwc_core::team::{FifaCode, Iso2, Rank, TeamId, TeamName};
 
 #[derive(Debug, Serialize, Queryable, Identifiable)]
@@ -40,6 +42,22 @@ pub struct NewTeam<'a> {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+#[belongs_to(parent = "Game", foreign_key = "game_id")]
+pub struct Group {
+    pub unik: String,
+    pub id: char,
+    pub game_id: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "groups"]
+pub struct NewGroup<'a> {
+    pub unik: &'a str,
+    pub id: &'a str,
+    pub game_id: i32,
+}
+
+#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Team", foreign_key = "id")]
 pub struct Game {
     pub id: i32,
@@ -69,4 +87,43 @@ pub struct NewGame<'a> {
     pub home_fair_play: Option<i32>,
     pub away_fair_play: Option<i32>,
     pub played: bool,
+}
+
+impl<'a> From<&'a UnplayedGroupGame> for NewGame<'a> {
+    fn from(game: &'a UnplayedGroupGame) -> Self {
+        NewGame {
+            id: u8::from(game.id).into(),
+            type_: "group",
+            home_team: u8::from(game.home).into(),
+            away_team: u8::from(game.away).into(),
+            home_result: None,
+            away_result: None,
+            home_penalty: None,
+            away_penalty: None,
+            home_fair_play: None,
+            away_fair_play: None,
+            played: false,
+        }
+    }
+}
+
+impl<'a> From<&'a PlayedGroupGame> for NewGame<'a> {
+    fn from(game: &'a PlayedGroupGame) -> Self {
+        NewGame {
+            id: u8::from(game.id).into(),
+            type_: "group",
+            home_team: u8::from(game.home).into(),
+            away_team: u8::from(game.away).into(),
+            home_result: Some(u8::from(game.score.home).into()),
+            away_result: Some(u8::from(game.score.away).into()),
+            home_penalty: None,
+            away_penalty: None,
+            // TODO: FairPlay --> FairPlayScore
+            //home_fair_play: Some(u8::from(game.fair_play.home).into()),
+            //away_fair_play: Some(u8::from(game.fair_play.away).into()),
+            home_fair_play: None,
+            away_fair_play: None,
+            played: false,
+        }
+    }
 }

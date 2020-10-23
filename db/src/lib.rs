@@ -6,10 +6,12 @@ pub mod schema;
 
 use crate::models::*;
 use crate::schema::games::dsl::*;
+use crate::schema::groups::dsl::*;
 use crate::schema::teams::dsl::*;
 use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
+use wwc_core::group::{game::GroupGameId, GroupId};
 
 fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -46,6 +48,23 @@ pub fn insert_team(team: &wwc_core::Team) {
 
     diesel::insert_into(teams)
         .values(&team)
+        .execute(&connection)
+        .expect("Error saving new post");
+}
+
+pub fn insert_group_game_mapping(group: (GroupId, GroupGameId)) {
+    let (group_id_, game_id_) = group;
+    println!("Inserting: {}, {}", group_id_, game_id_);
+    let unique: &str = &uuid::Uuid::new_v4().to_hyphenated().to_string();
+    let group = NewGroup {
+        unik: unique,
+        id: &(String::from(char::from(group_id_))),
+        game_id: u8::from(game_id_).into(),
+    };
+    let connection = establish_connection();
+
+    diesel::insert_into(groups)
+        .values(&group)
         .execute(&connection)
         .expect("Error saving new post");
 }

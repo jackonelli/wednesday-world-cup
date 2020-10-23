@@ -4,7 +4,7 @@
 //! expect from data structures describing a game.
 //! More concrete implementations are found in the group and playoff modules respectively.
 use crate::team::TeamId;
-use derive_more::{Add, AddAssign, Display, From, Neg};
+use derive_more::{Add, AddAssign, Display, From, Into, Neg};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
@@ -17,6 +17,7 @@ use std::ops::Sub;
     Clone,
     Copy,
     From,
+    Into,
     Eq,
     PartialEq,
     Ord,

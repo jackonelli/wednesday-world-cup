@@ -6,7 +6,7 @@ use crate::fair_play::FairPlayScore;
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::team::{Rank, Team, TeamId};
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From};
+use derive_more::{Add, AddAssign, Display, From, Into};
 use game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
@@ -39,6 +39,7 @@ pub type Groups = BTreeMap<GroupId, Group>;
     std::cmp::PartialOrd,
     std::hash::Hash,
     From,
+    Into,
 )]
 pub struct GroupId(char);
 
@@ -72,12 +73,12 @@ impl Group {
     ///
     /// - Every game (played and upcoming) must have a unique game id.
     pub fn try_new(
-        upcoming_games: Vec<UnplayedGroupGame>,
+        unplayed_games: Vec<UnplayedGroupGame>,
         played_games: Vec<PlayedGroupGame>,
     ) -> Result<Self, GroupError> {
-        if Self::game_ids_unique(&played_games, &upcoming_games) {
+        if Self::game_ids_unique(&played_games, &unplayed_games) {
             Ok(Self {
-                unplayed_games: upcoming_games,
+                unplayed_games,
                 played_games,
             })
         } else {
@@ -97,7 +98,7 @@ impl Group {
     }
 
     /// Games accessor
-    pub fn upcoming_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
+    pub fn unplayed_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
         self.unplayed_games.iter()
     }
 

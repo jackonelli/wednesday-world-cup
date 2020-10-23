@@ -15,7 +15,7 @@ use crate::group::GroupError;
 use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From};
+use derive_more::{Add, AddAssign, Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -199,6 +199,7 @@ impl Game for PlayedGroupGame {
     Add,
     AddAssign,
     From,
+    Into,
 )]
 pub struct GroupGameId(pub u8);
 

@@ -15,6 +15,14 @@ table! {
 }
 
 table! {
+    groups (unik) {
+        unik -> Text,
+        id -> Text,
+        game_id -> Integer,
+    }
+}
+
+table! {
     teams (id) {
         id -> Integer,
         name -> Text,
@@ -24,4 +32,10 @@ table! {
     }
 }
 
-allow_tables_to_appear_in_same_query!(games, teams,);
+joinable!(groups -> games (game_id));
+
+allow_tables_to_appear_in_same_query!(
+    games,
+    groups,
+    teams,
+);
