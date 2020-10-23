@@ -257,7 +257,7 @@ mod tests {
     fn mock_data_access() {
         let (_, mock_teams) = mock_data();
         assert_eq!(
-            mock_teams.get(&TeamId(0)).unwrap().name,
+            mock_teams.get(&TeamId(1)).unwrap().name,
             TeamName(String::from("Sweden"))
         );
     }

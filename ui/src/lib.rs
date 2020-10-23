@@ -54,9 +54,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::FetchTeams => {
             log!("Fetching teams");
-            orders.skip().perform_cmd({
-                async { Msg::TeamsFetched(get_teams().await) }
-            });
+            orders
+                .skip()
+                .perform_cmd({ async { Msg::TeamsFetched(get_teams().await) } });
         }
 
         Msg::TeamsFetched(Ok(teams)) => {
@@ -96,11 +96,8 @@ fn view_header() -> Node<Msg> {
     header![C!["header"], h1!["Group"],]
 }
 
-fn view_teams(teams: &Teams) -> Node<Msg>{
-    div![
-        C!["teams"],
-        h1![format!("Num teams: {}", teams.len())]
-    ]
+fn view_teams(teams: &Teams) -> Node<Msg> {
+    div![C!["teams"], h1![format!("Num teams: {}", teams.len())]]
 }
 
 fn view_group_play<T: Tiebreaker>(groups: &Groups, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {

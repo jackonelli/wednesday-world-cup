@@ -26,10 +26,12 @@ It compiles to a wasm module, creating a webpage where everything is displayed.
 The database library exposes a rust interface to read and write data to a `sqlite3` database.
 
 ### `server`
-The executable `wwc_server` is a very simple http server. The wasm `ui` cannot, for sand-boxing reasons, interact directly with the database. Instead, the `wwc_server` acts as a bridge to enable the `ui` to make database calls through a http api.
+The executable `wwc_server` is a very simple http server. The wasm `ui` cannot, for sand-boxing reasons, interact directly with the database.
+Instead, the `wwc_server` acts as a bridge to enable the `ui` to make database calls through a http api.
 
 ### `cli`
-Creates executable `wwc_cli`. Convenient way of initialising the database with teams, games and betters. `wwc_cli` has no restrictions like the `ui` and can communicate directly with `db` and so have an explicit dependency on `db`.
+Creates a command line interface `wwc_cli`. Convenient way of initialising the database with teams, games and betters.
+The CLI has no restrictions like the `ui` and can communicate directly with `db` and so have an explicit dependency on `db`.
 
 ### `data`
 interface to handle external data sources.
