@@ -46,7 +46,7 @@ pub struct GroupId(char);
 impl GroupId {
     pub fn try_new(id: char) -> Result<Self, GroupError> {
         if id.is_ascii_alphabetic() {
-            Ok(GroupId(id))
+            Ok(GroupId(id.to_ascii_uppercase()))
         } else {
             Err(GroupError::InvalidGroupId(id))
         }

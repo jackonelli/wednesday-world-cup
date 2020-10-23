@@ -1,7 +1,8 @@
-use crate::schema::{games, groups, teams};
+use crate::schema::{games, group_game_map, teams};
 use serde::Serialize;
 use std::convert::TryFrom;
-use wwc_core::group::game::{GroupGameId, PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::fair_play::FairPlayScore;
+use wwc_core::group::game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
 use wwc_core::group::GroupId;
 use wwc_core::team::{FifaCode, Iso2, Rank, TeamId, TeamName};
 
@@ -42,19 +43,19 @@ pub struct NewTeam<'a> {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+#[primary_key(game_id)]
+#[table_name = "group_game_map"]
 #[belongs_to(parent = "Game", foreign_key = "game_id")]
-pub struct Group {
-    pub unik: String,
-    pub id: char,
+pub struct GroupGameMap {
     pub game_id: i32,
+    pub group_id_: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "groups"]
-pub struct NewGroup<'a> {
-    pub unik: &'a str,
-    pub id: &'a str,
+#[table_name = "group_game_map"]
+pub struct NewGroupGameMap<'a> {
     pub game_id: i32,
+    pub group_id_: &'a str,
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
@@ -123,7 +124,34 @@ impl<'a> From<&'a PlayedGroupGame> for NewGame<'a> {
             //away_fair_play: Some(u8::from(game.fair_play.away).into()),
             home_fair_play: None,
             away_fair_play: None,
-            played: false,
+            played: true,
+        }
+    }
+}
+
+impl From<Game> for PlayedGroupGame {
+    fn from(game: Game) -> Self {
+        PlayedGroupGame {
+            id: GroupGameId::from(u8::try_from(game.id).unwrap()),
+            home: TeamId::from(u8::try_from(game.home_team).unwrap()),
+            away: TeamId::from(u8::try_from(game.away_team).unwrap()),
+            score: Score::from((
+                u8::try_from(game.home_result.unwrap()).unwrap(),
+                u8::try_from(game.away_result.unwrap()).unwrap(),
+            )),
+            fair_play: FairPlayScore::default(),
+            date: wwc_core::Date::mock(),
+        }
+    }
+}
+
+impl From<Game> for UnplayedGroupGame {
+    fn from(game: Game) -> Self {
+        UnplayedGroupGame {
+            id: GroupGameId::from(u8::try_from(game.id).unwrap()),
+            home: TeamId::from(u8::try_from(game.home_team).unwrap()),
+            away: TeamId::from(u8::try_from(game.away_team).unwrap()),
+            date: wwc_core::Date::mock(),
         }
     }
 }

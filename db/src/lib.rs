@@ -6,12 +6,17 @@ pub mod schema;
 
 use crate::models::*;
 use crate::schema::games::dsl::*;
-use crate::schema::groups::dsl::*;
+use crate::schema::group_game_map::dsl::*;
 use crate::schema::teams::dsl::*;
 use diesel::prelude::*;
 use dotenv::dotenv;
+use itertools::{Either, Itertools};
+use std::convert::TryFrom;
 use std::env;
-use wwc_core::group::{game::GroupGameId, GroupId};
+use wwc_core::group::{
+    game::{GroupGameId, PlayedGroupGame, UnplayedGroupGame},
+    GroupId,
+};
 
 fn establish_connection() -> SqliteConnection {
     dotenv().ok();
@@ -27,12 +32,41 @@ pub fn get_games() -> Vec<Game> {
         .expect("Error loading posts")
 }
 
+pub fn get_group_games() -> (Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>) {
+    let connection = establish_connection();
+    let group_games = games
+        .filter(type_.eq("group"))
+        .load::<Game>(&connection)
+        .expect("Error loading posts");
+
+    group_games.into_iter().partition_map(|game| {
+        if game.played {
+            Either::Left(game.into())
+        } else {
+            Either::Right(game.into())
+        }
+    })
+}
+
 pub fn get_teams() -> impl Iterator<Item = wwc_core::Team> {
     let connection = establish_connection();
     let db_teams = teams
         .load::<Team>(&connection)
         .expect("Error loading posts");
     db_teams.into_iter().map(|team| team.into())
+}
+
+pub fn get_group_game_maps() -> impl Iterator<Item = (GroupGameId, GroupId)> {
+    let connection = establish_connection();
+    let db_teams = group_game_map
+        .load::<GroupGameMap>(&connection)
+        .expect("Error loading posts");
+    db_teams.into_iter().map(|map_| {
+        (
+            GroupGameId::from(u8::try_from(map_.game_id).unwrap()),
+            GroupId::from(map_.group_id_.chars().next().unwrap()),
+        )
+    })
 }
 
 pub fn insert_team(team: &wwc_core::Team) {
@@ -53,17 +87,14 @@ pub fn insert_team(team: &wwc_core::Team) {
 }
 
 pub fn insert_group_game_mapping(group: (GroupId, GroupGameId)) {
-    let (group_id_, game_id_) = group;
-    println!("Inserting: {}, {}", group_id_, game_id_);
-    let unique: &str = &uuid::Uuid::new_v4().to_hyphenated().to_string();
-    let group = NewGroup {
-        unik: unique,
-        id: &(String::from(char::from(group_id_))),
+    let (group_id, game_id_) = group;
+    let group = NewGroupGameMap {
         game_id: u8::from(game_id_).into(),
+        group_id_: &(String::from(char::from(group_id))),
     };
     let connection = establish_connection();
 
-    diesel::insert_into(groups)
+    diesel::insert_into(group_game_map)
         .values(&group)
         .execute(&connection)
         .expect("Error saving new post");
@@ -77,4 +108,23 @@ pub fn insert_game<'a, T: Into<NewGame<'a>>>(game: T) {
         .values(&game)
         .execute(&connection)
         .expect("Error saving new post");
+}
+
+pub fn clear_teams() {
+    let connection = establish_connection();
+    diesel::delete(teams)
+        .execute(&connection)
+        .expect("Could not clear table");
+}
+pub fn clear_games() {
+    let connection = establish_connection();
+    diesel::delete(games)
+        .execute(&connection)
+        .expect("Could not clear table");
+}
+pub fn clear_group_game_maps() {
+    let connection = establish_connection();
+    diesel::delete(group_game_map)
+        .execute(&connection)
+        .expect("Could not clear table");
 }

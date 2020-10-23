@@ -122,7 +122,7 @@ pub struct PlayedGroupGame {
     pub away: TeamId,
     pub score: Score,
     pub fair_play: FairPlayScore,
-    date: Date,
+    pub date: Date,
 }
 
 impl PlayedGroupGame {

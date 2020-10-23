@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+use itertools::Itertools;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use structopt::StructOpt;
@@ -10,11 +11,36 @@ use wwc_data::lsv::lsv_data_from_file;
 fn main() {
     let opt = Opt::from_args();
     match opt {
-        Opt::AddTeams => add_teams(),
-        Opt::ListTeams => list_teams(),
-        Opt::AddGroups => add_groups(),
-        Opt::AddGames => add_games(), //add_games(),
-        Opt::ListGames => list_games(),
+        Opt::Add(table) => match table {
+            Table::Teams => add_teams(),
+            Table::Games => add_games(),
+            Table::GroupGameMaps => add_groups(),
+            Table::All => {
+                add_teams();
+                add_games();
+                add_groups()
+            }
+        },
+        Opt::List(table) => match table {
+            Table::Teams => list_teams(),
+            Table::Games => list_games(),
+            Table::GroupGameMaps => list_group_maps(),
+            Table::All => {
+                list_teams();
+                list_games();
+                list_group_maps()
+            }
+        },
+        Opt::Clear(table) => match table {
+            Table::Teams => wwc_db::clear_teams(),
+            Table::Games => wwc_db::clear_games(),
+            Table::GroupGameMaps => wwc_db::clear_group_game_maps(),
+            Table::All => {
+                wwc_db::clear_teams();
+                wwc_db::clear_games();
+                wwc_db::clear_group_game_maps();
+            }
+        },
     }
 }
 
@@ -26,6 +52,23 @@ fn list_teams() {
 fn list_games() {
     let games = wwc_db::get_games();
     games.iter().for_each(|game| println!("{:?}", game));
+}
+
+fn list_group_maps() {
+    let group_game_maps = wwc_db::get_group_game_maps();
+    group_game_maps
+        .map(|(game, group)| (group, game))
+        .into_group_map()
+        .iter()
+        .for_each(|(group_id, games)| {
+            println!(
+                "{}: {}",
+                group_id,
+                games
+                    .iter()
+                    .fold(String::new(), |acc, x| format!("{} {},", acc, x))
+            )
+        });
 }
 
 fn add_teams() {
@@ -96,14 +139,23 @@ fn add_groups() {
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
 pub enum Opt {
-    #[structopt(name = "add-teams")]
-    AddTeams,
-    #[structopt(name = "list-teams")]
-    ListTeams,
-    #[structopt(name = "add-games")]
-    AddGames,
-    #[structopt(name = "list-games")]
-    ListGames,
-    #[structopt(name = "add-groups")]
-    AddGroups,
+    #[structopt(name = "add")]
+    Add(Table),
+    #[structopt(name = "list")]
+    List(Table),
+    #[structopt(name = "clear")]
+    Clear(Table),
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "bryggio-cli", about = "cli usage")]
+pub enum Table {
+    #[structopt(name = "teams")]
+    Teams,
+    #[structopt(name = "games")]
+    Games,
+    #[structopt(name = "group-game-maps")]
+    GroupGameMaps,
+    #[structopt(name = "all")]
+    All,
 }

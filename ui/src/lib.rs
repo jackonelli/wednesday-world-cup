@@ -3,13 +3,14 @@
 use crate::format::Format;
 use crate::game::ScoreInput;
 use seed::{prelude::*, *};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use wwc_core::{
     group::{
         order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
         Group, GroupId, Groups,
+        game::{UnplayedGroupGame, PlayedGroupGame, GroupGameId},
     },
-    team::{Team, TeamId, Teams},
+    team::{Team, Teams},
 };
 
 mod format;
@@ -18,6 +19,8 @@ mod table;
 use table::DisplayTable;
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
+
+pub type GroupGameMap = BTreeMap<GroupId, Vec<GroupGameId>>;
 
 fn format_team_flag(team: &Team) -> Node<Msg> {
     span![C![format!(
@@ -28,6 +31,7 @@ fn format_team_flag(team: &Team) -> Node<Msg> {
 
 fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.perform_cmd(async { Msg::FetchTeams });
+    orders.perform_cmd(async { Msg::FetchGroups });
     Model {
         groups: Groups::new(),
         teams: Teams::new(),
@@ -45,8 +49,10 @@ struct Model {
 
 pub(crate) enum Msg {
     UrlChanged(subs::UrlChanged),
-    TeamsFetched(fetch::Result<Teams>),
     FetchTeams,
+    TeamsFetched(fetch::Result<Teams>),
+    FetchGroups,
+    GroupsFetched(fetch::Result<Groups>),
     PlayGame(ScoreInput),
 }
 
@@ -56,7 +62,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("Fetching teams");
             orders
                 .skip()
-                .perform_cmd({ async { Msg::TeamsFetched(get_teams().await) } });
+                .perform_cmd(async { Msg::TeamsFetched(get_teams().await) });
         }
 
         Msg::TeamsFetched(Ok(teams)) => {
@@ -68,6 +74,22 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("Error fetching teams {}", fetch_error);
         }
 
+        Msg::FetchGroups => {
+            log!("Fetching groups");
+            orders
+                .skip()
+                .perform_cmd( async { Msg::GroupsFetched(get_groups().await) } );
+        }
+
+        Msg::GroupsFetched(Ok(groups)) => {
+            log!(&format!("Fetched {} groups", groups.len()));
+            model.groups = groups;
+        }
+
+        Msg::GroupsFetched(Err(fetch_error)) => {
+            log!("Error fetching groups {}", fetch_error);
+        }
+
         Msg::PlayGame(input) => {
             let group = model.groups.get_mut(&input.group_id).unwrap();
             group.play_game(input.game_id, input.score);
@@ -75,8 +97,18 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         _ => {}
     }
 }
+
 async fn get_teams() -> fetch::Result<Teams> {
     Request::new("http://localhost:8000/get_teams")
+        .fetch()
+        .await?
+        .check_status()?
+        .json()
+        .await
+}
+
+async fn get_groups() -> fetch::Result<Groups> {
+    Request::new("http://localhost:8000/get_groups")
         .fetch()
         .await?
         .check_status()?
@@ -87,17 +119,12 @@ async fn get_teams() -> fetch::Result<Teams> {
 fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
         view_header(),
-        view_teams(&model.teams),
         view_group_play(&model.groups, &model.teams, &model.group_rules),
     ]
 }
 
 fn view_header() -> Node<Msg> {
     header![C!["header"], h1!["Group"],]
-}
-
-fn view_teams(teams: &Teams) -> Node<Msg> {
-    div![C!["teams"], h1![format!("Num teams: {}", teams.len())]]
 }
 
 fn view_group_play<T: Tiebreaker>(groups: &Groups, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {

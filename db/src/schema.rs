@@ -15,10 +15,9 @@ table! {
 }
 
 table! {
-    groups (unik) {
-        unik -> Text,
-        id -> Text,
+    group_game_map (game_id) {
         game_id -> Integer,
+        group_id_ -> Text,
     }
 }
 
@@ -32,10 +31,6 @@ table! {
     }
 }
 
-joinable!(groups -> games (game_id));
+joinable!(group_game_map -> games (game_id));
 
-allow_tables_to_appear_in_same_query!(
-    games,
-    groups,
-    teams,
-);
+allow_tables_to_appear_in_same_query!(games, group_game_map, teams,);

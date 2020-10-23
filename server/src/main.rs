@@ -2,16 +2,47 @@
 
 #[macro_use]
 extern crate rocket;
+use itertools::Itertools;
 use rocket::http::Method;
 use rocket::response::status::NotFound;
 use rocket_contrib::json::Json;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions, Error};
+use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::group::{Group, Groups};
 use wwc_core::team::Teams;
 
 #[get("/get_teams")]
 fn get_teams() -> Result<Json<Teams>, NotFound<String>> {
     let teams: Teams = wwc_db::get_teams().map(|x| (x.id, x)).collect();
     Ok(Json(teams))
+}
+
+#[get("/get_groups")]
+fn get_groups() -> Result<Json<Groups>, NotFound<String>> {
+    let (played_games, unplayed_games) = wwc_db::get_group_games();
+    let group_game_map = wwc_db::get_group_game_maps()
+        .map(|(game, group)| (group, game))
+        .into_group_map();
+    Ok(Json(group_game_map.iter().fold(
+        Groups::new(),
+        |mut acc, (id, games)| {
+            let group = Group::try_new(
+                unplayed_games
+                    .iter()
+                    .filter(|x| games.contains(&x.id))
+                    .map(|x| x.clone())
+                    .collect(),
+                played_games
+                    .iter()
+                    .filter(|x| games.contains(&x.id))
+                    .map(|x| x.clone())
+                    .collect(),
+            )
+            .unwrap();
+            acc.insert(*id, group);
+            acc
+        },
+    )))
 }
 
 fn make_cors() -> Cors {
@@ -39,7 +70,7 @@ fn make_cors() -> Cors {
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![get_teams])
+        .mount("/", routes![get_teams, get_groups])
         .attach(make_cors())
 }
 
