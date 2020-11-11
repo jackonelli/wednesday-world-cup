@@ -14,6 +14,13 @@ use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{Rank, Team, TeamId};
 use wwc_core::Date;
 
+pub fn lsv_data_from_file(filename: &str) -> Data {
+    let data_json =
+        crate::file_io::read_json_file_to_str(filename).expect("Could not read from file");
+    let data: Data = serde_json::from_str(&data_json).expect("JSON format error.");
+    data
+}
+
 pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
     let groups_with_err = data.groups.iter().map(|(id, group)| {
         let group: Result<Group, GroupError> = (group.clone()).try_into();
@@ -123,8 +130,8 @@ pub struct ParseGame {
     type_: GameType,
     home_team: TeamId,
     away_team: TeamId,
-    home_result: GoalCount,
-    away_result: GoalCount,
+    home_result: Option<GoalCount>,
+    away_result: Option<GoalCount>,
     home_penalty: Option<GoalCount>,
     away_penalty: Option<GoalCount>,
     home_fair_play: Option<FairPlay>,
@@ -144,8 +151,14 @@ impl TryInto<PlayedGroupGame> for ParseGame {
     type Error = GroupError;
     fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
         let game = UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
-        let score = Score::from((self.home_result, self.away_result));
-        let fair_play_score = FairPlayScore::default();
+        let score = match (self.home_result, self.away_result) {
+            (Some(home), Some(away)) => Score::from((home, away)),
+            _ => return Err(GroupError::GenericError),
+        };
+        let fair_play_score = match (self.home_fair_play, self.away_fair_play) {
+            (Some(home), Some(away)) => FairPlayScore::new(home, away),
+            _ => FairPlayScore::default(),
+        };
         Ok(game.play(score, fair_play_score))
     }
 }

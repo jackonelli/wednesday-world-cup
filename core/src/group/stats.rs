@@ -1,5 +1,5 @@
 //! Group statistics
-use crate::fair_play::FairPlayValue;
+use crate::fair_play::{FairPlayValue, FifaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff, NumGames};
 use crate::group::game::PlayedGroupGame;
 use crate::group::{Group, GroupPoint};
@@ -160,6 +160,7 @@ pub struct TableStats {
     pub goal_diff: GoalDiff,
     pub goals_scored: GoalCount,
     pub goals_conceded: GoalCount,
+    pub fair_play_score: FifaFairPlayValue,
     pub games_played: NumGames,
     pub wins: NumGames,
     pub losses: NumGames,
@@ -171,6 +172,7 @@ impl UnaryStat for TableStats {
         let (points_home, points_away) = GroupPoint::stat(game);
         let (goal_diff_home, goal_diff_away) = GoalDiff::stat(game);
         let (goals_scored_home, goals_scored_away) = GoalCount::stat(game);
+        let (fair_play_home, fair_play_away) = FifaFairPlayValue::stat(game);
         let (wins_home, wins_away) = NumWins::stat(game);
         let losses_home = NumGames((points_home == GroupPoint(0)) as u8);
         let draws_home = NumGames((points_home == GroupPoint(1)) as u8);
@@ -181,6 +183,7 @@ impl UnaryStat for TableStats {
             goal_diff: goal_diff_home,
             goals_scored: goals_scored_home,
             goals_conceded: goals_scored_away,
+            fair_play_score: fair_play_home,
             games_played: NumGames(1),
             wins: wins_home.0,
             losses: losses_home,
@@ -191,6 +194,7 @@ impl UnaryStat for TableStats {
             goal_diff: goal_diff_away,
             goals_scored: goals_scored_away,
             goals_conceded: goals_scored_home,
+            fair_play_score: fair_play_away,
             games_played: NumGames(1),
             wins: wins_away.0,
             losses: losses_away,
@@ -207,6 +211,7 @@ impl num::Zero for TableStats {
             goal_diff: GoalDiff::zero(),
             goals_scored: GoalCount::zero(),
             goals_conceded: GoalCount::zero(),
+            fair_play_score: FifaFairPlayValue::zero(),
             games_played: NumGames::zero(),
             wins: NumGames::zero(),
             losses: NumGames::zero(),
@@ -219,6 +224,7 @@ impl num::Zero for TableStats {
             && self.goal_diff.is_zero()
             && self.goals_scored.is_zero()
             && self.goals_conceded.is_zero()
+            && self.fair_play_score.is_zero()
             && self.games_played.is_zero()
             && self.wins.is_zero()
             && self.draws.is_zero()
@@ -230,8 +236,8 @@ impl std::fmt::Display for TableStats {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}\t{}\t{}",
-            self.points, self.goal_diff, self.goals_scored
+            "{}\t{}\t{}\t{}",
+            self.points, self.goal_diff, self.goals_scored, self.fair_play_score,
         )
     }
 }

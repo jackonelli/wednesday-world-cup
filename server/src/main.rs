@@ -2,33 +2,56 @@
 
 #[macro_use]
 extern crate rocket;
+use itertools::Itertools;
 use rocket::http::Method;
 use rocket::response::status::NotFound;
 use rocket_contrib::json::Json;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions, Error};
-use wwc_data::lsv;
+use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::group::{Group, Groups};
+use wwc_core::team::Teams;
 
-/// LSV data
-///
-/// Deprecated, this will not be handled by the server.
-/// It will be handed by a database connection, but it is nice for mock data.
-#[get("/<file_name>")]
-fn get_lsv_json(file_name: String) -> Result<Json<lsv::Data>, NotFound<String>> {
-    let data_json =
-        match wwc_data::file_io::read_json_file_to_str(&format!("server/data/{}", file_name)) {
-            Ok(data) => data,
-            Err(err) => return Err(NotFound(err.to_string())),
-        };
-    let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
-    Ok(Json(data))
+#[get("/get_teams")]
+fn get_teams() -> Result<Json<Teams>, NotFound<String>> {
+    let teams: Teams = wwc_db::get_teams().map(|x| (x.id, x)).collect();
+    Ok(Json(teams))
+}
+
+#[get("/get_groups")]
+fn get_groups() -> Result<Json<Groups>, NotFound<String>> {
+    let (played_games, unplayed_games) = wwc_db::get_group_games();
+    let group_game_map = wwc_db::get_group_game_maps()
+        .map(|(game, group)| (group, game))
+        .into_group_map();
+    // TODO: Very inefficient. Better to iterate overe the games and assign to groups.
+    Ok(Json(group_game_map.iter().fold(
+        Groups::new(),
+        |mut acc, (id, games)| {
+            let group = Group::try_new(
+                unplayed_games
+                    .iter()
+                    .filter(|x| games.contains(&x.id))
+                    .map(|x| x.clone())
+                    .collect(),
+                played_games
+                    .iter()
+                    .filter(|x| games.contains(&x.id))
+                    .map(|x| x.clone())
+                    .collect(),
+            )
+            .unwrap();
+            acc.insert(*id, group);
+            acc
+        },
+    )))
 }
 
 fn make_cors() -> Cors {
     let allowed_origins = AllowedOrigins::some_exact(&[
-        "http://localhost:8080",
-        "http://127.0.0.1:8080",
         "http://localhost:8000",
-        "http://0.0.0.0:8000",
+        "http://127.0.0.1:8888",
+        "http://localhost:8888",
+        "http://0.0.0.0:8888",
     ]);
 
     CorsOptions {
@@ -48,7 +71,7 @@ fn make_cors() -> Cors {
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![get_lsv_json])
+        .mount("/", routes![get_teams, get_groups])
         .attach(make_cors())
 }
 

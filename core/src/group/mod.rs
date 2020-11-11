@@ -6,7 +6,7 @@ use crate::fair_play::FairPlayScore;
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::team::{Rank, Team, TeamId};
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From};
+use derive_more::{Add, AddAssign, Display, From, Into};
 use game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
@@ -39,13 +39,14 @@ pub type Groups = BTreeMap<GroupId, Group>;
     std::cmp::PartialOrd,
     std::hash::Hash,
     From,
+    Into,
 )]
 pub struct GroupId(char);
 
 impl GroupId {
     pub fn try_new(id: char) -> Result<Self, GroupError> {
         if id.is_ascii_alphabetic() {
-            Ok(GroupId(id))
+            Ok(GroupId(id.to_ascii_uppercase()))
         } else {
             Err(GroupError::InvalidGroupId(id))
         }
@@ -72,12 +73,12 @@ impl Group {
     ///
     /// - Every game (played and upcoming) must have a unique game id.
     pub fn try_new(
-        upcoming_games: Vec<UnplayedGroupGame>,
+        unplayed_games: Vec<UnplayedGroupGame>,
         played_games: Vec<PlayedGroupGame>,
     ) -> Result<Self, GroupError> {
-        if Self::game_ids_unique(&played_games, &upcoming_games) {
+        if Self::game_ids_unique(&played_games, &unplayed_games) {
             Ok(Self {
-                unplayed_games: upcoming_games,
+                unplayed_games,
                 played_games,
             })
         } else {
@@ -97,7 +98,7 @@ impl Group {
     }
 
     /// Games accessor
-    pub fn upcoming_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
+    pub fn unplayed_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
         self.unplayed_games.iter()
     }
 
@@ -220,26 +221,26 @@ pub enum GroupError {
 }
 
 pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
-    let game_1 = UnplayedGroupGame::try_new(2, 2, 3, Date::mock()).unwrap();
-    let game_2 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock())
+    let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
         .unwrap()
         .play(Score::from((2, 1)), FairPlayScore::default());
     let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
-    let game_1 = UnplayedGroupGame::try_new(3, 4, 5, Date::mock()).unwrap();
-    let game_2 = UnplayedGroupGame::try_new(4, 6, 7, Date::mock()).unwrap();
+    let game_1 = UnplayedGroupGame::try_new(3, 5, 6, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(4, 7, 8, Date::mock()).unwrap();
     let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
     let mut groups = BTreeMap::new();
     groups.insert(GroupId('A'), group_a);
     groups.insert(GroupId('B'), group_b);
     let teams = vec![
-        Team::new(TeamId(0), "Sweden", "SWE", "se", Rank(0)),
-        Team::new(TeamId(1), "England", "ENG", "gb-eng", Rank(1)),
-        Team::new(TeamId(2), "France", "FRA", "fr", Rank(2)),
-        Team::new(TeamId(3), "Brazil", "BRA", "br", Rank(3)),
-        Team::new(TeamId(4), "Canada", "CAN", "ca", Rank(4)),
-        Team::new(TeamId(5), "Spain", "ESP", "es", Rank(5)),
-        Team::new(TeamId(6), "Japan", "JAP", "jp", Rank(6)),
-        Team::new(TeamId(7), "Norway", "NOR", "no", Rank(6)),
+        Team::new(TeamId(1), "Sweden", "SWE", "se", Rank(0)),
+        Team::new(TeamId(2), "England", "ENG", "gb-eng", Rank(1)),
+        Team::new(TeamId(3), "France", "FRA", "fr", Rank(2)),
+        Team::new(TeamId(4), "Brazil", "BRA", "br", Rank(3)),
+        Team::new(TeamId(5), "Canada", "CAN", "ca", Rank(4)),
+        Team::new(TeamId(6), "Spain", "ESP", "es", Rank(5)),
+        Team::new(TeamId(7), "Japan", "JAP", "jp", Rank(6)),
+        Team::new(TeamId(8), "Norway", "NOR", "no", Rank(6)),
     ];
     let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
     (groups, teams)
@@ -257,7 +258,7 @@ mod tests {
     fn mock_data_access() {
         let (_, mock_teams) = mock_data();
         assert_eq!(
-            mock_teams.get(&TeamId(0)).unwrap().name,
+            mock_teams.get(&TeamId(1)).unwrap().name,
             TeamName(String::from("Sweden"))
         );
     }

@@ -15,7 +15,7 @@ use crate::group::GroupError;
 use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From};
+use derive_more::{Add, AddAssign, Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -122,10 +122,20 @@ pub struct PlayedGroupGame {
     pub away: TeamId,
     pub score: Score,
     pub fair_play: FairPlayScore,
-    date: Date,
+    pub date: Date,
 }
 
 impl PlayedGroupGame {
+    /// Reset game.
+    pub fn unplay(self) -> UnplayedGroupGame {
+        UnplayedGroupGame {
+            id: self.id,
+            home: self.home,
+            away: self.away,
+            date: self.date,
+        }
+    }
+
     /// Points awarded to (home, away) teams respectively.
     pub fn points(&self) -> (GroupPoint, GroupPoint) {
         GroupPoint::stat(self)
@@ -199,6 +209,7 @@ impl Game for PlayedGroupGame {
     Add,
     AddAssign,
     From,
+    Into,
 )]
 pub struct GroupGameId(pub u8);
 

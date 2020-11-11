@@ -1,5 +1,5 @@
 //! Team
-use derive_more::{Display, From};
+use derive_more::{Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
@@ -14,6 +14,7 @@ use std::fmt;
     std::cmp::PartialEq,
     std::hash::Hash,
     From,
+    Into,
 )]
 pub struct TeamId(pub u8);
 
@@ -31,6 +32,7 @@ pub type Teams = HashMap<TeamId, Team>;
     std::cmp::PartialOrd,
     std::cmp::Ord,
     From,
+    Into,
 )]
 pub struct Rank(pub u8);
 
@@ -41,7 +43,7 @@ pub struct Team {
     #[serde(rename = "fifaCode")]
     pub fifa_code: FifaCode,
     pub iso2: Iso2,
-    rank: Rank,
+    pub rank: Rank,
 }
 
 impl Team {
@@ -62,11 +64,11 @@ impl std::fmt::Display for Team {
     }
 }
 
-#[derive(Display, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, From, Into, Deserialize, Serialize, PartialEq)]
 pub struct TeamName(pub(crate) String);
-#[derive(Display, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, From, Into, Deserialize, Serialize, PartialEq)]
 pub struct FifaCode(String);
-#[derive(Display, Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, From, Into, Deserialize, Serialize, PartialEq)]
 pub struct Iso2(String);
 
 #[cfg(test)]
