@@ -126,6 +126,16 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
+    /// Reset game.
+    pub fn unplay(self) -> UnplayedGroupGame {
+        UnplayedGroupGame {
+            id: self.id,
+            home: self.home,
+            away: self.away,
+            date: self.date,
+        }
+    }
+
     /// Points awarded to (home, away) teams respectively.
     pub fn points(&self) -> (GroupPoint, GroupPoint) {
         GroupPoint::stat(self)

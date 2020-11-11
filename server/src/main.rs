@@ -23,6 +23,7 @@ fn get_groups() -> Result<Json<Groups>, NotFound<String>> {
     let group_game_map = wwc_db::get_group_game_maps()
         .map(|(game, group)| (group, game))
         .into_group_map();
+    // TODO: Very inefficient. Better to iterate overe the games and assign to groups.
     Ok(Json(group_game_map.iter().fold(
         Groups::new(),
         |mut acc, (id, games)| {
