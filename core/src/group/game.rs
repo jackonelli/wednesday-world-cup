@@ -48,8 +48,13 @@ impl FromStr for Score {
         } else {
             (score_split[0], score_split[1])
         };
-        let home = home.parse::<u8>().map_err(|err| GroupError::GenericError)?;
-        let away = away.parse::<u8>().map_err(|err| GroupError::GenericError)?;
+        //TODO: Better error handling
+        let home = home
+            .parse::<u8>()
+            .map_err(|_err| GroupError::GenericError)?;
+        let away = away
+            .parse::<u8>()
+            .map_err(|_err| GroupError::GenericError)?;
         Ok(Score::from((home, away)))
     }
 }

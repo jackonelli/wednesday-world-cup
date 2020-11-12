@@ -8,7 +8,7 @@ use wwc_core::{
     group::{
         order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
         Group, GroupId, Groups,
-        game::{UnplayedGroupGame, PlayedGroupGame, GroupGameId},
+        game::GroupGameId,
     },
     team::{Team, Teams},
 };

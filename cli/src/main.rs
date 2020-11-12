@@ -1,11 +1,10 @@
 #![forbid(unsafe_code)]
 use itertools::Itertools;
-use std::convert::TryFrom;
 use std::convert::TryInto;
 use structopt::StructOpt;
 use wwc_core::group::game::GroupGameId;
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Team, Teams};
+use wwc_core::team::Teams;
 use wwc_data::lsv::lsv_data_from_file;
 
 fn main() {
@@ -76,7 +75,6 @@ fn add_teams() {
 
     let teams: Teams = data
         .teams
-        .clone()
         .into_iter()
         .map(|team| (team.id, team.try_into().unwrap()))
         .collect();
@@ -99,11 +97,11 @@ fn add_games() {
     groups
         .iter()
         .flat_map(|group| group.unplayed_games())
-        .for_each(|x| wwc_db::insert_game(x));
+        .for_each(wwc_db::insert_game);
     groups
         .iter()
         .flat_map(|group| group.played_games())
-        .for_each(|x| wwc_db::insert_game(x));
+        .for_each(wwc_db::insert_game);
 }
 
 fn add_groups() {

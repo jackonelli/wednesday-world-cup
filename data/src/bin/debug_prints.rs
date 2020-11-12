@@ -27,7 +27,7 @@ fn main() {
     }
 }
 
-fn print_game(game: &PlayedGroupGame, teams: &Teams) {
+fn _print_game(game: &PlayedGroupGame, teams: &Teams) {
     let home = teams.get(&game.home).unwrap();
     let away = teams.get(&game.away).unwrap();
     println!(

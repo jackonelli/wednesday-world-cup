@@ -69,7 +69,7 @@ fn non_strict_ordering(
     rules: &[Box<dyn SubOrdering>],
     sub_order: NonStrictGroupOrder,
 ) -> NonStrictGroupOrder {
-    if sub_order.is_strict() || rules.len() < 1 {
+    if sub_order.is_strict() || rules.is_empty() {
         sub_order
     } else {
         let (current_rule, remaining_rules) = rules.split_at(1);
@@ -167,7 +167,7 @@ impl NonStrictGroupOrder {
     }
 
     fn extend_sub_order(mut self, team: TeamId) -> Self {
-        let mut new_inner = self.0.pop().unwrap_or(vec![]);
+        let mut new_inner = self.0.pop().unwrap_or_else(Vec::new);
         new_inner.push(team);
         self.0.push(new_inner);
         self
@@ -299,7 +299,7 @@ pub trait Tiebreaker {
         //TODO: There must be a more efficient way to do this?
         let mut tmp_order = order.to_vec();
         tmp_order.sort_by(|a, b| self.cmp(*a, *b));
-        GroupOrder(tmp_order.into_iter().map(|x| x).rev().collect())
+        GroupOrder(tmp_order.into_iter().rev().collect())
     }
 
     /// Answers a comparison posed like this:

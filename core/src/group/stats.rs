@@ -5,6 +5,7 @@ use crate::group::game::PlayedGroupGame;
 use crate::group::{Group, GroupPoint};
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign};
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops;
@@ -93,12 +94,10 @@ impl UnaryStat for GroupPoint {
     /// ```
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let score = &game.score;
-        if score.home > score.away {
-            (GroupPoint(3), GroupPoint(0))
-        } else if score.home < score.away {
-            (GroupPoint(0), GroupPoint(3))
-        } else {
-            (GroupPoint(1), GroupPoint(1))
+        match score.home.cmp(&score.away) {
+            Ordering::Greater => (GroupPoint(3), GroupPoint(0)),
+            Ordering::Less => (GroupPoint(0), GroupPoint(3)),
+            Ordering::Equal => (GroupPoint(1), GroupPoint(1)),
         }
     }
 }
@@ -220,7 +219,7 @@ impl num::Zero for TableStats {
     }
 
     fn is_zero(&self) -> bool {
-        return self.points.is_zero()
+        self.points.is_zero()
             && self.goal_diff.is_zero()
             && self.goals_scored.is_zero()
             && self.goals_conceded.is_zero()
@@ -228,7 +227,7 @@ impl num::Zero for TableStats {
             && self.games_played.is_zero()
             && self.wins.is_zero()
             && self.draws.is_zero()
-            && self.losses.is_zero();
+            && self.losses.is_zero()
     }
 }
 

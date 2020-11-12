@@ -3,7 +3,6 @@ use serde::Serialize;
 use std::convert::TryFrom;
 use wwc_core::fair_play::FairPlayScore;
 use wwc_core::group::game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
-use wwc_core::group::GroupId;
 use wwc_core::team::{FifaCode, Iso2, Rank, TeamId, TeamName};
 
 #[derive(Debug, Serialize, Queryable, Identifiable)]

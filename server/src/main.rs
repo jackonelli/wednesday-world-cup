@@ -7,7 +7,6 @@ use rocket::http::Method;
 use rocket::response::status::NotFound;
 use rocket_contrib::json::Json;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions, Error};
-use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, Groups};
 use wwc_core::team::Teams;
 
@@ -31,12 +30,12 @@ fn get_groups() -> Result<Json<Groups>, NotFound<String>> {
                 unplayed_games
                     .iter()
                     .filter(|x| games.contains(&x.id))
-                    .map(|x| x.clone())
+                    .cloned()
                     .collect(),
                 played_games
                     .iter()
                     .filter(|x| games.contains(&x.id))
-                    .map(|x| x.clone())
+                    .cloned()
                     .collect(),
             )
             .unwrap();

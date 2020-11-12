@@ -40,7 +40,7 @@ impl Format<'_> for DisplayTable {
                 self.iter().map(|(team_id, stat)| {
                     let team = cxt
                         .get(&team_id)
-                        .expect(&format!("No team id: {}", team_id));
+                        .unwrap_or_else(|| panic!("No team id: {}", team_id));
                     stat.format(team)
                 })
             ]
