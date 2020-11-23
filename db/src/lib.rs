@@ -63,7 +63,7 @@ pub fn get_group_game_maps() -> impl Iterator<Item = (GroupGameId, GroupId)> {
         .expect("Error loading posts");
     db_teams.into_iter().map(|map_| {
         (
-            GroupGameId::from(u8::try_from(map_.game_id).unwrap()),
+            GroupGameId::from(u8::try_from(map_.id).unwrap()),
             GroupId::from(map_.group_id_.chars().next().unwrap()),
         )
     })
@@ -89,7 +89,7 @@ pub fn insert_team(team: &wwc_core::Team) {
 pub fn insert_group_game_mapping(group: (GroupId, GroupGameId)) {
     let (group_id, game_id_) = group;
     let group = NewGroupGameMap {
-        game_id: u8::from(game_id_).into(),
+        id: u8::from(game_id_).into(),
         group_id_: &(String::from(char::from(group_id))),
     };
     let connection = establish_connection();

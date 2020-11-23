@@ -99,7 +99,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 }
 
 async fn get_teams() -> fetch::Result<Teams> {
-    Request::new("http://localhost:8000/get_teams")
+    Request::new("http://129.16.37.14:8000/get_teams")
         .fetch()
         .await?
         .check_status()?
@@ -108,7 +108,7 @@ async fn get_teams() -> fetch::Result<Teams> {
 }
 
 async fn get_groups() -> fetch::Result<Groups> {
-    Request::new("http://localhost:8000/get_groups")
+    Request::new("http://129.16.37.14:8000/get_groups")
         .fetch()
         .await?
         .check_status()?

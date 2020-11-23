@@ -15,8 +15,8 @@ table! {
 }
 
 table! {
-    group_game_map (game_id) {
-        game_id -> Integer,
+    group_game_map (id) {
+        id -> Integer,
         group_id_ -> Text,
     }
 }
@@ -31,6 +31,10 @@ table! {
     }
 }
 
-joinable!(group_game_map -> games (game_id));
+joinable!(group_game_map -> games (id));
 
-allow_tables_to_appear_in_same_query!(games, group_game_map, teams,);
+allow_tables_to_appear_in_same_query!(
+    games,
+    group_game_map,
+    teams,
+);

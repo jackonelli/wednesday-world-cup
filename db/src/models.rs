@@ -42,18 +42,18 @@ pub struct NewTeam<'a> {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
-#[primary_key(game_id)]
+#[primary_key(id)]
 #[table_name = "group_game_map"]
-#[belongs_to(parent = "Game", foreign_key = "game_id")]
+#[belongs_to(parent = "Game", foreign_key = "id")]
 pub struct GroupGameMap {
-    pub game_id: i32,
+    pub id: i32,
     pub group_id_: String,
 }
 
 #[derive(Insertable)]
 #[table_name = "group_game_map"]
 pub struct NewGroupGameMap<'a> {
-    pub game_id: i32,
+    pub id: i32,
     pub group_id_: &'a str,
 }
 
