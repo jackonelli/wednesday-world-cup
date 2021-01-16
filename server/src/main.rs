@@ -48,6 +48,8 @@ fn get_groups() -> Result<Json<Groups>, NotFound<String>> {
 fn make_cors() -> Cors {
     let allowed_origins = AllowedOrigins::some_exact(&[
         "http://129.16.37.14:8888",
+        "http://192.168.0.15:8888",
+        "http://localhost:8888",
     ]);
 
     CorsOptions {

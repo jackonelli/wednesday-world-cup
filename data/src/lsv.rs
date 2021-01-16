@@ -2,7 +2,7 @@
 //!
 //! The plan is to eventually move the data module to a separate crate.
 //!
-//! Data source: https://github.com/lsv/fifa-worldcup-2018
+//! Data source: <https://github.com/lsv/fifa-worldcup-2018>
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::TryInto;

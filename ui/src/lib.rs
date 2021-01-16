@@ -6,9 +6,9 @@ use seed::{prelude::*, *};
 use std::collections::BTreeMap;
 use wwc_core::{
     group::{
+        game::GroupGameId,
         order::{fifa_2018, order_group, Random, Rules, Tiebreaker},
         Group, GroupId, Groups,
-        game::GroupGameId,
     },
     team::{Team, Teams},
 };
@@ -78,7 +78,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("Fetching groups");
             orders
                 .skip()
-                .perform_cmd( async { Msg::GroupsFetched(get_groups().await) } );
+                .perform_cmd(async { Msg::GroupsFetched(get_groups().await) });
         }
 
         Msg::GroupsFetched(Ok(groups)) => {
@@ -99,7 +99,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 }
 
 async fn get_teams() -> fetch::Result<Teams> {
-    Request::new("http://129.16.37.14:8000/get_teams")
+    Request::new("http://192.168.0.15:8000/get_teams")
         .fetch()
         .await?
         .check_status()?
@@ -108,7 +108,7 @@ async fn get_teams() -> fetch::Result<Teams> {
 }
 
 async fn get_groups() -> fetch::Result<Groups> {
-    Request::new("http://129.16.37.14:8000/get_groups")
+    Request::new("http://192.168.0.15:8000/get_groups")
         .fetch()
         .await?
         .check_status()?

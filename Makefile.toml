@@ -6,4 +6,4 @@ dependencies = ["doc"]
 
 [tasks.doc]
 command = "cargo"
-args = ["doc", "--workspace", "--no-deps", "--document-private-items", "--no-typescript"]
+args = ["doc", "--workspace", "--no-deps", "--document-private-items"]

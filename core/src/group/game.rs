@@ -1,10 +1,10 @@
 //! Group game
 //!
 //! Data and functionality related to games in the group stage of the tournament.
-//! This group is less restricted than a `PlayoffGame` since the `Score` is freer,
+//! This group is less restricted than a [`PlayoffGame`] since the [`Score`] is freer,
 //! e.g. draws are allowed and there are no additional penalty shoot-out score.
 //!
-//! The two game structs [`UnplayedGroupGame`](struct.UnPlayedGroupGame.html) and [`PlayedGroupGame`](struct.PlayedGroupGame.html)
+//! The two game structs [`UnplayedGroupGame`] and [`PlayedGroupGame`]
 //! are the fundamental datastructure for the group; all other properties and statistics are
 //! derived from them.
 use crate::fair_play::FairPlayScore;
@@ -19,7 +19,7 @@ use derive_more::{Add, AddAssign, Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-/// Score associated with [`PlayedGroupGame`](struct.PlayedGroupGame.html)
+/// Score associated with [`PlayedGroupGame`]
 ///
 /// Determines the outcome of a game which can be, win, loss or draw.
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -94,7 +94,7 @@ impl UnplayedGroupGame {
 
     /// Transform unplayed game to played.
     ///
-    /// Only (public) way of constructing a [`PlayedGroupGame`](struct.PlayedGroupGame.html).
+    /// Only (public) way of constructing a [`PlayedGroupGame`].
     pub fn play(self, score: Score, fair_play: FairPlayScore) -> PlayedGroupGame {
         PlayedGroupGame {
             id: self.id,
@@ -118,8 +118,8 @@ impl Game for UnplayedGroupGame {
 
 /// Played group game
 ///
-/// Can only be constructed by invoking the [`.play`](struct.UnplayedGroupGame.html#method.play) method on a
-/// [`UnplayedGroupGame`](struct.UnplayedGroupGame.html)
+/// Can only be constructed by invoking the [`.play`] method on a
+/// [`UnplayedGroupGame`]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
     pub id: GroupGameId,

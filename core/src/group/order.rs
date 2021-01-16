@@ -1,14 +1,14 @@
 //! Group ordering
 //!
-//! A group is ordered by a list of sub-orders, see [`Rules`](struct.Rules.html) followed
-//! by a final [`Tiebreaker`](trait.Tiebreaker.html).
+//! A group is ordered by a list of sub-orders, see [`Rules`] followed
+//! by a final [`Tiebreaker`].
 //! The ordering is greedy in the sense that the next sub-order is only applied if the ordering is non-strict.
 //! If there are no more sub-orders to apply, a tiebreaker ensures a strict ordering.
 //!
 //! A system of greedy, atomic sub-orders is flexible since new rules can easily be composed from them.
-//! The [`SubOrdering`](trait.SubOrdering.html) trait is auto-implemented for every struct that
-//! implements [`UnaryStat`](../stats/trait.UnaryStat.html) + `Ord` + `Copy`, making the
-//! composition of new rules straightforward, see ([`euro_2020`](fn.euro_2020.html), [`fifa_2018`](fn.fifa_2018.html)).
+//! The [`SubOrdering`] trait is auto-implemented for every struct that
+//! implements [`UnaryStat`] + [`Ord`] + [`Copy`], making the
+//! composition of new rules straightforward, see ([`euro_2020`], [`fifa_2018`]).
 //!
 //! Smaller sub-orders can also be grouped together. E.g., you could group points, goal diff.
 //! and goals scored into one struct, implement `UnaryStat` and `Ord` for it and use that as a
@@ -282,7 +282,7 @@ impl<T: UnaryStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     }
 }
 
-/// Associated with [`Rules`](struct.Rules.html) to ensure strict total order.
+/// Associated with [`Rules`] to ensure strict total order.
 pub trait Tiebreaker {
     fn order(&self, group: &Group, non_strict: NonStrictGroupOrder) -> GroupOrder {
         GroupOrder(non_strict.0.into_iter().fold(Vec::new(), |mut acc, x| {
@@ -361,7 +361,7 @@ impl Tiebreaker for UefaRanking {
     /// Comparison by Uefa ranking
     ///
     /// Panics if the team id's are not in `self.ranking_map`
-    /// Internally ok since the fallible constructor [`try_new`](struct.UefaRanking.html#method.try_new) ensures that the teams in the groups are a subset of the `ranking_map`.
+    /// Internally ok since the fallible constructor [`UefaRanking::try_new`] ensures that the teams in the groups are a subset of the `ranking_map`.
     fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering {
         let rank_1 = self.0.get(&id_1).unwrap();
         let rank_2 = self.0.get(&id_2).unwrap();
@@ -373,7 +373,7 @@ impl Tiebreaker for UefaRanking {
 
 /// Fifa World Cup 2018 Order
 ///
-/// https://www.fifa.com/worldcup/news/tie-breakers-for-russia-2018-groups
+/// <https://www.fifa.com/worldcup/news/tie-breakers-for-russia-2018-groups>
 ///
 ///First step: Pursuant to the criteria listed in art. 32 (5) lit. a) to c) of the Competition Regulations.
 ///
@@ -416,7 +416,7 @@ pub fn fifa_2018() -> Rules<Random> {
 
 /// Uefa Euro 2020 Order
 ///
-/// https://www.uefa.com/MultimediaFiles/Download/Regulations/uefaorg/Regulations/02/54/36/05/2543605_DOWNLOAD.pdf
+/// <https://www.uefa.com/MultimediaFiles/Download/Regulations/uefaorg/Regulations/02/54/36/05/2543605_DOWNLOAD.pdf>
 ///
 /// If two or more teams are equal on points on completion of the group matches, the following tie-breaking criteria are applied:
 ///

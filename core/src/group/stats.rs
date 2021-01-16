@@ -12,7 +12,7 @@ use std::ops;
 
 /// Statistic calculated from a single game.
 ///
-/// Implentor needs to provide the actual `stat` function,
+/// Implentor needs to provide the actual [`UnaryStat::stat`] function,
 /// the trait provides default methods to calculate the statistic on group level.
 pub trait UnaryStat: num::Zero + ops::AddAssign {
     /// Calculate statistic for a game.
@@ -52,9 +52,9 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
 
 /// Calculate stat for a game and assign to team map.
 ///
-/// Unwrap's do not panic if TeamId's of `game.home` and `game.away` are members of `acc`:
-/// - Calling this from [`team_stats`](trait.UnaryStat.html#method.team_stats), TeamId's will always be present, checked in Group constructor.
-/// - Calling this from [`internal_team_stats`](trait.UnaryStat.html#method.internal_team_stats) is ok since the unwrap's would panic iff `acc` would
+/// Unwrap's do not panic if [`TeamId`]'s of `game.home` and `game.away` are members of `acc`:
+/// - Calling this from [`UnaryStat::team_stats`], [`TeamId`]'s will always be present, checked in [Group] constructor.
+/// - Calling this from [`UnaryStat::internal_team_stats`] is ok since the unwrap's would panic iff `acc` would
 ///   not contain `game.home` or `game.away`, which is exactly the predicate that the
 ///   `group.played_games` are filtered by.
 /// - Other calls do not exist (private fn), when adding a call: Take care to uphold this invariant!
