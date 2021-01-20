@@ -1,4 +1,4 @@
-use crate::schema::{games, group_game_map, teams};
+use crate::schema::{games, group_game_map, preds, teams};
 use serde::Serialize;
 use std::convert::TryFrom;
 use wwc_core::fair_play::FairPlayScore;
@@ -11,6 +11,16 @@ pub struct Team {
     pub name: String,
     pub fifa_code: String,
     pub iso2: String,
+    pub rank_: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "teams"]
+pub struct NewTeam<'a> {
+    pub id: i32,
+    pub name: &'a str,
+    pub fifa_code: &'a str,
+    pub iso2: &'a str,
     pub rank_: i32,
 }
 
@@ -29,16 +39,6 @@ impl Into<wwc_core::Team> for Team {
             rank,
         }
     }
-}
-
-#[derive(Insertable)]
-#[table_name = "teams"]
-pub struct NewTeam<'a> {
-    pub id: i32,
-    pub name: &'a str,
-    pub fifa_code: &'a str,
-    pub iso2: &'a str,
-    pub rank_: i32,
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
@@ -153,4 +153,23 @@ impl From<Game> for UnplayedGroupGame {
             date: wwc_core::Date::mock(),
         }
     }
+}
+
+#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+#[belongs_to(parent = "Game")]
+pub struct Pred {
+    pub id: i32,
+    pub game_id: i32,
+    pub player: String,
+    pub home_result: i32,
+    pub away_result: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "preds"]
+pub struct NewPred<'a> {
+    pub id: i32,
+    pub player: &'a str,
+    pub home_result: i32,
+    pub away_result: i32,
 }

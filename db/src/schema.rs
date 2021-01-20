@@ -22,6 +22,16 @@ table! {
 }
 
 table! {
+    preds (id) {
+        id -> Integer,
+        player -> Text,
+        game_id -> Integer,
+        home_result -> Integer,
+        away_result -> Integer,
+    }
+}
+
+table! {
     teams (id) {
         id -> Integer,
         name -> Text,
@@ -32,5 +42,11 @@ table! {
 }
 
 joinable!(group_game_map -> games (id));
+joinable!(preds -> games (game_id));
 
-allow_tables_to_appear_in_same_query!(games, group_game_map, teams,);
+allow_tables_to_appear_in_same_query!(
+    games,
+    group_game_map,
+    preds,
+    teams,
+);

@@ -46,7 +46,7 @@ pub struct GroupId(char);
 impl GroupId {
     pub fn try_new(id: char) -> Result<Self, GroupError> {
         if id.is_ascii_alphabetic() {
-            Ok(GroupId(id.to_ascii_uppercase()))
+            Ok(GroupId(id))
         } else {
             Err(GroupError::InvalidGroupId(id))
         }
@@ -118,6 +118,16 @@ impl Group {
             .swap_remove(idx)
             .play(score, FairPlayScore::default());
         self.played_games.push(game);
+    }
+
+    pub fn unplay_game(&mut self, game_id: GroupGameId) {
+        let idx = self
+            .played_games
+            .iter()
+            .position(|game| game.id == game_id)
+            .unwrap();
+        let game = self.played_games.swap_remove(idx).unplay();
+        self.unplayed_games.push(game);
     }
 
     /// Group size by teams

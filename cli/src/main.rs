@@ -78,10 +78,7 @@ fn add_teams() {
         .into_iter()
         .map(|team| (team.id, team.try_into().unwrap()))
         .collect();
-    teams.iter().for_each(|(_, team)| {
-        println!("{}", &team);
-        wwc_db::insert_team(team)
-    });
+    teams.iter().for_each(|(_, team)| wwc_db::insert_team(team));
 }
 
 fn add_games() {

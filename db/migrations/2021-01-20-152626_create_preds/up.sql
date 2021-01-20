@@ -1,0 +1,8 @@
+CREATE TABLE preds (
+  id INTEGER PRIMARY KEY NOT NULL,
+  player VARCHAR NOT NULL,
+  game_id INTEGER NOT NULL,
+  home_result INTEGER NOT NULL,
+  away_result INTEGER NOT NULL,
+  FOREIGN KEY(game_id) REFERENCES games(id)
+)

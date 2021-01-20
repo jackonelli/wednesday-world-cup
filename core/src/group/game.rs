@@ -131,7 +131,7 @@ pub struct PlayedGroupGame {
 }
 
 impl PlayedGroupGame {
-    /// Reset game.
+    /// Transform played game to unplayed.
     pub fn unplay(self) -> UnplayedGroupGame {
         UnplayedGroupGame {
             id: self.id,

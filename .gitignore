@@ -3,3 +3,4 @@ assets/dep_graph.svg
 Cargo.lock
 server/data
 .DS_Store
+.env
