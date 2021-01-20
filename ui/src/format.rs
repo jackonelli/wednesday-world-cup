@@ -1,4 +1,4 @@
-use crate::Msg;
+use crate::app::Msg;
 use seed::prelude::*;
 
 pub(crate) trait Format<'a> {

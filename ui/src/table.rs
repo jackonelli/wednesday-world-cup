@@ -1,6 +1,6 @@
+use crate::app::Msg;
 use crate::format::Format;
-use crate::format_team_flag;
-use crate::Msg;
+use crate::team::format_team_flag;
 use seed::{prelude::*, *};
 use std::convert::From;
 use wwc_core::game::{GoalDiff, NumGames};
@@ -8,10 +8,10 @@ use wwc_core::group::{stats::TableStats, stats::UnaryStat, Group};
 use wwc_core::group::{GroupOrder, GroupPoint};
 use wwc_core::team::{Team, TeamId, Teams};
 
-pub struct DisplayTable(Vec<(TeamId, DisplayTableRow)>);
+pub(crate) struct DisplayTable(Vec<(TeamId, DisplayTableRow)>);
 
 impl DisplayTable {
-    pub fn new(group: &Group, group_order: &GroupOrder) -> Self {
+    pub(crate) fn new(group: &Group, group_order: &GroupOrder) -> Self {
         let full_table = TableStats::team_stats(group);
         let tmp = group_order
             .iter()

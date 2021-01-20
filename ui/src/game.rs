@@ -1,6 +1,6 @@
+use crate::app::Msg;
 use crate::format::Format;
-use crate::format_team_flag;
-use crate::Msg;
+use crate::team::format_team_flag;
 use seed::{prelude::*, *};
 use wwc_core::game::GoalCount;
 use wwc_core::group::game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
@@ -41,7 +41,11 @@ impl<'a> Format<'a> for UnplayedGroupGame {
                 C!["game-score-input"],
                 attrs![At::Size => 2],
                 input_ev(Ev::Input, |score| {
-                    Msg::PlayGame(score_input.update_score(score))
+                    if let Ok(score) = score_input.try_parse_score(score) {
+                        Msg::PlayGame(score)
+                    } else {
+                        Msg::UnfinishedScoreInput
+                    }
                 })
             ]],
             td![""],
@@ -68,8 +72,8 @@ impl ScoreInput {
         }
     }
 
-    fn update_score(self, score: String) -> Self {
-        let score = score.parse().unwrap();
-        ScoreInput { score, ..self }
+    fn try_parse_score(self, score: String) -> Result<Self, ()> {
+        let score = score.parse().map_err(|_| ())?;
+        Ok(ScoreInput { score, ..self })
     }
 }
