@@ -5,7 +5,7 @@
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use thiserror::Error;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::GoalCount;
@@ -61,25 +61,25 @@ pub struct ParseTeam {
     rank: Option<Rank>,
 }
 
-impl TryInto<Team> for ParseTeam {
+impl TryFrom<ParseTeam> for Team {
     type Error = LsvParseError;
-    fn try_into(self) -> Result<Team, Self::Error> {
-        if let Some(rank) = self.rank {
+    fn try_from(parse_team: ParseTeam) -> Result<Team, Self::Error> {
+        if let Some(rank) = parse_team.rank {
             Ok(Team::new(
-                self.id,
-                &self.name,
-                &self.fifa_code,
-                &self.iso2,
+                parse_team.id,
+                &parse_team.name,
+                &parse_team.fifa_code,
+                &parse_team.iso2,
                 rank,
             ))
         } else {
             //Err(Self::Error::TeamError)
             //TODO: How to solve missing rank?
             Ok(Team::new(
-                self.id,
-                &self.name,
-                &self.fifa_code,
-                &self.iso2,
+                parse_team.id,
+                &parse_team.name,
+                &parse_team.fifa_code,
+                &parse_team.iso2,
                 Rank(0),
             ))
         }

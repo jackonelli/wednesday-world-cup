@@ -42,22 +42,6 @@ impl Into<wwc_core::Team> for Team {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
-#[primary_key(id)]
-#[table_name = "group_game_map"]
-#[belongs_to(parent = "Game", foreign_key = "id")]
-pub struct GroupGameMap {
-    pub id: i32,
-    pub group_id_: String,
-}
-
-#[derive(Insertable)]
-#[table_name = "group_game_map"]
-pub struct NewGroupGameMap<'a> {
-    pub id: i32,
-    pub group_id_: &'a str,
-}
-
-#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Team", foreign_key = "id")]
 pub struct Game {
     pub id: i32,
@@ -153,6 +137,22 @@ impl From<Game> for UnplayedGroupGame {
             date: wwc_core::Date::mock(),
         }
     }
+}
+
+#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+#[primary_key(id)]
+#[table_name = "group_game_map"]
+#[belongs_to(parent = "Game", foreign_key = "id")]
+pub struct GroupGameMap {
+    pub id: i32,
+    pub group_id_: String,
+}
+
+#[derive(Insertable)]
+#[table_name = "group_game_map"]
+pub struct NewGroupGameMap<'a> {
+    pub id: i32,
+    pub group_id_: &'a str,
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]

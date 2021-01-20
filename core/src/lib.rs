@@ -44,20 +44,20 @@
 #![cfg_attr(feature = "clippy", warn(unseparated_literal_suffix))]
 #![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
 
+pub mod error;
 pub mod fair_play;
 pub mod game;
 pub mod group;
 // pub mod playoff;
 pub mod team;
 pub mod utils;
-
 // Exports
 pub use team::Team;
 pub use utils::date::Date;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
-// TODO: Is this necessary in the core crate? I'd rather move this to webass. crates which includes
+// TODO: Is this necessary in the core crate? I'd rather move this to wasm crates which includes
 // this. I think it should work that way but I'm not sure.
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]

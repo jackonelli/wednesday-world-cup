@@ -1,13 +1,15 @@
 #![forbid(unsafe_code)]
 use itertools::Itertools;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use structopt::StructOpt;
+use thiserror::Error;
+use wwc_core::error::WwcError;
 use wwc_core::group::game::GroupGameId;
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::Teams;
-use wwc_data::lsv::lsv_data_from_file;
+use wwc_core::team::{Team, Teams};
+use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
 
-fn main() {
+fn main() -> Result<(), CliError> {
     let opt = Opt::from_args();
     match opt {
         Opt::Add(table) => match table {
@@ -15,8 +17,8 @@ fn main() {
             Table::Games => add_games(),
             Table::GroupGameMaps => add_groups(),
             Table::All => {
-                add_teams();
-                add_games();
+                add_teams()?;
+                add_games()?;
                 add_groups()
             }
         },
@@ -25,36 +27,38 @@ fn main() {
             Table::Games => list_games(),
             Table::GroupGameMaps => list_group_maps(),
             Table::All => {
-                list_teams();
-                list_games();
+                list_teams()?;
+                list_games()?;
                 list_group_maps()
             }
         },
         Opt::Clear(table) => match table {
-            Table::Teams => wwc_db::clear_teams(),
-            Table::Games => wwc_db::clear_games(),
-            Table::GroupGameMaps => wwc_db::clear_group_game_maps(),
+            Table::Teams => Ok(wwc_db::clear_teams()?),
+            Table::Games => Ok(wwc_db::clear_games()?),
+            Table::GroupGameMaps => Ok(wwc_db::clear_group_game_maps()?),
             Table::All => {
-                wwc_db::clear_teams();
-                wwc_db::clear_games();
-                wwc_db::clear_group_game_maps();
+                wwc_db::clear_teams()?;
+                wwc_db::clear_games()?;
+                Ok(wwc_db::clear_group_game_maps()?)
             }
         },
     }
 }
 
-fn list_teams() {
-    let teams = wwc_db::get_teams();
+fn list_teams() -> Result<(), CliError> {
+    let teams = wwc_db::get_teams()?;
     teams.for_each(|team| println!("{:?}", team));
+    Ok(())
 }
 
-fn list_games() {
-    let games = wwc_db::get_games();
+fn list_games() -> Result<(), CliError> {
+    let games = wwc_db::get_games()?;
     games.iter().for_each(|game| println!("{:?}", game));
+    Ok(())
 }
 
-fn list_group_maps() {
-    let group_game_maps = wwc_db::get_group_game_maps();
+fn list_group_maps() -> Result<(), CliError> {
+    let group_game_maps = wwc_db::get_group_game_maps()?;
     group_game_maps
         .map(|(game, group)| (group, game))
         .into_group_map()
@@ -68,20 +72,26 @@ fn list_group_maps() {
                     .fold(String::new(), |acc, x| format!("{} {},", acc, x))
             )
         });
+    Ok(())
 }
 
-fn add_teams() {
+fn add_teams() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
-    let teams: Teams = data
+    let teams: Result<Teams, CliError> = data
         .teams
         .into_iter()
-        .map(|team| (team.id, team.try_into().unwrap()))
+        .map(|parse_team| Team::try_from(parse_team).map_err(CliError::from))
+        .map(|team| team.map(|ok_team| (ok_team.id, ok_team)))
         .collect();
-    teams.iter().for_each(|(_, team)| wwc_db::insert_team(team));
+
+    teams?
+        .iter()
+        .for_each(|(_, team)| wwc_db::insert_team(team));
+    Ok(())
 }
 
-fn add_games() {
+fn add_games() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
     let groups: Result<Vec<Group>, GroupError> = data
@@ -93,7 +103,7 @@ fn add_games() {
             group
         })
         .collect();
-    let groups = groups.expect("Could not parse groups");
+    let groups = groups.map_err(WwcError::from)?;
     groups
         .iter()
         .flat_map(|group| group.unplayed_games())
@@ -102,9 +112,10 @@ fn add_games() {
         .iter()
         .flat_map(|group| group.played_games())
         .for_each(wwc_db::insert_game);
+    Ok(())
 }
 
-fn add_groups() {
+fn add_groups() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
     let groups: Result<Groups, GroupError> = data
@@ -132,6 +143,7 @@ fn add_groups() {
     group_games
         .iter()
         .for_each(|x| wwc_db::insert_group_game_mapping(*x));
+    Ok(())
 }
 
 #[derive(Debug, StructOpt)]
@@ -156,4 +168,14 @@ pub enum Table {
     GroupGameMaps,
     #[structopt(name = "all")]
     All,
+}
+
+#[derive(Error, Debug)]
+pub enum CliError {
+    #[error("Cli: {0}")]
+    Db(#[from] wwc_db::DbError),
+    #[error("Cli: {0}")]
+    WwcCore(#[from] WwcError),
+    #[error("Parse: {0}")]
+    Parse(#[from] LsvParseError),
 }

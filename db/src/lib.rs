@@ -9,15 +9,18 @@ use crate::schema::games::dsl::*;
 use crate::schema::group_game_map::dsl::*;
 use crate::schema::teams::dsl::*;
 use diesel::prelude::*;
+use diesel::result::Error as QueryError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
 use std::convert::TryFrom;
 use std::env;
+use thiserror::Error;
 use wwc_core::group::{
     game::{GroupGameId, PlayedGroupGame, UnplayedGroupGame},
     GroupId,
 };
 
+// TODO: Err.
 fn establish_connection() -> SqliteConnection {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -25,48 +28,39 @@ fn establish_connection() -> SqliteConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn get_games() -> Vec<Game> {
+pub fn get_games() -> Result<Vec<Game>, DbError> {
     let connection = establish_connection();
-    games
-        .load::<Game>(&connection)
-        .expect("Error loading posts")
+    Ok(games.load::<Game>(&connection)?)
 }
 
-pub fn get_group_games() -> (Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>) {
+pub fn get_group_games() -> Result<(Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>), DbError> {
     let connection = establish_connection();
-    let group_games = games
-        .filter(type_.eq("group"))
-        .load::<Game>(&connection)
-        .expect("Error loading posts");
+    let group_games = games.filter(type_.eq("group")).load::<Game>(&connection)?;
 
-    group_games.into_iter().partition_map(|game| {
+    Ok(group_games.into_iter().partition_map(|game| {
         if game.played {
             Either::Left(game.into())
         } else {
             Either::Right(game.into())
         }
-    })
+    }))
 }
 
-pub fn get_teams() -> impl Iterator<Item = wwc_core::Team> {
+pub fn get_teams() -> Result<impl Iterator<Item = wwc_core::Team>, DbError> {
     let connection = establish_connection();
-    let db_teams = teams
-        .load::<Team>(&connection)
-        .expect("Error loading posts");
-    db_teams.into_iter().map(|team| team.into())
+    let db_teams = teams.load::<Team>(&connection)?;
+    Ok(db_teams.into_iter().map(|team| team.into()))
 }
 
-pub fn get_group_game_maps() -> impl Iterator<Item = (GroupGameId, GroupId)> {
+pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GroupGameId, GroupId)>, DbError> {
     let connection = establish_connection();
-    let db_teams = group_game_map
-        .load::<GroupGameMap>(&connection)
-        .expect("Error loading posts");
-    db_teams.into_iter().map(|map_| {
+    let db_teams = group_game_map.load::<GroupGameMap>(&connection)?;
+    Ok(db_teams.into_iter().map(|map_| {
         (
             GroupGameId::from(u8::try_from(map_.id).unwrap()),
             GroupId::from(map_.group_id_.chars().next().unwrap()),
         )
-    })
+    }))
 }
 
 pub fn insert_team(team: &wwc_core::Team) {
@@ -110,21 +104,34 @@ pub fn insert_game<'a, T: Into<NewGame<'a>>>(game: T) {
         .expect("Error saving new post");
 }
 
-pub fn clear_teams() {
+pub fn clear_teams() -> Result<(), DbError> {
     let connection = establish_connection();
     diesel::delete(teams)
         .execute(&connection)
         .expect("Could not clear table");
+    Ok(())
 }
-pub fn clear_games() {
+pub fn clear_games() -> Result<(), DbError> {
     let connection = establish_connection();
     diesel::delete(games)
         .execute(&connection)
         .expect("Could not clear table");
+    Ok(())
 }
-pub fn clear_group_game_maps() {
+pub fn clear_group_game_maps() -> Result<(), DbError> {
     let connection = establish_connection();
     diesel::delete(group_game_map)
         .execute(&connection)
         .expect("Could not clear table");
+    Ok(())
+}
+
+#[derive(Error, Debug)]
+pub enum DbError {
+    #[error("Database connection")]
+    Connection,
+    #[error("Database query: {0}")]
+    Query(#[from] QueryError),
+    #[error("Could you be more specific: {0}")]
+    Generic(String),
 }

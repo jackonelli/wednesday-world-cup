@@ -1,13 +1,13 @@
 use crate::data::{get_groups, get_teams};
+use crate::game::ScoreInput;
 use crate::group::view_group_play;
 use seed::{prelude::*, *};
-use crate::game::ScoreInput;
 use wwc_core::{
     group::{
         order::{fifa_2018, Random, Rules},
         GroupId, Groups,
     },
-    team::{Teams},
+    team::Teams,
 };
 const ENTER_KEY: &str = "Enter";
 const ESCAPE_KEY: &str = "Escape";
@@ -106,4 +106,3 @@ pub fn start() {
 
     App::start(root_element, init, update, view);
 }
-

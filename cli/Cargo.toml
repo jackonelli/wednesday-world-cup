@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3.11"
 itertools = ">=0.9"
+thiserror = ">=1.0"
 wwc_core = {path = "../core"}
 wwc_data = {path = "../data"}
 wwc_db = {path = "../db"}
