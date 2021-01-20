@@ -85,10 +85,9 @@ fn add_teams() -> Result<(), CliError> {
         .map(|team| team.map(|ok_team| (ok_team.id, ok_team)))
         .collect();
 
-    teams?
+    Ok(teams?
         .iter()
-        .for_each(|(_, team)| wwc_db::insert_team(team));
-    Ok(())
+        .try_for_each(|(_, team)| wwc_db::insert_team(team).map_err(CliError::from))?)
 }
 
 fn add_games() -> Result<(), CliError> {
@@ -107,11 +106,11 @@ fn add_games() -> Result<(), CliError> {
     groups
         .iter()
         .flat_map(|group| group.unplayed_games())
-        .for_each(wwc_db::insert_game);
+        .try_for_each(wwc_db::insert_game)?;
     groups
         .iter()
         .flat_map(|group| group.played_games())
-        .for_each(wwc_db::insert_game);
+        .try_for_each(wwc_db::insert_game)?;
     Ok(())
 }
 
@@ -140,10 +139,9 @@ fn add_groups() -> Result<(), CliError> {
                 .chain(group.unplayed_games().map(move |game| (*id, game.id)))
         })
         .collect();
-    group_games
+    Ok(group_games
         .iter()
-        .for_each(|x| wwc_db::insert_group_game_mapping(*x));
-    Ok(())
+        .try_for_each(|x| wwc_db::insert_group_game_mapping(*x))?)
 }
 
 #[derive(Debug, StructOpt)]
