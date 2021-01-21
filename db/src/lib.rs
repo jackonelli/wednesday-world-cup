@@ -23,7 +23,7 @@ use wwc_core::group::{
 
 fn establish_connection() -> Result<SqliteConnection, DbError> {
     dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").map_err(|_| DbError::DbUrlMissing)?;
     Ok(SqliteConnection::establish(&database_url)?)
 }
 
@@ -127,6 +127,8 @@ pub fn clear_group_game_maps() -> Result<(), DbError> {
 
 #[derive(Error, Debug)]
 pub enum DbError {
+    #[error("Missing 'DATABASE_URL'")]
+    DbUrlMissing,
     #[error("Database connection: {0}")]
     Connection(#[from] ConnectionError),
     #[error("Database query: {0}")]

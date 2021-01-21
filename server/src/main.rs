@@ -7,49 +7,97 @@ use rocket::http::Method;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::Json;
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
+use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wwc_core::error::WwcError;
-use wwc_core::group::{Group, Groups};
+use wwc_core::group::{
+    game::GroupGameId, game::PlayedGroupGame, game::UnplayedGroupGame, Group, GroupId, Groups,
+};
 use wwc_core::team::Teams;
 
+/// Get teams
 #[get("/get_teams")]
-fn get_teams() -> Result<Json<Teams>, BadRequest<ServerError>> {
+fn get_teams() -> Result<Json<Teams>, BadRequest<String>> {
     let teams: Teams = wwc_db::get_teams()
-        .map_err(|err| BadRequest(Some(ServerError::from(err))))?
+        .map_err(ServerError::from)
+        .map_err(BadRequest::from)?
         .map(|x| (x.id, x))
         .collect();
     Ok(Json(teams))
 }
 
+/// Get groups
+///
+/// Loads group games and a GameId: GroupId map from the db
+/// The games (played and unplayed) games are then mapped to prospective groups.
+/// The final groups are validated (with a fallible constructor) and collected together.
 #[get("/get_groups")]
-fn get_groups() -> Result<Json<Groups>, BadRequest<ServerError>> {
-    let (played_games, unplayed_games) =
-        wwc_db::get_group_games().map_err(|err| BadRequest(Some(ServerError::from(err))))?;
-    let group_game_map = wwc_db::get_group_game_maps()
-        .map_err(|err| BadRequest(Some(ServerError::from(err))))?
-        .map(|(game, group)| (group, game))
-        .into_group_map();
-    // TODO: Very inefficient. Better to iterate overe the games and assign to groups.
-    Ok(Json(group_game_map.iter().try_fold(
-        Groups::new(),
-        |mut acc, (id, games)| {
-            let group = Group::try_new(
-                unplayed_games
-                    .iter()
-                    .filter(|x| games.contains(&x.id))
-                    .cloned()
-                    .collect(),
-                played_games
-                    .iter()
-                    .filter(|x| games.contains(&x.id))
-                    .cloned()
-                    .collect(),
-            )
-            .map_err(|err| BadRequest(Some(ServerError::from(WwcError::from(err)))))?;
-            acc.insert(*id, group);
-            Ok(acc)
-        },
-    )?))
+fn get_groups() -> Result<Json<Groups>, BadRequest<String>> {
+    let (played_games, unplayed_games) = wwc_db::get_group_games()
+        .map_err(ServerError::from)
+        .map_err(BadRequest::from)?;
+    let game_group_map = wwc_db::get_group_game_maps()
+        .map_err(ServerError::from)
+        .map_err(BadRequest::from)?
+        .collect::<HashMap<GroupGameId, GroupId>>();
+
+    let empty_groups = game_group_map
+        .iter()
+        .map(|(_game_id, group_id)| group_id)
+        .unique();
+
+    let groups_played =
+        played_games.into_iter().fold(
+            empty_groups
+                .clone()
+                .map(|group_id| (*group_id, Vec::new()))
+                .collect::<BTreeMap<GroupId, Vec<PlayedGroupGame>>>(),
+            |mut acc, game| {
+                let entry = acc
+                    .entry(*game_group_map.get(&game.id).unwrap_or_else(|| {
+                        panic!("game group map discrepancy: no id: {:?}", game.id)
+                    }))
+                    .or_insert_with(Vec::new);
+                entry.push(game);
+                acc
+            },
+        );
+
+    let groups_unplayed =
+        unplayed_games.into_iter().fold(
+            empty_groups
+                .clone()
+                .map(|group_id| (*group_id, Vec::new()))
+                .collect::<BTreeMap<GroupId, Vec<UnplayedGroupGame>>>(),
+            |mut acc, game| {
+                let entry = acc
+                    .entry(*game_group_map.get(&game.id).unwrap_or_else(|| {
+                        panic!("game group map discrepancy: no id: {:?}", game.id)
+                    }))
+                    .or_insert_with(Vec::new);
+                entry.push(game);
+                acc
+            },
+        );
+
+    let groups: Result<Groups, WwcError> = groups_played
+        .into_iter()
+        .zip(groups_unplayed.into_iter())
+        .map(
+            |((group_id_played, played), (group_id_unplayed, unplayed))| {
+                assert!(group_id_played == group_id_unplayed);
+                Group::try_new(unplayed, played)
+                    .map(|group| (group_id_played, group))
+                    .map_err(WwcError::from)
+            },
+        )
+        .collect();
+
+    Ok(Json(
+        groups
+            .map_err(ServerError::from)
+            .map_err(BadRequest::from)?,
+    ))
 }
 
 fn make_cors() -> Cors {
@@ -85,9 +133,15 @@ fn main() {
 }
 
 #[derive(Error, Debug)]
-pub enum ServerError {
+enum ServerError {
     #[error("Database error: {0}")]
     Db(#[from] wwc_db::DbError),
     #[error("Wwc core error: {0}")]
     Wwc(#[from] WwcError),
+}
+
+impl From<ServerError> for BadRequest<String> {
+    fn from(server_err: ServerError) -> Self {
+        BadRequest(Some(server_err.to_string()))
+    }
 }
