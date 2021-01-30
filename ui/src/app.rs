@@ -5,6 +5,7 @@ use seed::{prelude::*, *};
 use wwc_core::{
     group::{
         order::{fifa_2018, Random, Rules},
+        game::GroupGameId,
         GroupId, Groups,
     },
     team::Teams,
@@ -26,6 +27,7 @@ pub(crate) enum Msg {
     FetchGroups,
     GroupsFetched(fetch::Result<Groups>),
     PlayGame(ScoreInput),
+    UnplayGame(GroupId, GroupGameId),
     UnfinishedScoreInput,
 }
 
@@ -81,6 +83,12 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::PlayGame(input) => {
             let group = model.groups.get_mut(&input.group_id).unwrap();
             group.play_game(input.game_id, input.score);
+
+        }
+        Msg::UnplayGame(group_id, game_id) => {
+            log!("Replaying game {} in group {}", game_id, group_id);
+            let group = model.groups.get_mut(&group_id).unwrap();
+            group.unplay_game(game_id);
         }
         _ => {}
     }

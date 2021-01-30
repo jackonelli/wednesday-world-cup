@@ -7,20 +7,28 @@ use wwc_core::group::game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGa
 use wwc_core::group::GroupId;
 use wwc_core::team::Teams;
 
-impl Format<'_> for PlayedGroupGame {
-    type Context = Teams;
-    fn format(&self, cxt: &Teams) -> Node<Msg> {
-        let home_team = cxt.get(&self.home).unwrap();
-        let away_team = cxt.get(&self.away).unwrap();
+impl<'a> Format<'a> for PlayedGroupGame {
+    type Context = (&'a Teams, GroupId);
+    fn format(&self, cxt: &(&Teams, GroupId)) -> Node<Msg> {
+        let (teams, group_id) = cxt;
+        let group_id = *group_id;
+        let home_team = teams.get(&self.home).unwrap();
+        let away_team = teams.get(&self.away).unwrap();
+        let game_id = self.id;
         tr![
             C!["played_game"],
-            el_key(&self.id),
+            el_key(&game_id),
             td![home_team.fifa_code.to_string()],
             td![format_team_flag(home_team)],
             td![self.score.home.to_string()],
             td![self.score.away.to_string()],
             td![away_team.fifa_code.to_string()],
             td![format_team_flag(away_team)],
+            // button!["&#8635;", ev(Ev::Click, |_| Msg::ReplayGame),],
+            button![
+                "\u{1F504}",
+                ev(Ev::Click, move |_| Msg::UnplayGame(group_id, game_id)),
+            ],
         ]
     }
 }

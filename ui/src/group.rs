@@ -49,7 +49,9 @@ fn format_group_games(group_id: &GroupId, group: &Group, teams: &Teams) -> Node<
         C!["games"],
         h4!("Games"),
         table![
-            group.played_games().map(|game| { game.format(teams) }),
+            group
+                .played_games()
+                .map(|game| { game.format(&(teams, *group_id)) }),
             group
                 .unplayed_games()
                 .map(|game| { game.format(&(teams, *group_id)) })
