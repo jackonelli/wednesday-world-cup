@@ -7,6 +7,9 @@ pub mod schema;
 use crate::models::*;
 use crate::schema::games::dsl::*;
 use crate::schema::group_game_map::dsl::*;
+use crate::schema::players::dsl::name as player_name;
+use crate::schema::players::dsl::players;
+use crate::schema::preds::dsl::*;
 use crate::schema::teams::dsl::*;
 use diesel::prelude::*;
 use diesel::result::ConnectionError;
@@ -26,6 +29,30 @@ fn establish_connection() -> Result<SqliteConnection, DbError> {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").map_err(|_| DbError::DbUrlMissing)?;
     Ok(SqliteConnection::establish(&database_url)?)
+}
+
+pub fn register_player(name_: &str) -> Result<(), DbError> {
+    let connection = establish_connection()?;
+    let db_players = players
+        .filter(player_name.eq(name_))
+        .load::<Player>(&connection)?;
+    let player = NewPlayer { name: name_ };
+    if db_players.is_empty() {
+        diesel::insert_into(players)
+            .values(&player)
+            .execute(&connection)?;
+        Ok(())
+    } else {
+        Err(DbError::Generic(format!(
+            "Player with name: '{}' already in db",
+            name_
+        )))
+    }
+}
+
+pub fn get_players() -> Result<Vec<Player>, DbError> {
+    let connection = establish_connection()?;
+    Ok(players.load::<Player>(&connection)?)
 }
 
 pub fn get_games() -> Result<Vec<Game>, DbError> {
@@ -104,6 +131,13 @@ pub fn insert_game<'a, T: Into<NewGame<'a>>>(game: T) -> Result<(), DbError> {
     Ok(())
 }
 
+pub fn clear_players() -> Result<(), DbError> {
+    let connection = establish_connection()?;
+    diesel::delete(players)
+        .execute(&connection)
+        .expect("Could not clear table");
+    Ok(())
+}
 pub fn clear_teams() -> Result<(), DbError> {
     let connection = establish_connection()?;
     diesel::delete(teams)

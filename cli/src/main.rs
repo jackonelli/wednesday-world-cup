@@ -12,7 +12,11 @@ use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
 fn main() -> Result<(), CliError> {
     let opt = Opt::from_args();
     match opt {
+        Opt::Register(new_instance) => match new_instance {
+            Instance::Player { name } => register_player(name),
+        },
         Opt::Add(table) => match table {
+            Table::Players => Ok(()),
             Table::Teams => add_teams(),
             Table::Games => add_games(),
             Table::GroupGameMaps => add_groups(),
@@ -23,16 +27,19 @@ fn main() -> Result<(), CliError> {
             }
         },
         Opt::List(table) => match table {
+            Table::Players => list_players(),
             Table::Teams => list_teams(),
             Table::Games => list_games(),
             Table::GroupGameMaps => list_group_maps(),
             Table::All => {
+                list_players()?;
                 list_teams()?;
                 list_games()?;
                 list_group_maps()
             }
         },
         Opt::Clear(table) => match table {
+            Table::Players => Ok(wwc_db::clear_players()?),
             Table::Teams => Ok(wwc_db::clear_teams()?),
             Table::Games => Ok(wwc_db::clear_games()?),
             Table::GroupGameMaps => Ok(wwc_db::clear_group_game_maps()?),
@@ -45,34 +52,8 @@ fn main() -> Result<(), CliError> {
     }
 }
 
-fn list_teams() -> Result<(), CliError> {
-    let teams = wwc_db::get_teams()?;
-    teams.for_each(|team| println!("{:?}", team));
-    Ok(())
-}
-
-fn list_games() -> Result<(), CliError> {
-    let games = wwc_db::get_games()?;
-    games.iter().for_each(|game| println!("{:?}", game));
-    Ok(())
-}
-
-fn list_group_maps() -> Result<(), CliError> {
-    let group_game_maps = wwc_db::get_group_game_maps()?;
-    group_game_maps
-        .map(|(game, group)| (group, game))
-        .into_group_map()
-        .iter()
-        .for_each(|(group_id, games)| {
-            println!(
-                "{}: {}",
-                group_id,
-                games
-                    .iter()
-                    .fold(String::new(), |acc, x| format!("{} {},", acc, x))
-            )
-        });
-    Ok(())
+fn register_player(name: String) -> Result<(), CliError> {
+    Ok(wwc_db::register_player(&name)?)
 }
 
 fn add_teams() -> Result<(), CliError> {
@@ -144,9 +125,51 @@ fn add_groups() -> Result<(), CliError> {
         .try_for_each(|x| wwc_db::insert_group_game_mapping(*x))?)
 }
 
+fn list_players() -> Result<(), CliError> {
+    let players = wwc_db::get_players()?;
+    // Very strange bug:
+    // players.for_each(|player| println!("{:?}", player));
+    for player in players {
+        println!("{:?}", player);
+    }
+    Ok(())
+}
+
+fn list_teams() -> Result<(), CliError> {
+    let teams = wwc_db::get_teams()?;
+    teams.for_each(|team| println!("{:?}", team));
+    Ok(())
+}
+
+fn list_games() -> Result<(), CliError> {
+    let games = wwc_db::get_games()?;
+    games.iter().for_each(|game| println!("{:?}", game));
+    Ok(())
+}
+
+fn list_group_maps() -> Result<(), CliError> {
+    let group_game_maps = wwc_db::get_group_game_maps()?;
+    group_game_maps
+        .map(|(game, group)| (group, game))
+        .into_group_map()
+        .iter()
+        .for_each(|(group_id, games)| {
+            println!(
+                "{}: {}",
+                group_id,
+                games
+                    .iter()
+                    .fold(String::new(), |acc, x| format!("{} {},", acc, x))
+            )
+        });
+    Ok(())
+}
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
 pub enum Opt {
+    #[structopt(name = "register")]
+    Register(Instance),
     #[structopt(name = "add")]
     Add(Table),
     #[structopt(name = "list")]
@@ -157,7 +180,16 @@ pub enum Opt {
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "bryggio-cli", about = "cli usage")]
+pub enum Instance {
+    #[structopt(name = "player")]
+    Player { name: String },
+}
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "bryggio-cli", about = "cli usage")]
 pub enum Table {
+    #[structopt(name = "players")]
+    Players,
     #[structopt(name = "teams")]
     Teams,
     #[structopt(name = "games")]

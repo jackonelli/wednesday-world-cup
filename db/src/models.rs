@@ -1,4 +1,4 @@
-use crate::schema::{games, group_game_map, preds, teams};
+use crate::schema::{games, group_game_map, players, preds, teams};
 use serde::Serialize;
 use std::convert::{TryFrom, TryInto};
 use wwc_core::fair_play::FairPlayScore;
@@ -176,19 +176,32 @@ pub struct NewGroupGameMap<'a> {
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Game")]
+#[belongs_to(parent = "Player")]
 pub struct Pred {
     pub id: i32,
+    pub player_id: i32,
     pub game_id: i32,
-    pub player: String,
     pub home_result: i32,
     pub away_result: i32,
 }
 
 #[derive(Insertable)]
 #[table_name = "preds"]
-pub struct NewPred<'a> {
+pub struct NewPred {
     pub id: i32,
-    pub player: &'a str,
+    pub player_id: i32,
     pub home_result: i32,
     pub away_result: i32,
+}
+
+#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+pub struct Player {
+    pub id: i32,
+    pub name: String,
+}
+
+#[derive(Insertable)]
+#[table_name = "players"]
+pub struct NewPlayer<'a> {
+    pub name: &'a str,
 }
