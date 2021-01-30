@@ -44,12 +44,12 @@ pub struct GameId(pub u32);
     Add,
     AddAssign,
 )]
-pub struct GoalCount(pub u8);
+pub struct GoalCount(pub u32);
 
 impl Sub for GoalCount {
     type Output = GoalDiff;
     fn sub(self, other: Self) -> Self::Output {
-        GoalDiff(self.0 as i8 - other.0 as i8)
+        GoalDiff(self.0 as i32 - other.0 as i32)
     }
 }
 
@@ -79,7 +79,7 @@ impl num::Zero for GoalCount {
     Add,
     AddAssign,
 )]
-pub struct GoalDiff(pub i8);
+pub struct GoalDiff(pub i32);
 
 impl num::Zero for GoalDiff {
     fn zero() -> GoalDiff {
@@ -106,7 +106,7 @@ impl num::Zero for GoalDiff {
     Add,
     AddAssign,
 )]
-pub struct NumGames(pub u8);
+pub struct NumGames(pub u32);
 
 impl num::Zero for NumGames {
     fn zero() -> NumGames {

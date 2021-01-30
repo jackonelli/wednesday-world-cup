@@ -17,7 +17,7 @@ To avoid that -- and in fact to make this class of bugs unrepresentable -- this 
 
 ```rust
 #derive[..., Add, ...]
-pub struct GoalCount(pub u8);
+pub struct GoalCount(pub u32);
 ```
 
 It is much more verbose to implement in the first place but when it's in place it's very ergonomic/hard to misuse.
@@ -32,7 +32,7 @@ The `Sub` trait on the other hand is manually implemented to reflect the fact th
 impl Sub for GoalCount {
     type Output = GoalDiff;
     fn sub(self, other: Self) -> Self::Output {
-        GoalDiff(self.0 as i8 - other.0 as i8)
+        GoalDiff(self.0 as i32 - other.0 as i32)
     }
 }
 ```

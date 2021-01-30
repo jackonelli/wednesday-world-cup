@@ -16,7 +16,7 @@ use std::fmt;
     From,
     Into,
 )]
-pub struct TeamId(pub u8);
+pub struct TeamId(pub u32);
 
 pub type Teams = HashMap<TeamId, Team>;
 
@@ -34,7 +34,7 @@ pub type Teams = HashMap<TeamId, Team>;
     From,
     Into,
 )]
-pub struct TeamRank(pub u8);
+pub struct TeamRank(pub u32);
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Team {

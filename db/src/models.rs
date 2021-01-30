@@ -27,11 +27,11 @@ pub struct NewTeam<'a> {
 
 impl From<Team> for wwc_core::Team {
     fn from(db_team: Team) -> wwc_core::Team {
-        let id = TeamId(u8::try_from(db_team.id).unwrap());
+        let id = TeamId(u32::try_from(db_team.id).unwrap());
         let name = TeamName::from(db_team.name);
         let fifa_code = FifaCode::from(db_team.fifa_code);
         let iso2 = Iso2::from(db_team.iso2);
-        let rank = TeamRank(u8::try_from(db_team.rank_).unwrap());
+        let rank = TeamRank(u32::try_from(db_team.rank_).unwrap());
         wwc_core::Team {
             id,
             name,
@@ -84,8 +84,8 @@ impl<'a> From<&'a UnplayedGroupGame> for NewGame<'a> {
                 )
             }),
             type_: "group",
-            home_team: u8::from(game.home).into(),
-            away_team: u8::from(game.away).into(),
+            home_team: u32::from(game.home).try_into().expect("team id u32 -> i32"),
+            away_team: u32::from(game.away).try_into().expect("team id u32 -> i32"),
             home_result: None,
             away_result: None,
             home_penalty: None,
@@ -107,10 +107,18 @@ impl<'a> From<&'a PlayedGroupGame> for NewGame<'a> {
                 )
             }),
             type_: "group",
-            home_team: u8::from(game.home).into(),
-            away_team: u8::from(game.away).into(),
-            home_result: Some(u8::from(game.score.home).into()),
-            away_result: Some(u8::from(game.score.away).into()),
+            home_team: u32::from(game.home).try_into().expect("team id u32 -> i32"),
+            away_team: u32::from(game.away).try_into().expect("team id u32 -> i32"),
+            home_result: Some(
+                u32::from(game.score.home)
+                    .try_into()
+                    .expect("result u32 -> i32"),
+            ),
+            away_result: Some(
+                u32::from(game.score.away)
+                    .try_into()
+                    .expect("result u32 -> i32"),
+            ),
             home_penalty: None,
             away_penalty: None,
             // TODO: FairPlay --> FairPlayScore
@@ -127,11 +135,11 @@ impl From<Game> for PlayedGroupGame {
     fn from(game: Game) -> Self {
         PlayedGroupGame {
             id: GameId::from(u32::try_from(game.id).unwrap()),
-            home: TeamId::from(u8::try_from(game.home_team).unwrap()),
-            away: TeamId::from(u8::try_from(game.away_team).unwrap()),
+            home: TeamId::from(u32::try_from(game.home_team).unwrap()),
+            away: TeamId::from(u32::try_from(game.away_team).unwrap()),
             score: Score::from((
-                u8::try_from(game.home_result.unwrap()).unwrap(),
-                u8::try_from(game.away_result.unwrap()).unwrap(),
+                u32::try_from(game.home_result.unwrap()).unwrap(),
+                u32::try_from(game.away_result.unwrap()).unwrap(),
             )),
             fair_play: FairPlayScore::default(),
             date: wwc_core::Date::mock(),
@@ -143,8 +151,8 @@ impl From<Game> for UnplayedGroupGame {
     fn from(game: Game) -> Self {
         UnplayedGroupGame {
             id: GameId::from(u32::try_from(game.id).unwrap()),
-            home: TeamId::from(u8::try_from(game.home_team).unwrap()),
-            away: TeamId::from(u8::try_from(game.away_team).unwrap()),
+            home: TeamId::from(u32::try_from(game.home_team).unwrap()),
+            away: TeamId::from(u32::try_from(game.away_team).unwrap()),
             date: wwc_core::Date::mock(),
         }
     }

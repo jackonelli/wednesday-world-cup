@@ -50,10 +50,10 @@ impl FromStr for Score {
         };
         //TODO: Better error handling
         let home = home
-            .parse::<u8>()
+            .parse::<u32>()
             .map_err(|_err| GroupError::GenericError)?;
         let away = away
-            .parse::<u8>()
+            .parse::<u32>()
             .map_err(|_err| GroupError::GenericError)?;
         Ok(Score::from((home, away)))
     }

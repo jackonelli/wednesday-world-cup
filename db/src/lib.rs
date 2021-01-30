@@ -65,11 +65,11 @@ pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, 
 
 pub fn insert_team(team: &wwc_core::Team) -> Result<(), DbError> {
     let team = NewTeam {
-        id: u8::from(team.id).into(),
+        id: u32::from(team.id).try_into().expect("team id u32 -> i32"),
         name: &String::from(team.name.clone()),
         fifa_code: &String::from(team.fifa_code.clone()),
         iso2: &String::from(team.iso2.clone()),
-        rank_: u8::from(team.rank).into(),
+        rank_: u32::from(team.rank).try_into().expect("team id u32 -> i32"),
     };
 
     let connection = establish_connection()?;

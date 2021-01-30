@@ -72,7 +72,7 @@ pub trait FairPlayValue {
     Add,
     AddAssign,
 )]
-pub struct FifaFairPlayValue(i8);
+pub struct FifaFairPlayValue(i32);
 
 impl FairPlayValue for FifaFairPlayValue {
     /// Calculate fair play value based on Fifa rules.
@@ -84,9 +84,9 @@ impl FairPlayValue for FifaFairPlayValue {
 // TODO: This trait impl is good for internal (test) ergonomics,
 // but I would rather not leak it to the pub API.
 // Private trait impl possible?
-impl From<u8> for FifaFairPlayValue {
-    fn from(magnitude: u8) -> Self {
-        FifaFairPlayValue(-(magnitude as i8))
+impl From<u32> for FifaFairPlayValue {
+    fn from(magnitude: u32) -> Self {
+        FifaFairPlayValue(-(magnitude as i32))
     }
 }
 
@@ -113,7 +113,7 @@ impl num::Zero for FifaFairPlayValue {
     Add,
     AddAssign,
 )]
-pub struct UefaFairPlayValue(i8);
+pub struct UefaFairPlayValue(i32);
 
 impl FairPlayValue for UefaFairPlayValue {
     /// Calculate fair play value based on Fifa rules.
@@ -125,9 +125,9 @@ impl FairPlayValue for UefaFairPlayValue {
 // TODO: This trait impl is good for internal (test) ergonomics,
 // but I would rather not leak it to the pub API.
 // Private trait impl possible?
-impl From<u8> for UefaFairPlayValue {
-    fn from(magnitude: u8) -> Self {
-        UefaFairPlayValue(-(magnitude as i8))
+impl From<u32> for UefaFairPlayValue {
+    fn from(magnitude: u32) -> Self {
+        UefaFairPlayValue(-(magnitude as i32))
     }
 }
 
@@ -143,11 +143,11 @@ impl num::Zero for UefaFairPlayValue {
 #[derive(
     Debug, Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, From, Add, AddAssign,
 )]
-pub struct CardCount(u8);
+pub struct CardCount(u32);
 
-impl Mul<i8> for CardCount {
-    type Output = i8;
-    fn mul(self, rhs: i8) -> Self::Output {
-        self.0 as i8 * rhs
+impl Mul<i32> for CardCount {
+    type Output = i32;
+    fn mul(self, rhs: i32) -> Self::Output {
+        self.0 as i32 * rhs
     }
 }

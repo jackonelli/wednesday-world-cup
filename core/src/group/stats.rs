@@ -142,8 +142,8 @@ pub struct NumWins(NumGames);
 impl UnaryStat for NumWins {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let (points_home, points_away) = GroupPoint::stat(game);
-        let wins_home = NumWins(NumGames((points_home == GroupPoint(3)) as u8));
-        let wins_away = NumWins(NumGames((points_away == GroupPoint(3)) as u8));
+        let wins_home = NumWins(NumGames((points_home == GroupPoint(3)) as u32));
+        let wins_away = NumWins(NumGames((points_away == GroupPoint(3)) as u32));
         (wins_home, wins_away)
     }
 }
@@ -182,10 +182,10 @@ impl UnaryStat for TableStats {
         let (goals_scored_home, goals_scored_away) = GoalCount::stat(game);
         let (fair_play_home, fair_play_away) = FifaFairPlayValue::stat(game);
         let (wins_home, wins_away) = NumWins::stat(game);
-        let losses_home = NumGames((points_home == GroupPoint(0)) as u8);
-        let draws_home = NumGames((points_home == GroupPoint(1)) as u8);
-        let losses_away = NumGames((points_away == GroupPoint(0)) as u8);
-        let draws_away = NumGames((points_away == GroupPoint(1)) as u8);
+        let losses_home = NumGames((points_home == GroupPoint(0)) as u32);
+        let draws_home = NumGames((points_home == GroupPoint(1)) as u32);
+        let losses_away = NumGames((points_away == GroupPoint(0)) as u32);
+        let draws_away = NumGames((points_away == GroupPoint(1)) as u32);
         let home = TableStats {
             points: points_home,
             goal_diff: goal_diff_home,
