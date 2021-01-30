@@ -2,8 +2,8 @@ use crate::app::Msg;
 use crate::format::Format;
 use crate::team::format_team_flag;
 use seed::{prelude::*, *};
-use wwc_core::game::GoalCount;
-use wwc_core::group::game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
+use wwc_core::game::{GameId, GoalCount};
+use wwc_core::group::game::{PlayedGroupGame, Score, UnplayedGroupGame};
 use wwc_core::group::GroupId;
 use wwc_core::team::Teams;
 
@@ -67,11 +67,11 @@ impl<'a> Format<'a> for UnplayedGroupGame {
 pub(crate) struct ScoreInput {
     pub(crate) score: Score,
     pub(crate) group_id: GroupId,
-    pub(crate) game_id: GroupGameId,
+    pub(crate) game_id: GameId,
 }
 
 impl ScoreInput {
-    fn placeholder(group_id: GroupId, game_id: GroupGameId) -> Self {
+    fn placeholder(group_id: GroupId, game_id: GameId) -> Self {
         let score = Score::from((GoalCount(0), GoalCount(0)));
         ScoreInput {
             score,

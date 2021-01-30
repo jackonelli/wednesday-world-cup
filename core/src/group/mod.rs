@@ -3,11 +3,12 @@ pub mod game;
 pub mod order;
 pub mod stats;
 use crate::fair_play::FairPlayScore;
+use crate::game::GameId;
 use crate::game::{Game, GoalCount, GoalDiff};
 use crate::team::{Team, TeamId, TeamRank};
 use crate::Date;
 use derive_more::{Add, AddAssign, Display, From, Into};
-use game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
+use game::{PlayedGroupGame, Score, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
 use serde::{Deserialize, Serialize};
@@ -117,7 +118,7 @@ impl Group {
         self.played_games.iter()
     }
 
-    pub fn play_game(&mut self, game_id: GroupGameId, score: Score) {
+    pub fn play_game(&mut self, game_id: GameId, score: Score) {
         let idx = self
             .unplayed_games
             .iter()
@@ -130,7 +131,7 @@ impl Group {
         self.played_games.push(game);
     }
 
-    pub fn unplay_game(&mut self, game_id: GroupGameId) {
+    pub fn unplay_game(&mut self, game_id: GameId) {
         let idx = self
             .played_games
             .iter()

@@ -2,7 +2,8 @@ use crate::schema::{games, group_game_map, preds, teams};
 use serde::Serialize;
 use std::convert::TryFrom;
 use wwc_core::fair_play::FairPlayScore;
-use wwc_core::group::game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
+use wwc_core::game::GameId;
+use wwc_core::group::game::{PlayedGroupGame, Score, UnplayedGroupGame};
 use wwc_core::team::{FifaCode, Iso2, TeamId, TeamName, TeamRank};
 
 #[derive(Debug, Serialize, Queryable, Identifiable)]
@@ -115,7 +116,7 @@ impl<'a> From<&'a PlayedGroupGame> for NewGame<'a> {
 impl From<Game> for PlayedGroupGame {
     fn from(game: Game) -> Self {
         PlayedGroupGame {
-            id: GroupGameId::from(u8::try_from(game.id).unwrap()),
+            id: GameId::from(u8::try_from(game.id).unwrap()),
             home: TeamId::from(u8::try_from(game.home_team).unwrap()),
             away: TeamId::from(u8::try_from(game.away_team).unwrap()),
             score: Score::from((
@@ -131,7 +132,7 @@ impl From<Game> for PlayedGroupGame {
 impl From<Game> for UnplayedGroupGame {
     fn from(game: Game) -> Self {
         UnplayedGroupGame {
-            id: GroupGameId::from(u8::try_from(game.id).unwrap()),
+            id: GameId::from(u8::try_from(game.id).unwrap()),
             home: TeamId::from(u8::try_from(game.home_team).unwrap()),
             away: TeamId::from(u8::try_from(game.away_team).unwrap()),
             date: wwc_core::Date::mock(),

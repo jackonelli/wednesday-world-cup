@@ -4,7 +4,7 @@ use std::convert::{TryFrom, TryInto};
 use structopt::StructOpt;
 use thiserror::Error;
 use wwc_core::error::WwcError;
-use wwc_core::group::game::GroupGameId;
+use wwc_core::game::GameId;
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{Team, Teams};
 use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
@@ -130,7 +130,7 @@ fn add_groups() -> Result<(), CliError> {
         })
         .collect();
     let groups = groups.expect("Could not parse groups");
-    let group_games: Vec<(GroupId, GroupGameId)> = groups
+    let group_games: Vec<(GroupId, GameId)> = groups
         .iter()
         .flat_map(move |(id, group)| {
             group

@@ -10,9 +10,8 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
 use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wwc_core::error::WwcError;
-use wwc_core::group::{
-    game::GroupGameId, game::PlayedGroupGame, game::UnplayedGroupGame, Group, GroupId, Groups,
-};
+use wwc_core::game::GameId;
+use wwc_core::group::{game::PlayedGroupGame, game::UnplayedGroupGame, Group, GroupId, Groups};
 use wwc_core::team::Teams;
 
 /// Get teams
@@ -39,7 +38,7 @@ fn get_groups() -> Result<Json<Groups>, BadRequest<String>> {
     let game_group_map = wwc_db::get_group_game_maps()
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?
-        .collect::<HashMap<GroupGameId, GroupId>>();
+        .collect::<HashMap<GameId, GroupId>>();
 
     let empty_groups = game_group_map
         .iter()

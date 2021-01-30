@@ -3,9 +3,9 @@ use crate::game::ScoreInput;
 use crate::group::view_group_play;
 use seed::{prelude::*, *};
 use wwc_core::{
+    game::GameId,
     group::{
         order::{fifa_2018, Random, Rules},
-        game::GroupGameId,
         GroupId, Groups,
     },
     team::Teams,
@@ -27,7 +27,7 @@ pub(crate) enum Msg {
     FetchGroups,
     GroupsFetched(fetch::Result<Groups>),
     PlayGame(ScoreInput),
-    UnplayGame(GroupId, GroupGameId),
+    UnplayGame(GroupId, GameId),
     UnfinishedScoreInput,
 }
 

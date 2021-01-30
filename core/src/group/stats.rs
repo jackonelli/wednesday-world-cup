@@ -86,14 +86,15 @@ impl UnaryStat for GroupPoint {
     ///
     /// ```
     /// # use wwc_core::group::stats::UnaryStat;
-    /// # use wwc_core::group::game::{GroupGameId, UnplayedGroupGame, Score};
+    /// # use wwc_core::group::game::{UnplayedGroupGame, Score};
+    /// # use wwc_core::game::GameId;
     /// # use wwc_core::group::GroupPoint;
     /// # use wwc_core::team::TeamId;
     /// # use wwc_core::Date;
     /// # use wwc_core::fair_play::{FairPlay, FairPlayScore};
     /// let score = Score::from((1, 0));
     /// let fair_play_score = FairPlayScore::new(FairPlay::new(1, 0, 0, 0), FairPlay::new(0, 0, 0, 0));
-    /// let game = UnplayedGroupGame::try_new(GroupGameId(0), TeamId(1), TeamId(2), Date::mock())
+    /// let game = UnplayedGroupGame::try_new(GameId(0), TeamId(1), TeamId(2), Date::mock())
     ///     .unwrap()
     ///     .play(score, fair_play_score);
     /// let (home, away) = GroupPoint::stat(&game);

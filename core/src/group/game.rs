@@ -8,6 +8,7 @@
 //! are the fundamental datastructure for the group; all other properties and statistics are
 //! derived from them.
 use crate::fair_play::FairPlayScore;
+use crate::game::GameId;
 use crate::game::GoalDiff;
 use crate::game::{Game, GoalCount};
 use crate::group::stats::UnaryStat;
@@ -15,7 +16,6 @@ use crate::group::GroupError;
 use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -62,7 +62,7 @@ impl FromStr for Score {
 /// Not yet played group game
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UnplayedGroupGame {
-    pub id: GroupGameId,
+    pub id: GameId,
     pub home: TeamId,
     pub away: TeamId,
     pub date: Date,
@@ -72,7 +72,7 @@ impl UnplayedGroupGame {
     /// Fallible constructor.
     ///
     /// Fails if `TeamId`'s are not different for home and away team.
-    pub fn try_new<G: Into<GroupGameId>, T: Into<TeamId>>(
+    pub fn try_new<G: Into<GameId>, T: Into<TeamId>>(
         id: G,
         home: T,
         away: T,
@@ -122,7 +122,7 @@ impl Game for UnplayedGroupGame {
 /// [`UnplayedGroupGame`]
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
-    pub id: GroupGameId,
+    pub id: GameId,
     pub home: TeamId,
     pub away: TeamId,
     pub score: Score,
@@ -161,7 +161,7 @@ impl PlayedGroupGame {
     /// Used in-crate only for easier test setup.
     #[cfg(test)]
     pub(crate) fn try_new<
-        G: Into<GroupGameId>,
+        G: Into<GameId>,
         T: Into<TeamId>,
         S: Into<Score>,
         F: Into<FairPlayScore>,
@@ -198,25 +198,6 @@ impl Game for PlayedGroupGame {
         self.away
     }
 }
-
-#[derive(
-    Debug,
-    Display,
-    Deserialize,
-    Serialize,
-    Clone,
-    Copy,
-    Eq,
-    PartialEq,
-    Hash,
-    Ord,
-    PartialOrd,
-    Add,
-    AddAssign,
-    From,
-    Into,
-)]
-pub struct GroupGameId(pub u8);
 
 #[cfg(test)]
 mod tests {

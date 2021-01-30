@@ -16,8 +16,9 @@ use itertools::{Either, Itertools};
 use std::convert::TryFrom;
 use std::env;
 use thiserror::Error;
+use wwc_core::game::GameId;
 use wwc_core::group::{
-    game::{GroupGameId, PlayedGroupGame, UnplayedGroupGame},
+    game::{PlayedGroupGame, UnplayedGroupGame},
     GroupId,
 };
 
@@ -51,12 +52,12 @@ pub fn get_teams() -> Result<impl Iterator<Item = wwc_core::Team>, DbError> {
     Ok(db_teams.into_iter().map(|team| team.into()))
 }
 
-pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GroupGameId, GroupId)>, DbError> {
+pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, DbError> {
     let connection = establish_connection()?;
     let db_teams = group_game_map.load::<GroupGameMap>(&connection)?;
     Ok(db_teams.into_iter().map(|map_| {
         (
-            GroupGameId::from(u8::try_from(map_.id).unwrap()),
+            GameId::from(u8::try_from(map_.id).unwrap()),
             GroupId::from(map_.group_id_.chars().next().unwrap()),
         )
     }))
@@ -79,7 +80,7 @@ pub fn insert_team(team: &wwc_core::Team) -> Result<(), DbError> {
     Ok(())
 }
 
-pub fn insert_group_game_mapping(group: (GroupId, GroupGameId)) -> Result<(), DbError> {
+pub fn insert_group_game_mapping(group: (GroupId, GameId)) -> Result<(), DbError> {
     let (group_id, game_id_) = group;
     let group = NewGroupGameMap {
         id: u8::from(game_id_).into(),

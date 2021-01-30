@@ -9,6 +9,25 @@ use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
 #[derive(
+    Debug,
+    Display,
+    Deserialize,
+    Serialize,
+    Clone,
+    Copy,
+    Eq,
+    PartialEq,
+    Hash,
+    Ord,
+    PartialOrd,
+    Add,
+    AddAssign,
+    From,
+    Into,
+)]
+pub struct GameId(pub u8);
+
+#[derive(
     Default,
     Debug,
     Display,
