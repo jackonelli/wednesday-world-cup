@@ -68,7 +68,7 @@ fn add_teams() -> Result<(), CliError> {
 
     Ok(teams?
         .iter()
-        .try_for_each(|(_, team)| wwc_db::insert_team(team).map_err(CliError::from))?)
+        .try_for_each(|(_, team)| wwc_db::insert_team(team))?)
 }
 
 fn add_games() -> Result<(), CliError> {
