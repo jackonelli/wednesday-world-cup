@@ -16,6 +16,7 @@ use diesel::result::ConnectionError;
 use diesel::result::Error as QueryError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
+use std::convert::AsRef;
 use std::convert::{TryFrom, TryInto};
 use std::env;
 use thiserror::Error;
@@ -103,6 +104,17 @@ pub fn insert_team(team: &wwc_core::Team) -> Result<(), DbError> {
 
     diesel::insert_into(teams)
         .values(&team)
+        .execute(&connection)?;
+    Ok(())
+}
+
+pub fn insert_teams(teams_: &[wwc_core::Team]) -> Result<(), DbError> {
+    let teams_: Vec<NewTeam> = teams_.iter().map(NewTeam::from).collect();
+
+    let connection = establish_connection()?;
+
+    diesel::insert_into(teams)
+        .values(&teams_)
         .execute(&connection)?;
     Ok(())
 }

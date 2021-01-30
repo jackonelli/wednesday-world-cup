@@ -1,5 +1,5 @@
 //! Team
-use derive_more::{Display, From, Into};
+use derive_more::{AsRef, Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
@@ -64,11 +64,14 @@ impl std::fmt::Display for Team {
     }
 }
 
-#[derive(Display, Debug, Clone, From, Into, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, AsRef, From, Into, Deserialize, Serialize, PartialEq)]
+#[as_ref(forward)]
 pub struct TeamName(pub(crate) String);
-#[derive(Display, Debug, Clone, From, Into, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, AsRef, From, Into, Deserialize, Serialize, PartialEq)]
+#[as_ref(forward)]
 pub struct FifaCode(String);
-#[derive(Display, Debug, Clone, From, Into, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, AsRef, From, Into, Deserialize, Serialize, PartialEq)]
+#[as_ref(forward)]
 pub struct Iso2(String);
 
 #[cfg(test)]

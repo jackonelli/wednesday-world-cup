@@ -59,16 +59,15 @@ fn register_player(name: String) -> Result<(), CliError> {
 fn add_teams() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
-    let teams: Result<Teams, CliError> = data
+    let teams: Result<Vec<Team>, CliError> = data
         .teams
         .into_iter()
         .map(|parse_team| Team::try_from(parse_team).map_err(CliError::from))
-        .map(|team| team.map(|ok_team| (ok_team.id, ok_team)))
         .collect();
-
-    Ok(teams?
-        .iter()
-        .try_for_each(|(_, team)| wwc_db::insert_team(team))?)
+    match teams {
+        Ok(teams) => Ok(wwc_db::insert_teams(&teams)?),
+        Err(err) => Err(err),
+    }
 }
 
 fn add_games() -> Result<(), CliError> {
@@ -77,17 +76,14 @@ fn add_games() -> Result<(), CliError> {
     let groups: Result<Vec<Group>, GroupError> = data
         .groups
         .into_iter()
-        .map(|(_, pg)| {
-            // TODO: Do not know why Group::try_from(pg) does not work
-            let group: Result<Group, GroupError> = pg.try_into();
-            group
-        })
+        .map(|(_, pg)| Group::try_from(pg))
         .collect();
     let groups = groups.map_err(WwcError::from)?;
     groups
         .iter()
         .flat_map(|group| group.unplayed_games())
         .try_for_each(wwc_db::insert_game)?;
+    // TODO: Add full iter, see teams
     groups
         .iter()
         .flat_map(|group| group.played_games())
@@ -101,13 +97,9 @@ fn add_groups() -> Result<(), CliError> {
     let groups: Result<Groups, GroupError> = data
         .groups
         .into_iter()
-        .map(|(id, pg)| {
-            // TODO: Do not know why Group::try_from(pg) does not work
-            let group: Result<Group, GroupError> = pg.try_into();
-            match group {
-                Ok(group) => Ok((id, group)),
-                Err(_) => Err(GroupError::GenericError),
-            }
+        .map(|(id, pg)| match Group::try_from(pg) {
+            Ok(group) => Ok((id, group)),
+            Err(_) => Err(GroupError::GenericError),
         })
         .collect();
     let groups = groups.expect("Could not parse groups");
@@ -120,6 +112,7 @@ fn add_groups() -> Result<(), CliError> {
                 .chain(group.unplayed_games().map(move |game| (*id, game.id)))
         })
         .collect();
+    // TODO: Add full iter, see teams
     Ok(group_games
         .iter()
         .try_for_each(|x| wwc_db::insert_group_game_mapping(*x))?)

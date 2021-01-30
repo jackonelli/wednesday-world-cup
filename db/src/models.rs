@@ -42,6 +42,18 @@ impl From<Team> for wwc_core::Team {
     }
 }
 
+impl<'a> From<&'a wwc_core::Team> for NewTeam<'a> {
+    fn from(team: &'a wwc_core::Team) -> NewTeam<'a> {
+        NewTeam {
+            id: u32::from(team.id).try_into().expect("team id u32 -> i32"),
+            name: team.name.as_ref(),
+            fifa_code: team.fifa_code.as_ref(),
+            iso2: team.iso2.as_ref(),
+            rank_: u32::from(team.rank).try_into().expect("team id u32 -> i32"),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Team", foreign_key = "id")]
 pub struct Game {
