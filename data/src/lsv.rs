@@ -125,7 +125,7 @@ impl TryFrom<ParseGroup> for Group {
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct ParseGame {
     #[serde(rename = "name")]
-    id: u8,
+    id: u32,
     #[serde(rename = "type")]
     type_: GameType,
     home_team: TeamId,

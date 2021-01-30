@@ -25,7 +25,7 @@ use std::ops::Sub;
     From,
     Into,
 )]
-pub struct GameId(pub u8);
+pub struct GameId(pub u32);
 
 #[derive(
     Default,

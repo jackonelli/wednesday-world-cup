@@ -13,7 +13,7 @@ use diesel::result::ConnectionError;
 use diesel::result::Error as QueryError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::env;
 use thiserror::Error;
 use wwc_core::game::GameId;
@@ -57,7 +57,7 @@ pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, 
     let db_teams = group_game_map.load::<GroupGameMap>(&connection)?;
     Ok(db_teams.into_iter().map(|map_| {
         (
-            GameId::from(u8::try_from(map_.id).unwrap()),
+            GameId::from(u32::try_from(map_.id).unwrap()),
             GroupId::from(map_.group_id_.chars().next().unwrap()),
         )
     }))
@@ -83,7 +83,7 @@ pub fn insert_team(team: &wwc_core::Team) -> Result<(), DbError> {
 pub fn insert_group_game_mapping(group: (GroupId, GameId)) -> Result<(), DbError> {
     let (group_id, game_id_) = group;
     let group = NewGroupGameMap {
-        id: u8::from(game_id_).into(),
+        id: u32::from(game_id_).try_into().unwrap(),
         group_id_: &(String::from(char::from(group_id))),
     };
     let connection = establish_connection()?;
