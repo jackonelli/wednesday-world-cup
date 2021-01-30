@@ -4,7 +4,7 @@ pub mod order;
 pub mod stats;
 use crate::fair_play::FairPlayScore;
 use crate::game::{Game, GoalCount, GoalDiff};
-use crate::team::{Rank, Team, TeamId};
+use crate::team::{Team, TeamId, TeamRank};
 use crate::Date;
 use derive_more::{Add, AddAssign, Display, From, Into};
 use game::{GroupGameId, PlayedGroupGame, Score, UnplayedGroupGame};
@@ -44,6 +44,11 @@ pub type Groups = BTreeMap<GroupId, Group>;
 pub struct GroupId(char);
 
 impl GroupId {
+    /// Fallible `GroupId` constructor
+    ///
+    /// # Errors
+    ///
+    /// Errors if the arbitrary ascii check fails.
     pub fn try_new(id: char) -> Result<Self, GroupError> {
         if id.is_ascii_alphabetic() {
             Ok(GroupId(id))
@@ -69,9 +74,14 @@ impl Group {
     /// Fallible `Group` constructor
     ///
     /// Creates a new group from a vector of played and upcoming games.
-    /// Imposes the following restrictions on the group type (more might come):
+    ///
+    /// # Errors
+    ///
+    /// The following restrictions on the group type (more might come) are imposed:
     ///
     /// - Every game (played and upcoming) must have a unique game id.
+    ///
+    /// Returns error variant if any restriction is violated.
     pub fn try_new(
         unplayed_games: Vec<UnplayedGroupGame>,
         played_games: Vec<PlayedGroupGame>,
@@ -91,7 +101,7 @@ impl Group {
     /// Finds all team id's in the group games
     /// (played and upcoming).
     /// Returns an iterator over unique team id's
-    pub fn teams(&self) -> impl Iterator<Item = TeamId> + '_ {
+    pub fn team_ids(&self) -> impl Iterator<Item = TeamId> + '_ {
         Group::unique_teams_in_games(&self.played_games)
             .chain(Group::unique_teams_in_games(&self.unplayed_games))
             .unique()
@@ -132,7 +142,7 @@ impl Group {
 
     /// Group size by teams
     pub fn num_teams(&self) -> usize {
-        self.teams().count()
+        self.team_ids().count()
     }
 
     /// Calculate group winner
@@ -243,14 +253,14 @@ pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
     groups.insert(GroupId('A'), group_a);
     groups.insert(GroupId('B'), group_b);
     let teams = vec![
-        Team::new(TeamId(1), "Sweden", "SWE", "se", Rank(0)),
-        Team::new(TeamId(2), "England", "ENG", "gb-eng", Rank(1)),
-        Team::new(TeamId(3), "France", "FRA", "fr", Rank(2)),
-        Team::new(TeamId(4), "Brazil", "BRA", "br", Rank(3)),
-        Team::new(TeamId(5), "Canada", "CAN", "ca", Rank(4)),
-        Team::new(TeamId(6), "Spain", "ESP", "es", Rank(5)),
-        Team::new(TeamId(7), "Japan", "JAP", "jp", Rank(6)),
-        Team::new(TeamId(8), "Norway", "NOR", "no", Rank(6)),
+        Team::new(TeamId(1), "Sweden", "SWE", "se", TeamRank(0)),
+        Team::new(TeamId(2), "England", "ENG", "gb-eng", TeamRank(1)),
+        Team::new(TeamId(3), "France", "FRA", "fr", TeamRank(2)),
+        Team::new(TeamId(4), "Brazil", "BRA", "br", TeamRank(3)),
+        Team::new(TeamId(5), "Canada", "CAN", "ca", TeamRank(4)),
+        Team::new(TeamId(6), "Spain", "ESP", "es", TeamRank(5)),
+        Team::new(TeamId(7), "Japan", "JAP", "jp", TeamRank(6)),
+        Team::new(TeamId(8), "Norway", "NOR", "no", TeamRank(6)),
     ];
     let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
     (groups, teams)
@@ -299,7 +309,7 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let parsed_teams: HashSet<TeamId> =
-            Group::unique_teams_in_games(&vec![game_1, game_2]).collect();
+            Group::unique_teams_in_games(&[game_1, game_2]).collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));
         true_teams.insert(TeamId(1));
@@ -314,7 +324,7 @@ mod tests {
             .play(Score::from((2, 0)), FairPlayScore::default());
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
-            .teams()
+            .team_ids()
             .collect();
         let mut true_teams = HashSet::new();
         true_teams.insert(TeamId(0));

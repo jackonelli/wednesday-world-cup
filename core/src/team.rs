@@ -34,7 +34,7 @@ pub type Teams = HashMap<TeamId, Team>;
     From,
     Into,
 )]
-pub struct Rank(pub u8);
+pub struct TeamRank(pub u8);
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Team {
@@ -43,11 +43,11 @@ pub struct Team {
     #[serde(rename = "fifaCode")]
     pub fifa_code: FifaCode,
     pub iso2: Iso2,
-    pub rank: Rank,
+    pub rank: TeamRank,
 }
 
 impl Team {
-    pub fn new(id: TeamId, name: &str, fifa_code: &str, iso2: &str, rank: Rank) -> Self {
+    pub fn new(id: TeamId, name: &str, fifa_code: &str, iso2: &str, rank: TeamRank) -> Self {
         Team {
             id,
             name: TeamName(String::from(name)),

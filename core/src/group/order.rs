@@ -20,7 +20,7 @@ use crate::fair_play::{FifaFairPlayValue, UefaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::{NumWins, UnaryStat};
 use crate::group::{Group, GroupError, GroupPoint};
-use crate::team::{Rank, TeamId};
+use crate::team::{TeamId, TeamRank};
 use rand::Rng;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
@@ -29,7 +29,7 @@ use std::iter::FromIterator;
 
 /// Group ordering rules
 ///
-/// All ordering rules should have an ordered list (vector) of subrules.
+/// All ordering rules have an ordered list (vector) of subrules.
 /// These subrules may define a non-strict ordering,
 /// therefore a proper ordering rule must also define a tiebreaker which maps a (possibly)
 /// non-strict ordering to a strict one.
@@ -49,6 +49,9 @@ pub struct Rules<T: Tiebreaker> {
 ///
 /// First orders by a list of non-strict sub-orders.
 /// If the sub-order is not strict, the rules' tiebreaker is used.
+///
+/// # Panics
+///
 /// Does not panic since the unwrapping match arm is checked to be strict.
 pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
     let possibly_non_strict =
@@ -76,13 +79,22 @@ fn non_strict_ordering(
         let sub_order = sub_order
             .into_iter()
             .fold(NonStrictGroupOrder::empty(), |acc, x| {
-                let new_order = current_rule[0].order(group, x);
+                // Don't apply rule if the sub-order is already strict,
+                // i.e. if x consists of a single TeamId
+                // TODO: benchmark, possible that the allocation in the else branch is more costly.
+                let new_order = if x.len() > 1 {
+                    current_rule[0].order(group, x)
+                } else {
+                    NonStrictGroupOrder::single(x)
+                };
+
                 acc.extend(new_order)
             });
         non_strict_ordering(group, remaining_rules, sub_order)
     }
 }
 
+/// Indexes [`GroupOrder`]
 #[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct GroupRank(pub usize);
 
@@ -140,6 +152,9 @@ impl TryFrom<NonStrictGroupOrder> for GroupOrder {
 pub struct NonStrictGroupOrder(Vec<Vec<TeamId>>);
 
 impl NonStrictGroupOrder {
+    fn single(x: Vec<TeamId>) -> Self {
+        NonStrictGroupOrder(vec![x])
+    }
     fn empty() -> Self {
         NonStrictGroupOrder(vec![])
     }
@@ -154,7 +169,7 @@ impl NonStrictGroupOrder {
     /// A group with all teams equal are represented as a vector with a single element,
     /// where this element is a vector containing all the teams in the group.
     fn init(group: &Group) -> Self {
-        NonStrictGroupOrder(vec![group.teams().collect()])
+        NonStrictGroupOrder(vec![group.team_ids().collect()])
     }
 
     /// Strict ordering check
@@ -339,15 +354,15 @@ impl Tiebreaker for Random {
 }
 
 /// Rank tiebreaker
-pub struct UefaRanking(HashMap<TeamId, Rank>);
+pub struct UefaRanking(HashMap<TeamId, TeamRank>);
 
 impl UefaRanking {
     pub fn try_new(
         groups: &[Group],
-        ranking_map: HashMap<TeamId, Rank>,
+        ranking_map: HashMap<TeamId, TeamRank>,
     ) -> Result<Self, GroupError> {
         // TODO: Why does this need to be mut?
-        let mut all_teams = groups.iter().flat_map(|x| x.teams());
+        let mut all_teams = groups.iter().flat_map(|x| x.team_ids());
         let exists = all_teams.all(|x| ranking_map.get(&x).is_some());
         if exists {
             Ok(UefaRanking(ranking_map))
@@ -590,8 +605,8 @@ mod tiebreaker_test {
     #[test]
     fn uefa_rank() {
         let mut ranking = HashMap::new();
-        ranking.insert(TeamId(0), Rank(1));
-        ranking.insert(TeamId(1), Rank(2));
+        ranking.insert(TeamId(0), TeamRank(1));
+        ranking.insert(TeamId(1), TeamRank(2));
         let ranking = UefaRanking(ranking);
         assert_eq!(ranking.cmp(TeamId(0), TeamId(1)), Ordering::Greater);
     }

@@ -2,16 +2,46 @@
 
 Tournament betting app.
 
-## Design idea
-
-### Functional
-
-Currently, not purely functional due to a borrow-checker work-around.
+## Design ideas
 
 ### Dumb backend, smart frontend.
 
 The frontend user interface `ui` is written in the same language as the `core` library (rust), which both compile to webassembly [_wasm_](https://webassembly.org/).
 This enables a trivial backend, which does no more than serve up raw data and leaves all calculations to be done in the browser.
+
+### Type safety
+
+Many of the data in this lib: goals scored, number of games, team rank, group point, et c, are in principle (positive) integers.
+Having many data types with shared representation but wildly differing semantics is to beg for bugs.
+To avoid that -- and in fact to make this class of bugs unrepresentable -- this lib consistently implements types with the newtype pattern, e.g.
+
+```rust
+#derive[..., Add, ...]
+pub struct GoalCount(pub u8);
+```
+
+It is much more verbose to implement in the first place but when it's in place it's very ergonomic/hard to misuse.
+
+One particular nice feature is that the newtype pattern opts out of all the trait implementations of the wrapped type.
+This makes enforcing semantics very ergonomic.
+In the `GoalCount` example above, for instance, the `Add` trait (i.e. enabling the `+` operator) is auto-impl. with the [`derive_more`](https://crates.io/crates/derive_more) crate
+(NB. the auto impl _only_ allows for addition where both values are of type `GoalCount`).
+The `Sub` trait on the other hand is manually implemented to reflect the fact that the difference between two `GoalCount`'s is not a `GoalCount` but a `GoalDiff`:
+
+```rust
+impl Sub for GoalCount {
+    type Output = GoalDiff;
+    fn sub(self, other: Self) -> Self::Output {
+        GoalDiff(self.0 as i8 - other.0 as i8)
+    }
+}
+```
+
+Similarly, addition for the type `TeamRank` has no semantic meaning and subsequently does not impl `Add` with any types.
+
+### Functional
+
+Currently, not purely functional due to a borrow-checker work-around.
 
 ## Project structure
 

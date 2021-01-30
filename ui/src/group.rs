@@ -16,6 +16,7 @@ pub(crate) fn view_group_play<T: Tiebreaker>(
 ) -> Node<Msg> {
     section![
         C!["group_play"],
+        h2!["Groups"],
         groups
             .iter()
             .map(|(group_id, group)| { view_group(group_id, group, teams, rules) })
@@ -31,7 +32,7 @@ fn view_group<T: Tiebreaker>(
     div![
         //C![format!("group_{}", id).to_ascii_lowercase()],
         C!["group"],
-        h2!(format!("{}", id)),
+        h3!(format!("{}", id)),
         format_group_table(group, teams, rules),
         format_group_games(id, group, teams),
     ]
@@ -46,7 +47,7 @@ fn format_group_table<T: Tiebreaker>(group: &Group, teams: &Teams, rules: &Rules
 fn format_group_games(group_id: &GroupId, group: &Group, teams: &Teams) -> Node<Msg> {
     div![
         C!["games"],
-        h3!("Games"),
+        h4!("Games"),
         table![
             group.played_games().map(|game| { game.format(teams) }),
             group

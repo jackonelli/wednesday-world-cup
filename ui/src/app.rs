@@ -90,11 +90,12 @@ fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
         view_header(),
         view_group_play(&model.groups, &model.teams, &model.group_rules),
+        // view_play_off(&model.playoff, &model.teams)
     ]
 }
 
 fn view_header() -> Node<Msg> {
-    header![C!["header"], h1!["Group"],]
+    header![C!["header"], h1!["Wednesday world cup"],]
 }
 
 #[wasm_bindgen(start)]

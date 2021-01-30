@@ -11,7 +11,7 @@ use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::GoalCount;
 use wwc_core::group::game::{PlayedGroupGame, Score, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Rank, Team, TeamId};
+use wwc_core::team::{Team, TeamId, TeamRank};
 use wwc_core::Date;
 
 pub fn lsv_data_from_file(filename: &str) -> Data {
@@ -58,7 +58,7 @@ pub struct ParseTeam {
     #[serde(rename = "fifaCode")]
     fifa_code: String,
     iso2: String,
-    rank: Option<Rank>,
+    rank: Option<TeamRank>,
 }
 
 impl TryFrom<ParseTeam> for Team {
@@ -80,7 +80,7 @@ impl TryFrom<ParseTeam> for Team {
                 &parse_team.name,
                 &parse_team.fifa_code,
                 &parse_team.iso2,
-                Rank(0),
+                TeamRank(0),
             ))
         }
     }
@@ -96,10 +96,10 @@ pub struct ParseGroup {
     games: Vec<ParseGame>,
 }
 
-impl TryInto<Group> for ParseGroup {
+impl TryFrom<ParseGroup> for Group {
     type Error = GroupError;
-    fn try_into(self) -> Result<Group, Self::Error> {
-        let upcoming_games = self
+    fn try_from(parse_group: ParseGroup) -> Result<Group, Self::Error> {
+        let upcoming_games = parse_group
             .games
             .iter()
             .filter(|game| !game.finished)
@@ -109,7 +109,7 @@ impl TryInto<Group> for ParseGroup {
             })
             .collect::<Result<Vec<UnplayedGroupGame>, GroupError>>()?;
 
-        let played_games = self
+        let played_games = parse_group
             .games
             .iter()
             .filter(|game| game.finished)
@@ -140,22 +140,32 @@ pub struct ParseGame {
     date: Date,
 }
 
-impl TryInto<UnplayedGroupGame> for ParseGame {
+impl TryFrom<ParseGame> for UnplayedGroupGame {
     type Error = GroupError;
-    fn try_into(self) -> Result<UnplayedGroupGame, Self::Error> {
-        UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)
+    fn try_from(parse_game: ParseGame) -> Result<UnplayedGroupGame, Self::Error> {
+        UnplayedGroupGame::try_new(
+            parse_game.id,
+            parse_game.home_team,
+            parse_game.away_team,
+            parse_game.date,
+        )
     }
 }
 
-impl TryInto<PlayedGroupGame> for ParseGame {
+impl TryFrom<ParseGame> for PlayedGroupGame {
     type Error = GroupError;
-    fn try_into(self) -> Result<PlayedGroupGame, Self::Error> {
-        let game = UnplayedGroupGame::try_new(self.id, self.home_team, self.away_team, self.date)?;
-        let score = match (self.home_result, self.away_result) {
+    fn try_from(parse_game: ParseGame) -> Result<PlayedGroupGame, Self::Error> {
+        let game = UnplayedGroupGame::try_new(
+            parse_game.id,
+            parse_game.home_team,
+            parse_game.away_team,
+            parse_game.date,
+        )?;
+        let score = match (parse_game.home_result, parse_game.away_result) {
             (Some(home), Some(away)) => Score::from((home, away)),
             _ => return Err(GroupError::GenericError),
         };
-        let fair_play_score = match (self.home_fair_play, self.away_fair_play) {
+        let fair_play_score = match (parse_game.home_fair_play, parse_game.away_fair_play) {
             (Some(home), Some(away)) => FairPlayScore::new(home, away),
             _ => FairPlayScore::default(),
         };

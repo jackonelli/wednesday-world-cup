@@ -10,10 +10,14 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops;
 
+// TODO: This could perhaps be more efficient with the cool group by
+// https://docs.rs/itertools/0.10.0/itertools/trait.Itertools.html#method.into_grouping_map
+// i.e. don't fold but map all games to (team_id, stat), then eff. fold to team stats map.
 /// Statistic calculated from a single game.
 ///
 /// Implentor needs to provide the actual [`UnaryStat::stat`] function,
-/// the trait provides default methods to calculate the statistic on group level.
+/// which calculates the statistics (for both teams) for a single game.
+/// The trait then provides default methods to calculate the statistic on group level.
 pub trait UnaryStat: num::Zero + ops::AddAssign {
     /// Calculate statistic for a game.
     ///
@@ -26,7 +30,7 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
     ///
     /// Statistics for all games are summed up and stored in a map of the teams.
     fn team_stats(group: &Group) -> HashMap<TeamId, Self> {
-        let team_map = group.teams().map(|team| (team, Self::zero())).collect();
+        let team_map = group.team_ids().map(|team| (team, Self::zero())).collect();
         group
             .played_games
             .iter()
@@ -51,6 +55,10 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
 }
 
 /// Calculate stat for a game and assign to team map.
+///
+/// Internal helper function for the [`UnaryStat`] trait.
+///
+/// # Panics
 ///
 /// Unwrap's do not panic if [`TeamId`]'s of `game.home` and `game.away` are members of `acc`:
 /// - Calling this from [`UnaryStat::team_stats`], [`TeamId`]'s will always be present, checked in [Group] constructor.
