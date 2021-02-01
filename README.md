@@ -17,7 +17,7 @@ To avoid that -- and in fact to make this class of bugs unrepresentable -- this 
 
 ```rust
 #derive[..., Add, ...]
-pub struct GoalCount(pub u32);
+pub struct GoalCount(u32);
 ```
 
 It is much more verbose to implement in the first place but when it's in place it's very ergonomic/hard to misuse.
@@ -83,7 +83,8 @@ interface to handle external data sources.
 The `server` is built with a rust framework called [Rocket](https://rocket.rs/)
 It requires a nightly version of the rust compiler:
 
-```
+```bash
+# NB. this switches to the nightly compiler in the current repo only.
 rustup override set nightly
 ```
 
@@ -94,7 +95,7 @@ Anyway, it doesn't bother me enough to track the master branch, just to leave ni
 
 requires the `diesel-cli`, get it with:
 
-```
+```bash
 cargo install diesel_cli --no-default-features --features sqlite
 ```
 
@@ -107,8 +108,28 @@ diesel setup
 diesel migration run
 ```
 
+### UI setup
+
+### WASM compilation
+
+Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/#).
+Some pre-built binaries are provided but the `cargo install` option works just as well.
+
+#### Local hosting
+
+Any webserver will do. I find [`microserver`](https://github.com/robertohuertasm/microserver) to be very convenient.
+Simply install with `cargo install microserver`
+
+### Optional
+
+Install [`cargo-make`](https://github.com/sagiegurari/cargo-make#installation).
+The repo contains some `Makefile.toml`, which defines some long and tedious build commands which can be accessed with `cargo-make`.
+I don't love `cargo-make` but it is kind of helpful to document all the build commands.
+
+## Docs
+
 Generate the dependency graph:
 
-```
+```bash
 mmdc -i assets/dep_graph.mmd -o assets/dep_graph.svg
 ```

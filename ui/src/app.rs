@@ -1,6 +1,7 @@
-use crate::data::{get_groups, get_teams};
+use crate::data::{clear_preds, get_groups_played_with_preds, get_teams, save_preds};
 use crate::game::ScoreInput;
 use crate::group::view_group_play;
+use crate::UiError;
 use seed::{prelude::*, *};
 use wwc_core::{
     game::GameId,
@@ -8,6 +9,7 @@ use wwc_core::{
         order::{fifa_2018, Random, Rules},
         GroupId, Groups,
     },
+    player::{Player, PlayerPredictions, Prediction},
     team::Teams,
 };
 const ENTER_KEY: &str = "Enter";
@@ -15,6 +17,7 @@ const ESCAPE_KEY: &str = "Escape";
 
 struct Model {
     groups: Groups,
+    player: Player,
     teams: Teams,
     base_url: Url,
     group_rules: Rules<Random>,
@@ -23,11 +26,15 @@ struct Model {
 pub(crate) enum Msg {
     UrlChanged(subs::UrlChanged),
     FetchTeams,
-    TeamsFetched(fetch::Result<Teams>),
+    TeamsFetched(Result<Teams, UiError>),
     FetchGroups,
-    GroupsFetched(fetch::Result<Groups>),
+    GroupsFetched(Result<Groups, UiError>),
     PlayGame(ScoreInput),
     UnplayGame(GroupId, GameId),
+    SavePreds,
+    PredsSaved(Result<(), UiError>),
+    ClearPreds,
+    PredsCleared(Result<(), UiError>),
     UnfinishedScoreInput,
 }
 
@@ -36,6 +43,7 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.perform_cmd(async { Msg::FetchGroups });
     Model {
         groups: Groups::new(),
+        player: Player::dummy(),
         teams: Teams::new(),
         base_url: Url::new(),
         group_rules: fifa_2018(),
@@ -62,17 +70,14 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
         Msg::FetchGroups => {
             log!("Fetching groups");
-            orders
-                .skip()
-                .perform_cmd(async { Msg::GroupsFetched(get_groups().await) });
+            let player_id = model.player.id();
+            orders.skip().perform_cmd(async move {
+                Msg::GroupsFetched(get_groups_played_with_preds(player_id).await)
+            });
         }
 
-        Msg::GroupsFetched(Ok(mut groups)) => {
+        Msg::GroupsFetched(Ok(groups)) => {
             log!(&format!("Fetched {} groups", groups.len()));
-            // Unplay a few games for display testing.
-            let group_a = groups.get_mut(&GroupId::try_new('a').unwrap()).unwrap();
-            let game_idcs: Vec<_> = group_a.played_games().map(|game| game.id).collect();
-            game_idcs.iter().for_each(|idx| group_a.unplay_game(*idx));
             model.groups = groups;
         }
 
@@ -83,20 +88,57 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::PlayGame(input) => {
             let group = model.groups.get_mut(&input.group_id).unwrap();
             group.play_game(input.game_id, input.score);
-
         }
         Msg::UnplayGame(group_id, game_id) => {
             log!("Replaying game {} in group {}", game_id, group_id);
             let group = model.groups.get_mut(&group_id).unwrap();
             group.unplay_game(game_id);
         }
+        Msg::SavePreds => {
+            let player_preds = model_preds(&model);
+            log!("Saving preds");
+            orders.skip().perform_cmd(async {
+                Msg::PredsSaved(save_preds(player_preds).await.map_err(UiError::from))
+            });
+        }
+        Msg::PredsSaved(Err(fetch_error)) => {
+            error!("Error saving preds {}", fetch_error);
+        }
+        Msg::ClearPreds => {
+            log!("Clearing preds");
+            orders.skip().perform_cmd(async {
+                Msg::PredsCleared(clear_preds().await.map_err(UiError::from))
+            });
+        }
+        Msg::PredsCleared(Ok(())) => {
+            log!("Preds cleared");
+        }
+        Msg::PredsCleared(Err(fetch_error)) => {
+            error!("Error clearing preds {}", fetch_error);
+        }
         _ => {}
     }
+}
+
+fn model_preds(model: &Model) -> PlayerPredictions {
+    PlayerPredictions::new(
+        model.player.id(),
+        model
+            .groups
+            .iter()
+            .map(|(_, group)| group.played_games())
+            .flatten()
+            .map(|game| (Prediction::from(game.clone())))
+            .collect(),
+    )
 }
 
 fn view(model: &Model) -> Vec<Node<Msg>> {
     nodes![
         view_header(),
+        button!["Save preds", ev(Ev::Click, |_| Msg::SavePreds),]
+        br!(),
+        button!["Clear preds", ev(Ev::Click, |_| Msg::ClearPreds),]
         view_group_play(&model.groups, &model.teams, &model.group_rules),
         // view_play_off(&model.playoff, &model.teams)
     ]

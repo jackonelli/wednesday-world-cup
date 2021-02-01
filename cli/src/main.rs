@@ -1,12 +1,12 @@
 #![forbid(unsafe_code)]
 use itertools::Itertools;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use structopt::StructOpt;
 use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Team, Teams};
+use wwc_core::team::Team;
 use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
 
 fn main() -> Result<(), CliError> {

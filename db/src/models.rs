@@ -2,8 +2,9 @@ use crate::schema::{games, group_game_map, players, preds, teams};
 use serde::Serialize;
 use std::convert::{TryFrom, TryInto};
 use wwc_core::fair_play::FairPlayScore;
-use wwc_core::game::GameId;
-use wwc_core::group::game::{PlayedGroupGame, Score, UnplayedGroupGame};
+use wwc_core::game::{GameId, Score};
+use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::player::{PlayerId, Prediction};
 use wwc_core::team::{FifaCode, Iso2, TeamId, TeamName, TeamRank};
 
 #[derive(Debug, Serialize, Queryable, Identifiable)]
@@ -145,17 +146,18 @@ impl<'a> From<&'a PlayedGroupGame> for NewGame<'a> {
 
 impl From<Game> for PlayedGroupGame {
     fn from(game: Game) -> Self {
-        PlayedGroupGame {
-            id: GameId::from(u32::try_from(game.id).unwrap()),
-            home: TeamId::from(u32::try_from(game.home_team).unwrap()),
-            away: TeamId::from(u32::try_from(game.away_team).unwrap()),
-            score: Score::from((
+        PlayedGroupGame::try_new(
+            u32::try_from(game.id).unwrap(),
+            u32::try_from(game.home_team).unwrap(),
+            u32::try_from(game.away_team).unwrap(),
+            Score::from((
                 u32::try_from(game.home_result.unwrap()).unwrap(),
                 u32::try_from(game.away_result.unwrap()).unwrap(),
             )),
-            fair_play: FairPlayScore::default(),
-            date: wwc_core::Date::mock(),
-        }
+            FairPlayScore::default(),
+            wwc_core::Date::mock(),
+        )
+        .expect("Error creating PlayedGroupGame from db Game")
     }
 }
 
@@ -189,6 +191,7 @@ pub struct NewGroupGameMap<'a> {
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Game")]
 #[belongs_to(parent = "Player")]
+#[table_name = "preds"]
 pub struct Pred {
     pub id: i32,
     pub player_id: i32,
@@ -197,13 +200,35 @@ pub struct Pred {
     pub away_result: i32,
 }
 
+impl From<Pred> for Prediction {
+    fn from(pred: Pred) -> Prediction {
+        let score = Score::from((
+            u32::try_from(pred.home_result).unwrap(),
+            u32::try_from(pred.away_result).unwrap(),
+        ));
+        Prediction(GameId::from(u32::try_from(pred.id).unwrap()), score)
+    }
+}
+
 #[derive(Insertable)]
 #[table_name = "preds"]
 pub struct NewPred {
-    pub id: i32,
     pub player_id: i32,
+    pub game_id: i32,
     pub home_result: i32,
     pub away_result: i32,
+}
+
+impl From<&(PlayerId, Prediction)> for NewPred {
+    fn from(player_pred: &(PlayerId, Prediction)) -> NewPred {
+        let (player_id, pred) = player_pred;
+        NewPred {
+            player_id: i32::from(*player_id),
+            game_id: u32::from(pred.0).try_into().expect("u32 -> i32 conv"),
+            home_result: u32::from(pred.1.home).try_into().expect("u32 -> i32 conv"),
+            away_result: u32::from(pred.1.away).try_into().expect("u32 -> i32 conv"),
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]

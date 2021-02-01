@@ -4,11 +4,11 @@ pub mod order;
 pub mod stats;
 use crate::fair_play::FairPlayScore;
 use crate::game::GameId;
-use crate::game::{Game, GoalCount, GoalDiff};
+use crate::game::{Game, GoalCount, GoalDiff, Score};
 use crate::team::{Team, TeamId, TeamRank};
 use crate::Date;
 use derive_more::{Add, AddAssign, Display, From, Into};
-use game::{PlayedGroupGame, Score, UnplayedGroupGame};
+use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
 use serde::{Deserialize, Serialize};
@@ -120,10 +120,9 @@ impl Group {
 
     pub fn play_game(&mut self, game_id: GameId, score: Score) {
         let idx = self
-            .unplayed_games
-            .iter()
+            .unplayed_games()
             .position(|game| game.id == game_id)
-            .unwrap();
+            .unwrap_or_else(|| panic!("No game with id: {:?}", game_id));
         let game = self
             .unplayed_games
             .swap_remove(idx)
@@ -271,7 +270,8 @@ pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
 mod tests {
     use super::*;
     use crate::fair_play::FairPlayScore;
-    use crate::group::game::{Score, UnplayedGroupGame};
+    use crate::game::Score;
+    use crate::group::game::UnplayedGroupGame;
     use crate::team::{TeamId, TeamName};
     use crate::Date;
     use std::collections::HashSet;

@@ -6,13 +6,26 @@ use itertools::Itertools;
 use rocket::http::Method;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::Json;
-use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
+use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
 use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{game::PlayedGroupGame, game::UnplayedGroupGame, Group, GroupId, Groups};
+use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
 use wwc_core::team::Teams;
+
+/// Save preds
+#[post("/save_preds", data = "<player_preds>", format = "application/json")]
+fn save_preds(player_preds: Json<PlayerPredictions>) -> Result<(), BadRequest<String>> {
+    let player_preds = player_preds.into_inner();
+    println!("Preds:\n{:?}", player_preds);
+    let tmp = wwc_db::insert_preds(&player_preds)
+        .map_err(ServerError::from)
+        .map_err(BadRequest::from);
+    tmp?;
+    Ok(())
+}
 
 /// Get teams
 #[get("/get_teams")]
@@ -23,6 +36,25 @@ fn get_teams() -> Result<Json<Teams>, BadRequest<String>> {
         .map(|x| (x.id, x))
         .collect();
     Ok(Json(teams))
+}
+
+/// Get predictions
+#[get("/get_preds/<player_id>")]
+fn get_preds(player_id: i32) -> Result<Json<Vec<Prediction>>, BadRequest<String>> {
+    let preds = wwc_db::get_preds(PlayerId::from(player_id))
+        .map_err(ServerError::from)
+        .map_err(BadRequest::from)?;
+    Ok(Json(preds))
+}
+
+/// Clear predictions
+#[get("/clear_preds")]
+fn clear_preds() -> Result<(), BadRequest<String>> {
+    let preds = wwc_db::clear_preds()
+        .map_err(ServerError::from)
+        .map_err(BadRequest::from)?;
+    println!("Clear preds res {:?}", preds);
+    Ok(())
 }
 
 /// Get groups
@@ -108,12 +140,15 @@ fn make_cors() -> Cors {
 
     CorsOptions {
         allowed_origins,
-        allowed_methods: vec![Method::Get].into_iter().map(From::from).collect(),
-        allowed_headers: AllowedHeaders::some(&[
-            "Authorization",
-            "Accept",
-            "Access-Control-Allow-Origin",
-        ]),
+        allowed_methods: vec![Method::Get, Method::Post]
+            .into_iter()
+            .map(From::from)
+            .collect(),
+        // allowed_headers: AllowedHeaders::some(&[
+        //     "Authorization",
+        //     "Accept",
+        //     "Access-Control-Allow-Origin",
+        // ]),
         allow_credentials: true,
         ..Default::default()
     }
@@ -123,7 +158,10 @@ fn make_cors() -> Cors {
 
 fn rocket() -> rocket::Rocket {
     rocket::ignite()
-        .mount("/", routes![get_teams, get_groups])
+        .mount(
+            "/",
+            routes![get_teams, get_groups, save_preds, get_preds, clear_preds],
+        )
         .attach(make_cors())
 }
 

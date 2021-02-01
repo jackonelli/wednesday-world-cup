@@ -2,8 +2,8 @@ use crate::app::Msg;
 use crate::format::Format;
 use crate::team::format_team_flag;
 use seed::{prelude::*, *};
-use wwc_core::game::{GameId, GoalCount};
-use wwc_core::group::game::{PlayedGroupGame, Score, UnplayedGroupGame};
+use wwc_core::game::{GameId, Score};
+use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::GroupId;
 use wwc_core::team::Teams;
 
@@ -39,7 +39,11 @@ impl<'a> Format<'a> for UnplayedGroupGame {
         let (teams, group_id) = cxt;
         let home_team = teams.get(&self.home).unwrap();
         let away_team = teams.get(&self.away).unwrap();
-        let score_input = ScoreInput::placeholder(*group_id, self.id);
+        // There is some black magic borrowing with the closure here.
+        // I need to decouple these 'Copy' values outside of the closure.
+        let game_id = self.id;
+        let group_id = *group_id;
+
         tr![
             C!["played_game"],
             el_key(&self.id),
@@ -48,9 +52,9 @@ impl<'a> Format<'a> for UnplayedGroupGame {
             td![input![
                 C!["game-score-input"],
                 attrs![At::Size => 2],
-                input_ev(Ev::Input, |score| {
-                    if let Ok(score) = score_input.try_parse_score(score) {
-                        Msg::PlayGame(score)
+                input_ev(Ev::Input, move |score| {
+                    if let Ok(score) = score.parse::<Score>() {
+                        Msg::PlayGame(ScoreInput::new(score, group_id, game_id))
                     } else {
                         Msg::UnfinishedScoreInput
                     }
@@ -71,17 +75,11 @@ pub(crate) struct ScoreInput {
 }
 
 impl ScoreInput {
-    fn placeholder(group_id: GroupId, game_id: GameId) -> Self {
-        let score = Score::from((GoalCount(0), GoalCount(0)));
+    fn new(score: Score, group_id: GroupId, game_id: GameId) -> Self {
         ScoreInput {
             score,
             group_id,
             game_id,
         }
-    }
-
-    fn try_parse_score(self, score: String) -> Result<Self, ()> {
-        let score = score.parse().map_err(|_| ())?;
-        Ok(ScoreInput { score, ..self })
     }
 }

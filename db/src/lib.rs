@@ -16,7 +16,6 @@ use diesel::result::ConnectionError;
 use diesel::result::Error as QueryError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
-use std::convert::AsRef;
 use std::convert::{TryFrom, TryInto};
 use std::env;
 use thiserror::Error;
@@ -25,6 +24,7 @@ use wwc_core::group::{
     game::{PlayedGroupGame, UnplayedGroupGame},
     GroupId,
 };
+use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
 
 fn establish_connection() -> Result<SqliteConnection, DbError> {
     dotenv().ok();
@@ -49,6 +49,15 @@ pub fn register_player(name_: &str) -> Result<(), DbError> {
             name_
         )))
     }
+}
+
+pub fn get_preds(player_id_: PlayerId) -> Result<Vec<Prediction>, DbError> {
+    let connection = establish_connection()?;
+    let player_id_ = i32::from(player_id_);
+    let db_preds = preds
+        .filter(player_id.eq(player_id_))
+        .load::<Pred>(&connection)?;
+    Ok(db_preds.into_iter().map(Prediction::from).collect())
 }
 
 pub fn get_players() -> Result<Vec<Player>, DbError> {
@@ -89,6 +98,18 @@ pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, 
             GroupId::from(map_.group_id_.chars().next().unwrap()),
         )
     }))
+}
+
+pub fn insert_preds(preds_: &PlayerPredictions) -> Result<(), DbError> {
+    let preds_: Vec<NewPred> = preds_
+        .preds()
+        .map(move |pred| NewPred::from(&(preds_.id, pred.clone())))
+        .collect();
+    let connection = establish_connection()?;
+    diesel::insert_into(preds)
+        .values(&preds_)
+        .execute(&connection)?;
+    Ok(())
 }
 
 pub fn insert_team(team: &wwc_core::Team) -> Result<(), DbError> {
@@ -143,6 +164,14 @@ pub fn insert_game<'a, T: Into<NewGame<'a>>>(game: T) -> Result<(), DbError> {
     Ok(())
 }
 
+pub fn clear_preds() -> Result<(), DbError> {
+    let connection = establish_connection()?;
+    diesel::delete(preds)
+        .execute(&connection)
+        .expect("Could not clear table");
+    Ok(())
+}
+
 pub fn clear_players() -> Result<(), DbError> {
     let connection = establish_connection()?;
     diesel::delete(players)
@@ -150,6 +179,7 @@ pub fn clear_players() -> Result<(), DbError> {
         .expect("Could not clear table");
     Ok(())
 }
+
 pub fn clear_teams() -> Result<(), DbError> {
     let connection = establish_connection()?;
     diesel::delete(teams)
@@ -157,6 +187,7 @@ pub fn clear_teams() -> Result<(), DbError> {
         .expect("Could not clear table");
     Ok(())
 }
+
 pub fn clear_games() -> Result<(), DbError> {
     let connection = establish_connection()?;
     diesel::delete(games)
@@ -164,6 +195,7 @@ pub fn clear_games() -> Result<(), DbError> {
         .expect("Could not clear table");
     Ok(())
 }
+
 pub fn clear_group_game_maps() -> Result<(), DbError> {
     let connection = establish_connection()?;
     diesel::delete(group_game_map)

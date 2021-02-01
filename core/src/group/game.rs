@@ -10,6 +10,7 @@
 use crate::fair_play::FairPlayScore;
 use crate::game::GameId;
 use crate::game::GoalDiff;
+use crate::game::Score;
 use crate::game::{Game, GoalCount};
 use crate::group::stats::UnaryStat;
 use crate::group::GroupError;
@@ -17,47 +18,6 @@ use crate::group::GroupPoint;
 use crate::team::TeamId;
 use crate::Date;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
-
-/// Score associated with [`PlayedGroupGame`]
-///
-/// Determines the outcome of a game which can be, win, loss or draw.
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Score {
-    pub home: GoalCount,
-    pub away: GoalCount,
-}
-
-impl<T: Into<GoalCount>> From<(T, T)> for Score {
-    fn from(x: (T, T)) -> Self {
-        let (home, away) = x;
-        Self {
-            home: home.into(),
-            away: away.into(),
-        }
-    }
-}
-
-// TODO test.
-impl FromStr for Score {
-    type Err = GroupError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let score_split: Vec<&str> = s.split('-').collect();
-        let (home, away) = if score_split.len() != 2 {
-            return Err(GroupError::GenericError);
-        } else {
-            (score_split[0], score_split[1])
-        };
-        //TODO: Better error handling
-        let home = home
-            .parse::<u32>()
-            .map_err(|_err| GroupError::GenericError)?;
-        let away = away
-            .parse::<u32>()
-            .map_err(|_err| GroupError::GenericError)?;
-        Ok(Score::from((home, away)))
-    }
-}
 
 /// Not yet played group game
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -71,7 +31,9 @@ pub struct UnplayedGroupGame {
 impl UnplayedGroupGame {
     /// Fallible constructor.
     ///
-    /// Fails if `TeamId`'s are not different for home and away team.
+    /// # Errors
+    ///
+    /// Enforces distinct team id's
     pub fn try_new<G: Into<GameId>, T: Into<TeamId>>(
         id: G,
         home: T,
@@ -127,10 +89,39 @@ pub struct PlayedGroupGame {
     pub away: TeamId,
     pub score: Score,
     pub fair_play: FairPlayScore,
-    pub date: Date,
+    pub(crate) date: Date,
 }
 
 impl PlayedGroupGame {
+    /// Fallible constructor for a played group game
+    ///
+    /// # Errors
+    ///
+    /// Enforces distinct team id's
+    pub fn try_new<G: Into<GameId>, T: Into<TeamId>, S: Into<Score>, F: Into<FairPlayScore>>(
+        id: G,
+        home: T,
+        away: T,
+        score: S,
+        fair_play: F,
+        date: Date,
+    ) -> Result<Self, GroupError> {
+        let home = home.into();
+        let away = away.into();
+        if home != away {
+            Ok(Self {
+                id: id.into(),
+                home,
+                away,
+                score: score.into(),
+                fair_play: fair_play.into(),
+                date,
+            })
+        } else {
+            Err(GroupError::GameTeamsNotUnique)
+        }
+    }
+
     /// Transform played game to unplayed.
     pub fn unplay(self) -> UnplayedGroupGame {
         UnplayedGroupGame {
@@ -154,39 +145,6 @@ impl PlayedGroupGame {
     /// Goals scored for (home, away) teams respectively.
     pub fn goals_scored(&self) -> (GoalCount, GoalCount) {
         GoalCount::stat(self)
-    }
-
-    /// Fallible constructor for a played group game
-    ///
-    /// Used in-crate only for easier test setup.
-    #[cfg(test)]
-    pub(crate) fn try_new<
-        G: Into<GameId>,
-        T: Into<TeamId>,
-        S: Into<Score>,
-        F: Into<FairPlayScore>,
-    >(
-        id: G,
-        home: T,
-        away: T,
-        score: S,
-        fair_play: F,
-        date: Date,
-    ) -> Result<Self, GroupError> {
-        let home = home.into();
-        let away = away.into();
-        if home != away {
-            Ok(Self {
-                id: id.into(),
-                home,
-                away,
-                score: score.into(),
-                fair_play: fair_play.into(),
-                date,
-            })
-        } else {
-            Err(GroupError::GameTeamsNotUnique)
-        }
     }
 }
 

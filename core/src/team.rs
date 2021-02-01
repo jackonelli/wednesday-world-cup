@@ -77,7 +77,6 @@ pub struct Iso2(String);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     #[test]
     fn deserialize() {
         let data = r#"

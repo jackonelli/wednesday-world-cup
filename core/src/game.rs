@@ -7,6 +7,51 @@ use crate::team::TeamId;
 use derive_more::{Add, AddAssign, Display, From, Into, Neg};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
+use std::str::FromStr;
+use thiserror::Error;
+
+/// General game score.
+///
+/// Accepts any pair of non-negative integers
+/// Score associated with [`PlayedGroupGame`]
+///
+/// Determines the outcome of a game which can be, win, loss or draw.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Score {
+    pub home: GoalCount,
+    pub away: GoalCount,
+}
+
+impl<T: Into<GoalCount>> From<(T, T)> for Score {
+    fn from(x: (T, T)) -> Self {
+        let (home, away) = x;
+        Self {
+            home: home.into(),
+            away: away.into(),
+        }
+    }
+}
+
+// TODO test.
+impl FromStr for Score {
+    type Err = GameError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let score_split: Vec<&str> = s.split('-').collect();
+        let (home, away) = if score_split.len() != 2 {
+            return Err(GameError::ScoreParse(String::from(s)));
+        } else {
+            (score_split[0], score_split[1])
+        };
+        //TODO: Better error handling
+        let home = home
+            .parse::<u32>()
+            .map_err(|_err| GameError::ScoreParse(String::from(s)))?;
+        let away = away
+            .parse::<u32>()
+            .map_err(|_err| GameError::ScoreParse(String::from(s)))?;
+        Ok(Score::from((home, away)))
+    }
+}
 
 #[derive(
     Debug,
@@ -25,7 +70,7 @@ use std::ops::Sub;
     From,
     Into,
 )]
-pub struct GameId(pub u32);
+pub struct GameId(u32);
 
 #[derive(
     Default,
@@ -44,7 +89,7 @@ pub struct GameId(pub u32);
     Add,
     AddAssign,
 )]
-pub struct GoalCount(pub u32);
+pub struct GoalCount(u32);
 
 impl Sub for GoalCount {
     type Output = GoalDiff;
@@ -120,4 +165,10 @@ impl num::Zero for NumGames {
 pub trait Game {
     fn home_team(&self) -> TeamId;
     fn away_team(&self) -> TeamId;
+}
+
+#[derive(Error, Debug)]
+pub enum GameError {
+    #[error("Error parsing score: '{0}'")]
+    ScoreParse(String),
 }
