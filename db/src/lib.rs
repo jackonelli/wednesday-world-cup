@@ -101,11 +101,13 @@ pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, 
 }
 
 pub fn insert_preds(preds_: &PlayerPredictions) -> Result<(), DbError> {
+    let connection = establish_connection()?;
+    let player_id_ = i32::from(preds_.id);
+    diesel::delete(preds.filter(player_id.eq(player_id_))).execute(&connection)?;
     let preds_: Vec<NewPred> = preds_
         .preds()
         .map(move |pred| NewPred::from(&(preds_.id, pred.clone())))
         .collect();
-    let connection = establish_connection()?;
     diesel::insert_into(preds)
         .values(&preds_)
         .execute(&connection)?;
