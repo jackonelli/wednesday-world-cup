@@ -82,26 +82,32 @@ interface to handle external data sources.
 
 To get the full app up and running, you need to have
 
+- an installation of `rust` and `cargo`
 - an initialised database
 - a running `server`
 - hosting of the to-wasm-compiled UI.
 
-The code requires a nightly version of the rust compiler:
+The code requires a nightly version of the rust compiler.
+Get the code and switch to the nightly compiler
 
 ```bash
+git clone git@github.com:jackonelli/wednesday-world-cup.git wwc
+cd wwc
 # NB. this switches to the nightly compiler in the current repo only.
 rustup override set nightly
 ```
 
-The nightly requirement comest from the `server`, which is built with a rust framework called [Rocket](https://rocket.rs/).
+The nightly requirement comes from the `server`, which is built with a rust framework called [Rocket](https://rocket.rs/).
 [Presumably](https://github.com/SergioBenitez/Rocket/issues/19) Rocket is already available on stable, though not yet on the official registry (crates.io).
 Anyway, it doesn't bother me enough to track the master branch, just to leave nightly.
 
 ### Backend setup
 
-Requires the `diesel-cli`, get it with:
+First, we setup the database.
+This requires the `diesel-cli`, get it with:
 
 ```bash
+# This requires an install sqlite lib on your system.
 cargo install diesel_cli --no-default-features --features sqlite
 # Optionally, install with bundled sqlite c-lib. Path of least resistance for Windows users
 cargo install diesel_cli --no-default-features --features "sqlite-bundled"
@@ -126,7 +132,7 @@ cd $WWC_ROOT
 cargo run --bin wwc_cli add all
 ```
 
-Now, the backend is set up and the only remaining thing is to start the server.
+Now, the database is set up and the only remaining thing is to start the server.
 The server expects a config file `Rocket.toml` in the repo root.
 An actual config is placed in `server/Rocket.toml`, which is symlinked to the repo root.
 If there is an issue with the symlinking, simply copy the actual file from `server/` to the repo root.
