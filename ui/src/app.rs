@@ -106,6 +106,10 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::ClearPreds => {
             log!("Clearing preds");
+            model.groups.iter_mut().for_each(|(_, group)| {
+                let tmp = group.clone();
+                tmp.played_games().for_each(|game| group.unplay_game(game.id))
+            });
             orders.skip().perform_cmd(async {
                 Msg::PredsCleared(clear_preds().await.map_err(UiError::from))
             });
