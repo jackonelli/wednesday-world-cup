@@ -78,47 +78,82 @@ The CLI has no restrictions like the `ui` and can communicate directly with `db`
 
 interface to handle external data sources.
 
-## Setup
+## Setup and build
 
-The `server` is built with a rust framework called [Rocket](https://rocket.rs/)
-It requires a nightly version of the rust compiler:
+To get the full app up and running, you need to have
+
+- an initialised database
+- a running `server`
+- hosting of the to-wasm-compiled UI.
+
+The code requires a nightly version of the rust compiler:
 
 ```bash
 # NB. this switches to the nightly compiler in the current repo only.
 rustup override set nightly
 ```
 
+The nightly requirement comest from the `server`, which is built with a rust framework called [Rocket](https://rocket.rs/).
 [Presumably](https://github.com/SergioBenitez/Rocket/issues/19) Rocket is already available on stable, though not yet on the official registry (crates.io).
 Anyway, it doesn't bother me enough to track the master branch, just to leave nightly.
 
-### Database setup
+### Backend setup
 
-requires the `diesel-cli`, get it with:
+Requires the `diesel-cli`, get it with:
 
 ```bash
 cargo install diesel_cli --no-default-features --features sqlite
+# Optionally, install with bundled sqlite c-lib. Path of least resistance for Windows users
+cargo install diesel_cli --no-default-features --features "sqlite-bundled"
 ```
 
-```
+Set environment variable `DATABASE_URL=<path_to_db>`, perhaps like this:
+
+```bash
 # Preferably in a ".env" file.
 export WWC_ROOT=$(pwd)
 export DATABASE_URL=$WWC_ROOT/<path_to_db>
+```
+
+The variable `WWC_ROOT` is not strictly necessary, but I will use it here to reference the repo root.
+To create and fill the db with data, run:
+
+```bash
 cd $WWC_ROOT/db
 diesel setup
 diesel migration run
+cd $WWC_ROOT
+cargo run --bin wwc_cli add all
+```
+
+Now, the backend is set up and the only remaining thing is to start the server.
+The server expects a config file `Rocket.toml` in the repo root.
+An actual config is placed in `server/Rocket.toml`, which is symlinked to the repo root.
+If there is an issue with the symlinking, simply copy the actual file from `server/` to the repo root.
+
+```bash
+cd $WWC_ROOT
+cargo run --bin wwc_server
 ```
 
 ### UI setup
-
-### WASM compilation
-
-Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/#).
-Some pre-built binaries are provided but the `cargo install` option works just as well.
 
 #### Local hosting
 
 Any webserver will do. I find [`microserver`](https://github.com/robertohuertasm/microserver) to be very convenient.
 Simply install with `cargo install microserver`
+
+#### WASM compilation
+
+Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/#).
+Some pre-built binaries are provided but the `cargo install` option works just as well.
+
+```bash
+cd $WWC_ROOT/ui
+wasm-pack build --target web --out-name wwc_ui --dev
+# host the `ui` directory on `port 8888`, e.g. with
+microserver --port 8888 $WWC_ROOT/ui
+```
 
 ### Optional
 
@@ -127,6 +162,12 @@ The repo contains some `Makefile.toml`, which defines some long and tedious buil
 I don't love `cargo-make` but it is kind of helpful to document all the build commands.
 
 ## Docs
+
+Open documentation:
+
+```bash
+cargo doc --workspace --no-deps --document-private-items --open
+```
 
 Generate the dependency graph:
 

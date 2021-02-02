@@ -52,4 +52,10 @@ joinable!(group_game_map -> games (id));
 joinable!(preds -> games (game_id));
 joinable!(preds -> players (player_id));
 
-allow_tables_to_appear_in_same_query!(games, group_game_map, players, preds, teams,);
+allow_tables_to_appear_in_same_query!(
+    games,
+    group_game_map,
+    players,
+    preds,
+    teams,
+);

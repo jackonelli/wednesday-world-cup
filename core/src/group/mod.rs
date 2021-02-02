@@ -147,21 +147,21 @@ impl Group {
 
     /// Calculate group winner
     ///
-    /// Order group according to `order_fn`
+    /// Order group according to `rules`
     pub fn rank_teams<T: Tiebreaker>(&self, rules: &Rules<T>) -> GroupOrder {
         order_group(self, rules)
     }
 
     /// Calculate group winner
     ///
-    /// Order group according to `order_fn` and return first in order.
+    /// Order group according to `rules` and return first in order.
     pub fn winner<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
         order_group(self, rules).winner()
     }
 
     /// Calculate group runner up
     ///
-    /// Order group according to `order_fn` and return second in order.
+    /// Order group according to `rules` and return second in order.
     pub fn runner_up<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
         order_group(self, rules).runner_up()
     }
