@@ -127,7 +127,6 @@ To create and fill the db with data, run:
 ```bash
 cd $WWC_ROOT/db
 diesel setup
-diesel migration run
 cd $WWC_ROOT
 cargo run --bin wwc_cli add all
 ```
@@ -172,11 +171,13 @@ I don't love `cargo-make` but it is kind of helpful to document all the build co
 Open documentation:
 
 ```bash
+cd $WWC_ROOT
 cargo doc --workspace --no-deps --document-private-items --open
 ```
 
 Generate the dependency graph:
 
 ```bash
+cd $WWC_ROOT
 mmdc -i assets/dep_graph.mmd -o assets/dep_graph.svg
 ```
