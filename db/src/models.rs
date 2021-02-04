@@ -188,6 +188,17 @@ pub struct NewGroupGameMap<'a> {
     pub group_id_: &'a str,
 }
 
+// Need to turn GroupId into allocated string before this conversion.
+impl<'a> From<&'a (String, GameId)> for NewGroupGameMap<'a> {
+    fn from(group_game_map: &'a (String, GameId)) -> NewGroupGameMap<'a> {
+        let (group_id, game_id) = group_game_map;
+        NewGroupGameMap {
+            id: i32::try_from(u32::from(*game_id)).unwrap(),
+            group_id_: &group_id,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
 #[belongs_to(parent = "Game")]
 #[belongs_to(parent = "Player")]

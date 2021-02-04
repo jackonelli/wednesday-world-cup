@@ -16,7 +16,7 @@ use diesel::result::ConnectionError;
 use diesel::result::Error as QueryError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::env;
 use thiserror::Error;
 use wwc_core::game::GameId;
@@ -114,23 +114,6 @@ pub fn insert_preds(preds_: &PlayerPredictions) -> Result<(), DbError> {
     Ok(())
 }
 
-pub fn insert_team(team: &wwc_core::Team) -> Result<(), DbError> {
-    let team = NewTeam {
-        id: u32::from(team.id).try_into().expect("team id u32 -> i32"),
-        name: &String::from(team.name.clone()),
-        fifa_code: &String::from(team.fifa_code.clone()),
-        iso2: &String::from(team.iso2.clone()),
-        rank_: u32::from(team.rank).try_into().expect("team id u32 -> i32"),
-    };
-
-    let connection = establish_connection()?;
-
-    diesel::insert_into(teams)
-        .values(&team)
-        .execute(&connection)?;
-    Ok(())
-}
-
 pub fn insert_teams(teams_: &[wwc_core::Team]) -> Result<(), DbError> {
     let teams_: Vec<NewTeam> = teams_.iter().map(NewTeam::from).collect();
 
@@ -142,41 +125,42 @@ pub fn insert_teams(teams_: &[wwc_core::Team]) -> Result<(), DbError> {
     Ok(())
 }
 
-pub fn insert_group_game_mapping(group: (GroupId, GameId)) -> Result<(), DbError> {
-    let (group_id, game_id_) = group;
-    let group = NewGroupGameMap {
-        id: u32::from(game_id_).try_into().unwrap(),
-        group_id_: &(String::from(char::from(group_id))),
-    };
+pub fn insert_games<'a, T: 'a>(games_: &'a [T]) -> Result<(), DbError>
+where
+    &'a T: Into<NewGame<'a>>,
+{
+    let games_: Vec<NewGame> = games_.iter().map(|game| game.into()).collect();
     let connection = establish_connection()?;
-
-    diesel::insert_into(group_game_map)
-        .values(&group)
-        .execute(&connection)?;
-    Ok(())
-}
-
-pub fn insert_game<'a, T: Into<NewGame<'a>>>(game: T) -> Result<(), DbError> {
-    let game = game.into();
-    let connection = establish_connection()?;
-
     diesel::insert_into(games)
-        .values(&game)
+        .values(&games_)
         .execute(&connection)?;
     Ok(())
 }
 
-pub fn clear_preds() -> Result<(), DbError> {
+pub fn insert_group_game_mappings(group_mappings: &[(GroupId, GameId)]) -> Result<(), DbError> {
+    let mappings: Vec<_> = group_mappings
+        .iter()
+        .map(|(group_id, game_id_)| (String::from(char::from(*group_id)), *game_id_))
+        .collect();
+    let mappings: Vec<_> = mappings.iter().map(NewGroupGameMap::from).collect();
     let connection = establish_connection()?;
-    diesel::delete(preds)
-        .execute(&connection)
-        .expect("Could not clear table");
+    diesel::insert_into(group_game_map)
+        .values(&mappings)
+        .execute(&connection)?;
     Ok(())
 }
 
 pub fn clear_players() -> Result<(), DbError> {
     let connection = establish_connection()?;
     diesel::delete(players)
+        .execute(&connection)
+        .expect("Could not clear table");
+    Ok(())
+}
+
+pub fn clear_preds() -> Result<(), DbError> {
+    let connection = establish_connection()?;
+    diesel::delete(preds)
         .execute(&connection)
         .expect("Could not clear table");
     Ok(())

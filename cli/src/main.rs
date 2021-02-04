@@ -5,6 +5,7 @@ use structopt::StructOpt;
 use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
+use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::Team;
 use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
@@ -79,15 +80,18 @@ fn add_games() -> Result<(), CliError> {
         .map(|(_, pg)| Group::try_from(pg))
         .collect();
     let groups = groups.map_err(WwcError::from)?;
-    groups
+    let unplayed_games: Vec<_> = groups
         .iter()
         .flat_map(|group| group.unplayed_games())
-        .try_for_each(wwc_db::insert_game)?;
-    // TODO: Add full iter, see teams
-    groups
+        .cloned()
+        .collect();
+    wwc_db::insert_games(&unplayed_games)?;
+    let played_games: Vec<_> = groups
         .iter()
         .flat_map(|group| group.played_games())
-        .try_for_each(wwc_db::insert_game)?;
+        .cloned()
+        .collect();
+    wwc_db::insert_games(&played_games)?;
     Ok(())
 }
 
@@ -112,10 +116,8 @@ fn add_groups() -> Result<(), CliError> {
                 .chain(group.unplayed_games().map(move |game| (*id, game.id)))
         })
         .collect();
-    // TODO: Add full iter, see teams
-    Ok(group_games
-        .iter()
-        .try_for_each(|x| wwc_db::insert_group_game_mapping(*x))?)
+    wwc_db::insert_group_game_mappings(&group_games)?;
+    Ok(())
 }
 
 fn list_players() -> Result<(), CliError> {
