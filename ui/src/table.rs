@@ -32,13 +32,13 @@ impl DisplayTable {
 
 impl Format<'_> for DisplayTable {
     type Context = Teams;
-    fn format(&self, cxt: &Teams) -> Node<Msg> {
+    fn format(&self, ctx: &Teams) -> Node<Msg> {
         div![
             C!["group-table"],
             table![
                 tr![th![""], th![""], th!["pl"], th!["+/-"], th!["p"]],
                 self.iter().map(|(team_id, stat)| {
-                    let team = cxt
+                    let team = ctx
                         .get(&team_id)
                         .unwrap_or_else(|| panic!("No team id: {}", team_id));
                     stat.format(team)
@@ -56,10 +56,10 @@ pub(crate) struct DisplayTableRow {
 
 impl Format<'_> for DisplayTableRow {
     type Context = Team;
-    fn format(&self, cxt: &Team) -> Node<Msg> {
+    fn format(&self, ctx: &Team) -> Node<Msg> {
         tr![
-            td![cxt.fifa_code.to_string()],
-            td![format_team_flag(cxt)],
+            td![ctx.fifa_code.to_string()],
+            td![format_team_flag(ctx)],
             td![self.games_played.to_string()],
             td![self.goal_diff.to_string()],
             td![self.points.to_string()]

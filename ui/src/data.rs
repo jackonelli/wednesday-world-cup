@@ -1,7 +1,6 @@
 use crate::UiError;
-use seed::log;
 use seed::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use wwc_core::player::{PlayerId, Prediction};
 use wwc_core::{
     game::GameId,
@@ -10,7 +9,7 @@ use wwc_core::{
     team::Teams,
 };
 
-const SERVER_IP: &str = "http://192.168.0.15:8000";
+const SERVER_IP: &str = "http://localhost:8000";
 
 pub(crate) async fn get_preds(player_id: PlayerId) -> Result<Vec<Prediction>, UiError> {
     Ok(
@@ -25,15 +24,11 @@ pub(crate) async fn get_preds(player_id: PlayerId) -> Result<Vec<Prediction>, Ui
 
 pub(crate) async fn save_preds(preds: PlayerPredictions) -> Result<(), UiError> {
     let url = format!("{}/{}", SERVER_IP, "save_preds");
-    let req = Request::new(&url)
-        .method(Method::Post)
+    Request::new(&url)
+        .method(Method::Put)
         .json(&preds)
-        .unwrap();
-    log!("Req created");
-    let res = req.fetch().await?.check_status()?;
-    // .json()
-    // .await?;
-    log!("save preds complete");
+        .expect("Could not serialise PlayerPredictions")
+        .fetch().await?.check_status()?;
     Ok(())
 }
 

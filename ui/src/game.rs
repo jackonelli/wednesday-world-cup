@@ -9,8 +9,8 @@ use wwc_core::team::Teams;
 
 impl<'a> Format<'a> for PlayedGroupGame {
     type Context = (&'a Teams, GroupId);
-    fn format(&self, cxt: &(&Teams, GroupId)) -> Node<Msg> {
-        let (teams, group_id) = cxt;
+    fn format(&self, ctx: &(&Teams, GroupId)) -> Node<Msg> {
+        let (teams, group_id) = ctx;
         let group_id = *group_id;
         let home_team = teams.get(&self.home).unwrap();
         let away_team = teams.get(&self.away).unwrap();
@@ -35,8 +35,8 @@ impl<'a> Format<'a> for PlayedGroupGame {
 
 impl<'a> Format<'a> for UnplayedGroupGame {
     type Context = (&'a Teams, GroupId);
-    fn format(&self, cxt: &(&Teams, GroupId)) -> Node<Msg> {
-        let (teams, group_id) = cxt;
+    fn format(&self, ctx: &(&Teams, GroupId)) -> Node<Msg> {
+        let (teams, group_id) = ctx;
         let home_team = teams.get(&self.home).unwrap();
         let away_team = teams.get(&self.away).unwrap();
         // There is some black magic borrowing with the closure here.
