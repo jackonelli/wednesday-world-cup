@@ -6,7 +6,7 @@ use itertools::Itertools;
 use rocket::http::Method;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::Json;
-use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
+use rocket_cors::{Cors, CorsOptions};
 use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wwc_core::error::WwcError;
@@ -16,7 +16,7 @@ use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
 use wwc_core::team::Teams;
 
 /// Save preds
-#[post("/save_preds", data = "<player_preds>", format = "application/json")]
+#[put("/save_preds", format = "application/json", data = "<player_preds>")]
 fn save_preds(player_preds: Json<PlayerPredictions>) -> Result<(), BadRequest<String>> {
     let player_preds = player_preds.into_inner();
     println!("Preds:\n{:?}", player_preds);
@@ -132,15 +132,15 @@ fn get_groups() -> Result<Json<Groups>, BadRequest<String>> {
 }
 
 fn make_cors() -> Cors {
-    let allowed_origins = AllowedOrigins::some_exact(&[
-        "http://129.16.37.14:8888",
-        "http://192.168.0.15:8888",
-        "http://localhost:8888",
-    ]);
+    // let allowed_origins = AllowedOrigins::some_exact(&[
+    //     "http://129.16.37.14:8888",
+    //     "http://192.168.0.15:8888",
+    //     "http://localhost:8888",
+    // ]);
 
     CorsOptions {
         // allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post]
+        allowed_methods: vec![Method::Get, Method::Put]
             .into_iter()
             .map(From::from)
             .collect(),
@@ -162,6 +162,8 @@ fn rocket() -> rocket::Rocket {
             "/",
             routes![get_teams, get_groups, save_preds, get_preds, clear_preds],
         )
+        // Can't get this catch_all... to work.
+        // .mount("/", catch_all_options_routes())
         .attach(make_cors())
 }
 
