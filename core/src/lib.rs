@@ -50,6 +50,7 @@ pub mod game;
 pub mod group;
 // pub mod playoff;
 pub mod player;
+pub mod pred_score;
 pub mod team;
 pub mod utils;
 // Exports

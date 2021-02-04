@@ -6,6 +6,7 @@
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign, Display, From, Into, Neg};
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::ops::Sub;
 use std::str::FromStr;
 use thiserror::Error;
@@ -16,10 +17,33 @@ use thiserror::Error;
 /// Score associated with [`PlayedGroupGame`]
 ///
 /// Determines the outcome of a game which can be, win, loss or draw.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq)]
 pub struct Score {
     pub home: GoalCount,
     pub away: GoalCount,
+}
+
+impl Score {
+    pub fn new<T: Into<GoalCount>>(home_goals: T, away_goals: T) -> Self {
+        Score {
+            home: home_goals.into(),
+            away: away_goals.into(),
+        }
+    }
+    pub fn home_outcome(&self) -> Outcome {
+        match self.home.cmp(&self.away) {
+            Ordering::Greater => Outcome::Win,
+            Ordering::Less => Outcome::Lose,
+            Ordering::Equal => Outcome::Draw,
+        }
+    }
+    pub fn away_outcome(&self) -> Outcome {
+        match self.home_outcome() {
+            Outcome::Win => Outcome::Lose,
+            Outcome::Draw => Outcome::Draw,
+            Outcome::Lose => Outcome::Win,
+        }
+    }
 }
 
 impl<T: Into<GoalCount>> From<(T, T)> for Score {
@@ -53,6 +77,13 @@ impl FromStr for Score {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, Eq, PartialEq)]
+pub enum Outcome {
+    Win,
+    Draw,
+    Lose,
+}
+
 #[derive(
     Debug,
     Display,
@@ -65,8 +96,6 @@ impl FromStr for Score {
     Hash,
     Ord,
     PartialOrd,
-    Add,
-    AddAssign,
     From,
     Into,
 )]
