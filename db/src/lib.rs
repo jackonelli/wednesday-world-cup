@@ -19,6 +19,7 @@ use itertools::{Either, Itertools};
 use std::convert::TryFrom;
 use std::env;
 use thiserror::Error;
+use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{
     game::{PlayedGroupGame, UnplayedGroupGame},
@@ -76,9 +77,9 @@ pub fn get_group_games() -> Result<(Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>
 
     Ok(group_games.into_iter().partition_map(|game| {
         if game.played {
-            Either::Left(game.into())
+            Either::Left(PlayedGroupGame::try_from(game).unwrap())
         } else {
-            Either::Right(game.into())
+            Either::Right(UnplayedGroupGame::try_from(game).unwrap())
         }
     }))
 }
@@ -198,6 +199,8 @@ pub enum DbError {
     Connection(#[from] ConnectionError),
     #[error("Database query: {0}")]
     Query(#[from] QueryError),
+    #[error("Core error: {0}")]
+    Core(#[from] WwcError),
     #[error("Could you be more specific: {0}")]
     Generic(String),
 }

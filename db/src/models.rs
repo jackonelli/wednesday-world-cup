@@ -1,6 +1,8 @@
 use crate::schema::{games, group_game_map, players, preds, teams};
+use crate::DbError;
 use serde::Serialize;
 use std::convert::{TryFrom, TryInto};
+use wwc_core::error::WwcError;
 use wwc_core::fair_play::FairPlayScore;
 use wwc_core::game::{GameId, Score};
 use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
@@ -144,31 +146,38 @@ impl<'a> From<&'a PlayedGroupGame> for NewGame<'a> {
     }
 }
 
-impl From<Game> for PlayedGroupGame {
-    fn from(game: Game) -> Self {
-        PlayedGroupGame::try_new(
+impl TryFrom<Game> for PlayedGroupGame {
+    type Error = DbError;
+    fn try_from(game: Game) -> Result<Self, Self::Error> {
+        Ok(UnplayedGroupGame::try_new(
             u32::try_from(game.id).unwrap(),
             u32::try_from(game.home_team).unwrap(),
             u32::try_from(game.away_team).unwrap(),
+            wwc_core::Date::mock(),
+        )
+        .map_err(WwcError::from)
+        .map_err(DbError::from)?
+        .play(
             Score::from((
                 u32::try_from(game.home_result.unwrap()).unwrap(),
                 u32::try_from(game.away_result.unwrap()).unwrap(),
             )),
             FairPlayScore::default(),
-            wwc_core::Date::mock(),
-        )
-        .expect("Error creating PlayedGroupGame from db Game")
+        ))
     }
 }
 
-impl From<Game> for UnplayedGroupGame {
-    fn from(game: Game) -> Self {
-        UnplayedGroupGame {
-            id: GameId::from(u32::try_from(game.id).unwrap()),
-            home: TeamId::from(u32::try_from(game.home_team).unwrap()),
-            away: TeamId::from(u32::try_from(game.away_team).unwrap()),
-            date: wwc_core::Date::mock(),
-        }
+impl TryFrom<Game> for UnplayedGroupGame {
+    type Error = DbError;
+    fn try_from(game: Game) -> Result<Self, Self::Error> {
+        UnplayedGroupGame::try_new(
+            u32::try_from(game.id).unwrap(),
+            u32::try_from(game.home_team).unwrap(),
+            u32::try_from(game.away_team).unwrap(),
+            wwc_core::Date::mock(),
+        )
+        .map_err(WwcError::from)
+        .map_err(DbError::from)
     }
 }
 
