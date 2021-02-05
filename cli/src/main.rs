@@ -5,7 +5,6 @@ use structopt::StructOpt;
 use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
-use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::Team;
 use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
@@ -61,8 +60,7 @@ fn add_teams() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
     let teams: Result<Vec<Team>, CliError> = data
-        .teams
-        .into_iter()
+        .teams()
         .map(|parse_team| Team::try_from(parse_team).map_err(CliError::from))
         .collect();
     match teams {
@@ -74,11 +72,8 @@ fn add_teams() -> Result<(), CliError> {
 fn add_games() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
-    let groups: Result<Vec<Group>, GroupError> = data
-        .groups
-        .into_iter()
-        .map(|(_, pg)| Group::try_from(pg))
-        .collect();
+    let groups: Result<Vec<Group>, GroupError> =
+        data.groups().map(|(_, pg)| Group::try_from(pg)).collect();
     let groups = groups.map_err(WwcError::from)?;
     let unplayed_games: Vec<_> = groups
         .iter()
@@ -99,8 +94,7 @@ fn add_groups() -> Result<(), CliError> {
     let data = lsv_data_from_file("data/tests/data/wc-2018.json");
 
     let groups: Result<Groups, GroupError> = data
-        .groups
-        .into_iter()
+        .groups()
         .map(|(id, pg)| match Group::try_from(pg) {
             Ok(group) => Ok((id, group)),
             Err(_) => Err(GroupError::GenericError),

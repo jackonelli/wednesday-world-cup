@@ -12,9 +12,8 @@ fn main() {
     let data = lsv::lsv_data_from_file("data/tests/data/wc-2018.json");
 
     let teams: HashMap<TeamId, Team> = data
-        .teams
         .clone()
-        .into_iter()
+        .teams()
         .map(|team| (team.id, team.try_into().unwrap()))
         .collect();
 

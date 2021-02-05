@@ -1,7 +1,5 @@
 //! LSV JSON data interface
 //!
-//! The plan is to eventually move the data module to a separate crate.
-//!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -17,31 +15,45 @@ use wwc_core::Date;
 pub fn lsv_data_from_file(filename: &str) -> Data {
     let data_json =
         crate::file_io::read_json_file_to_str(filename).expect("Could not read from file");
-    let data: Data = serde_json::from_str(&data_json).expect("JSON format error.");
+    let mut data: Data = serde_json::from_str(&data_json).expect("JSON format error.");
+    data.groups = data
+        .groups
+        .into_iter()
+        .map(|(id, pg)| (id.into_uppercase(), pg))
+        .collect();
     data
 }
 
 pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
     let groups_with_err = data.groups.iter().map(|(id, group)| {
         let group: Result<Group, GroupError> = (group.clone()).try_into();
+        let id = GroupId::from(char::from(*id).to_ascii_uppercase());
         (id, group)
     });
     if groups_with_err.clone().any(|(_, group)| group.is_err()) {
         Err(LsvParseError::GroupError)
     } else {
         Ok(groups_with_err
-            .map(|(id, group)| (*id, group.unwrap()))
+            .map(|(id, group)| (id, group.unwrap()))
             .collect())
     }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Data {
-    pub teams: Vec<ParseTeam>,
-    pub groups: HashMap<GroupId, ParseGroup>,
+    teams: Vec<ParseTeam>,
+    groups: HashMap<GroupId, ParseGroup>,
 }
 
 impl Data {
+    pub fn teams(self) -> impl Iterator<Item = ParseTeam> {
+        self.teams.into_iter()
+    }
+
+    pub fn groups(self) -> impl Iterator<Item = (GroupId, ParseGroup)> {
+        self.groups.into_iter()
+    }
+
     pub fn group_winners(&self) -> impl Iterator<Item = (&GroupId, &TeamId)> {
         self.groups.iter().map(|(id, group)| (id, &group.winner))
     }
