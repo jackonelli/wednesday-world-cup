@@ -23,6 +23,18 @@ struct Model {
     group_rules: Rules<Random>,
 }
 
+fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
+    orders.perform_cmd(async { Msg::FetchTeams });
+    orders.perform_cmd(async { Msg::FetchGroups });
+    Model {
+        groups: Groups::new(),
+        player: Player::dummy(),
+        teams: Teams::new(),
+        base_url: Url::new(),
+        group_rules: fifa_2018(),
+    }
+}
+
 pub(crate) enum Msg {
     UrlChanged(subs::UrlChanged),
     FetchTeams,
@@ -36,18 +48,6 @@ pub(crate) enum Msg {
     ClearPreds,
     PredsCleared(Result<(), UiError>),
     UnfinishedScoreInput,
-}
-
-fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
-    orders.perform_cmd(async { Msg::FetchTeams });
-    orders.perform_cmd(async { Msg::FetchGroups });
-    Model {
-        groups: Groups::new(),
-        player: Player::dummy(),
-        teams: Teams::new(),
-        base_url: Url::new(),
-        group_rules: fifa_2018(),
-    }
 }
 
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {

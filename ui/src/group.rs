@@ -30,9 +30,8 @@ fn view_group<T: Tiebreaker>(
     rules: &Rules<T>,
 ) -> Node<Msg> {
     div![
-        //C![format!("group_{}", id).to_ascii_lowercase()],
         C!["group"],
-        h3!(format!("{}", id)),
+        h3!(id.to_string()),
         format_group_table(group, teams, rules),
         format_group_games(id, group, teams),
     ]
