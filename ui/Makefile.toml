@@ -5,3 +5,8 @@ dependencies = ["create_wasm"]
 command = "wasm-pack"
 args = ["build", "--target", "web", "--out-name", "wwc_ui", "--dev"]
 dependencies = ["build"]
+
+[tasks.create_wasm_opt]
+command = "wasm-pack"
+args = ["build", "--target", "web", "--out-name", "wwc_ui"]
+dependencies = ["build"]

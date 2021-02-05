@@ -162,7 +162,7 @@ impl num::Zero for NumWins {
 ///
 ///Does not impl UnaryStat even though it could in principle do it.
 ///Defining an order (impl Ord) defeats the purpose of composing rules.
-#[derive(Add, AddAssign, Debug, Clone)]
+#[derive(Add, AddAssign, Debug, Clone, Eq, PartialEq)]
 pub struct TableStats {
     pub points: GroupPoint,
     pub goal_diff: GoalDiff,
@@ -175,10 +175,39 @@ pub struct TableStats {
     pub draws: NumGames,
 }
 
+impl TableStats {
+    fn new<GP, GC, FFP, NG>(
+        points: GP,
+        goals_scored: GC,
+        goals_conceded: GC,
+        fair_play_score: FFP,
+        wins: NG,
+        losses: NG,
+        draws: NG,
+    ) -> Self
+    where
+        GP: Into<GroupPoint>,
+        GC: Into<GoalCount> + Copy,
+        FFP: Into<FifaFairPlayValue>,
+        NG: Into<NumGames> + Copy,
+    {
+        Self {
+            points: points.into(),
+            goal_diff: goals_scored.into() - goals_conceded.into(),
+            goals_scored: goals_scored.into(),
+            goals_conceded: goals_conceded.into(),
+            fair_play_score: fair_play_score.into(),
+            games_played: wins.into() + losses.into() + draws.into(),
+            wins: wins.into(),
+            losses: losses.into(),
+            draws: draws.into(),
+        }
+    }
+}
+
 impl UnaryStat for TableStats {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let (points_home, points_away) = GroupPoint::stat(game);
-        let (goal_diff_home, goal_diff_away) = GoalDiff::stat(game);
         let (goals_scored_home, goals_scored_away) = GoalCount::stat(game);
         let (fair_play_home, fair_play_away) = FifaFairPlayValue::stat(game);
         let (wins_home, wins_away) = NumWins::stat(game);
@@ -186,28 +215,24 @@ impl UnaryStat for TableStats {
         let draws_home = NumGames((points_home == GroupPoint(1)) as u32);
         let losses_away = NumGames((points_away == GroupPoint(0)) as u32);
         let draws_away = NumGames((points_away == GroupPoint(1)) as u32);
-        let home = TableStats {
-            points: points_home,
-            goal_diff: goal_diff_home,
-            goals_scored: goals_scored_home,
-            goals_conceded: goals_scored_away,
-            fair_play_score: fair_play_home,
-            games_played: NumGames(1),
-            wins: wins_home.0,
-            losses: losses_home,
-            draws: draws_home,
-        };
-        let away = TableStats {
-            points: points_away,
-            goal_diff: goal_diff_away,
-            goals_scored: goals_scored_away,
-            goals_conceded: goals_scored_home,
-            fair_play_score: fair_play_away,
-            games_played: NumGames(1),
-            wins: wins_away.0,
-            losses: losses_away,
-            draws: draws_away,
-        };
+        let home = TableStats::new(
+            points_home,
+            goals_scored_home,
+            goals_scored_away,
+            fair_play_home,
+            wins_home.0,
+            losses_home,
+            draws_home,
+        );
+        let away = TableStats::new(
+            points_away,
+            goals_scored_away,
+            goals_scored_home,
+            fair_play_away,
+            wins_away.0,
+            losses_away,
+            draws_away,
+        );
         (home, away)
     }
 }
@@ -252,6 +277,20 @@ impl std::fmt::Display for TableStats {
 
 #[cfg(test)]
 mod tests {
-    // TODO: Test TableStats
-    // TODO: Test TeamStats
+    use super::*;
+    use crate::group::tests::mock_data;
+    use crate::group::GroupId;
+    use num::Zero;
+
+    #[test]
+    fn mock_teams_stats() {
+        let (groups, _) = mock_data();
+        let group_a = groups.get(&GroupId::from('A')).unwrap();
+        let mut truth = HashMap::new();
+        truth.insert(TeamId::from(1), TableStats::new(3, 2, 1, 0, 1, 0, 0));
+        truth.insert(TeamId::from(2), TableStats::new(0, 1, 2, 0, 0, 1, 0));
+        truth.insert(TeamId::from(3), TableStats::zero());
+        truth.insert(TeamId::from(4), TableStats::zero());
+        assert_eq!(truth, TableStats::team_stats(group_a));
+    }
 }

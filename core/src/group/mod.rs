@@ -252,7 +252,7 @@ mod tests {
     use crate::team::{Team, TeamId, TeamName, TeamRank};
     use crate::Date;
     use std::collections::HashSet;
-    fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
+    pub(crate) fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
             .unwrap()
