@@ -173,6 +173,7 @@ impl num::Zero for GoalDiff {
     Clone,
     Copy,
     From,
+    Into,
     Eq,
     PartialEq,
     Ord,

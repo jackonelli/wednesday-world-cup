@@ -278,7 +278,7 @@ impl std::fmt::Display for TableStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::group::tests::mock_data;
+    use crate::group::mock_data;
     use crate::group::GroupId;
     use num::Zero;
 

@@ -3,13 +3,14 @@ pub mod game;
 pub mod order;
 pub mod stats;
 use crate::fair_play::FairPlayScore;
-use crate::game::GameId;
 use crate::game::{Game, GoalCount, GoalDiff, Score};
+use crate::game::{GameId, NumGames};
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign, Display, From, Into};
 use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
+use rand::{distributions::Distribution, distributions::Uniform, seq::IteratorRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 use stats::UnaryStat;
 use std::collections::{BTreeMap, HashMap};
@@ -184,6 +185,42 @@ impl Group {
         GoalCount::team_stats(self)
     }
 
+    pub fn random<NG>(num_games: NG, num_teams: u32, min_games_played: NG) -> Self
+    where
+        NG: Into<NumGames>,
+    {
+        let num_games = num_games.into();
+        let min_games_played = min_games_played.into();
+        let mut rng = thread_rng();
+        let teams = (0..num_teams).map(TeamId::from);
+        let games: Vec<UnplayedGroupGame> = (0..u32::from(num_games))
+            .map(|id| {
+                let teams = teams.clone().choose_multiple(&mut rng, 2);
+                UnplayedGroupGame::try_new(id, teams[0], teams[1], Date::mock()).unwrap()
+            })
+            .collect();
+        let (unpl, pl) = if min_games_played < num_games {
+            let (unpl, pl) = games.split_at(
+                Uniform::new(
+                    u32::from(min_games_played) as usize,
+                    u32::from(num_games) as usize,
+                )
+                .sample(&mut rng),
+            );
+            (unpl.to_vec(), pl.to_vec())
+        } else {
+            (Vec::new(), games)
+        };
+        let pl = pl
+            .iter()
+            .map(|unpl| {
+                let goal_count = Uniform::new(0, 5);
+                let score = Score::new(goal_count.sample(&mut rng), goal_count.sample(&mut rng));
+                unpl.clone().play(score, FairPlayScore::default())
+            })
+            .collect();
+        Group::try_new(unpl.to_vec(), pl).unwrap()
+    }
     /// Check games for unique id's
     ///
     /// Extract and combine Game Id's from played and upcoming games.
@@ -243,41 +280,43 @@ pub enum GroupError {
     GenericError,
 }
 
+use crate::team::{Team, TeamRank};
+use crate::Date;
+pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
+    let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
+        .unwrap()
+        .play(Score::from((2, 1)), FairPlayScore::default());
+    let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
+    let game_1 = UnplayedGroupGame::try_new(3, 5, 6, Date::mock()).unwrap();
+    let game_2 = UnplayedGroupGame::try_new(4, 7, 8, Date::mock()).unwrap();
+    let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
+    let mut groups = BTreeMap::new();
+    groups.insert(GroupId('A'), group_a);
+    groups.insert(GroupId('B'), group_b);
+    let teams = vec![
+        Team::new(TeamId(1), "Sweden", "SWE", "se", TeamRank(0)),
+        Team::new(TeamId(2), "England", "ENG", "gb-eng", TeamRank(1)),
+        Team::new(TeamId(3), "France", "FRA", "fr", TeamRank(2)),
+        Team::new(TeamId(4), "Brazil", "BRA", "br", TeamRank(3)),
+        Team::new(TeamId(5), "Canada", "CAN", "ca", TeamRank(4)),
+        Team::new(TeamId(6), "Spain", "ESP", "es", TeamRank(5)),
+        Team::new(TeamId(7), "Japan", "JAP", "jp", TeamRank(6)),
+        Team::new(TeamId(8), "Norway", "NOR", "no", TeamRank(6)),
+    ];
+    let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
+    (groups, teams)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::fair_play::FairPlayScore;
     use crate::game::Score;
     use crate::group::game::UnplayedGroupGame;
-    use crate::team::{Team, TeamId, TeamName, TeamRank};
+    use crate::team::{TeamId, TeamName};
     use crate::Date;
     use std::collections::HashSet;
-    pub(crate) fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
-        let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
-        let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
-            .unwrap()
-            .play(Score::from((2, 1)), FairPlayScore::default());
-        let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
-        let game_1 = UnplayedGroupGame::try_new(3, 5, 6, Date::mock()).unwrap();
-        let game_2 = UnplayedGroupGame::try_new(4, 7, 8, Date::mock()).unwrap();
-        let group_b = Group::try_new(vec![game_1, game_2], vec![]).unwrap();
-        let mut groups = BTreeMap::new();
-        groups.insert(GroupId('A'), group_a);
-        groups.insert(GroupId('B'), group_b);
-        let teams = vec![
-            Team::new(TeamId(1), "Sweden", "SWE", "se", TeamRank(0)),
-            Team::new(TeamId(2), "England", "ENG", "gb-eng", TeamRank(1)),
-            Team::new(TeamId(3), "France", "FRA", "fr", TeamRank(2)),
-            Team::new(TeamId(4), "Brazil", "BRA", "br", TeamRank(3)),
-            Team::new(TeamId(5), "Canada", "CAN", "ca", TeamRank(4)),
-            Team::new(TeamId(6), "Spain", "ESP", "es", TeamRank(5)),
-            Team::new(TeamId(7), "Japan", "JAP", "jp", TeamRank(6)),
-            Team::new(TeamId(8), "Norway", "NOR", "no", TeamRank(6)),
-        ];
-        let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
-        (groups, teams)
-    }
-
     #[test]
     fn mock_data_access() {
         let (_, mock_teams) = mock_data();
