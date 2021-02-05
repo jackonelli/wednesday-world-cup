@@ -8,24 +8,20 @@
 //! are the fundamental datastructure for the group; all other properties and statistics are
 //! derived from them.
 use crate::fair_play::FairPlayScore;
-use crate::game::GameId;
-use crate::game::GoalDiff;
-use crate::game::Score;
-use crate::game::{Game, GoalCount};
+use crate::game::{Game, GameId, GoalCount, GoalDiff, Score};
 use crate::group::stats::UnaryStat;
-use crate::group::GroupError;
-use crate::group::GroupPoint;
+use crate::group::{GroupError, GroupPoint};
 use crate::team::TeamId;
 use crate::Date;
 use serde::{Deserialize, Serialize};
 
-/// Not yet played group game
+/// Unplayed group game
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UnplayedGroupGame {
     pub id: GameId,
     pub home: TeamId,
     pub away: TeamId,
-    pub date: Date,
+    date: Date,
 }
 
 impl UnplayedGroupGame {
@@ -42,9 +38,10 @@ impl UnplayedGroupGame {
     ) -> Result<Self, GroupError> {
         let home = home.into();
         let away = away.into();
+        let id = id.into();
         if home != away {
             Ok(Self {
-                id: id.into(),
+                id,
                 home,
                 away,
                 date,
@@ -80,25 +77,32 @@ impl Game for UnplayedGroupGame {
 
 /// Played group game
 ///
-/// Can only be constructed by invoking the [`.play`] method on a
-/// [`UnplayedGroupGame`]
+/// Can only be constructed by invoking the [`UnplayedGroupGame::play`] method.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct PlayedGroupGame {
     pub id: GameId,
     pub home: TeamId,
     pub away: TeamId,
     pub score: Score,
-    pub fair_play: FairPlayScore,
+    pub(crate) fair_play: FairPlayScore,
     pub(crate) date: Date,
 }
 
 impl PlayedGroupGame {
     /// Fallible constructor for a played group game
     ///
+    /// Internal use only.
+    ///
     /// # Errors
     ///
     /// Enforces distinct team id's
-    pub fn try_new<G: Into<GameId>, T: Into<TeamId>, S: Into<Score>, F: Into<FairPlayScore>>(
+    #[cfg(test)]
+    pub(crate) fn try_new<
+        G: Into<GameId>,
+        T: Into<TeamId>,
+        S: Into<Score>,
+        F: Into<FairPlayScore>,
+    >(
         id: G,
         home: T,
         away: T,
