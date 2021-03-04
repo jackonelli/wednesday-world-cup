@@ -10,7 +10,10 @@ use derive_more::{Add, AddAssign, Display, From, Into};
 use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
-use rand::{distributions::Distribution, distributions::Uniform, seq::IteratorRandom, thread_rng};
+use rand::{
+    distributions::Distribution, distributions::Uniform, rngs::StdRng, seq::IteratorRandom,
+    thread_rng, SeedableRng,
+};
 use serde::{Deserialize, Serialize};
 use stats::UnaryStat;
 use std::collections::{BTreeMap, HashMap};
@@ -185,13 +188,22 @@ impl Group {
         GoalCount::team_stats(self)
     }
 
-    pub fn random<NG>(num_games: NG, num_teams: u32, min_games_played: NG) -> Self
+    pub fn random<NG>(
+        num_games: NG,
+        num_teams: u32,
+        min_games_played: NG,
+        seed: Option<u64>,
+    ) -> Self
     where
         NG: Into<NumGames>,
     {
         let num_games = num_games.into();
         let min_games_played = min_games_played.into();
-        let mut rng = thread_rng();
+        let mut rng = match seed {
+            Some(seed) => StdRng::seed_from_u64(seed),
+            None => StdRng::from_rng(thread_rng()).unwrap(),
+        };
+
         let teams = (0..num_teams).map(TeamId::from);
         let games: Vec<UnplayedGroupGame> = (0..u32::from(num_games))
             .map(|id| {

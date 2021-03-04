@@ -5,8 +5,9 @@ use wwc_core::group::{
 };
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let group = Group::random(6, 4, 6);
-    c.bench_function("team_stats for TableStats", |b| {
+    let seed = Some(0);
+    let group = Group::random(6, 4, 6, seed);
+    c.bench_function("team_stats_for_TableStats", |b| {
         b.iter(|| TableStats::team_stats(black_box(&group)))
     });
 }
