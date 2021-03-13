@@ -10,9 +10,12 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops;
 
-// TODO: This could perhaps be more efficient with the cool group by
+// It looks like this could be more efficient with the cool grouping
 // https://docs.rs/itertools/0.10.0/itertools/trait.Itertools.html#method.into_grouping_map
 // i.e. don't fold but map all games to (team_id, stat), then eff. fold to team stats map.
+// I tested it and it is indeed faster when all teams occur in the played games. This is of course
+// not true in general and adding that extra hashmap merge makes it solidly slower than the naive
+// impl (also requires an additional 'Clone' constraint on the 'UnaryStat' trait).
 /// Statistic calculated from a single game.
 ///
 /// Implentor needs to provide the actual [`UnaryStat::stat`] function,
@@ -278,10 +281,29 @@ impl std::fmt::Display for TableStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::fair_play::FairPlayScore;
+    use crate::game::Score;
+    use crate::group::game::UnplayedGroupGame;
     use crate::group::mock_data;
     use crate::group::GroupId;
+    use crate::Date;
     use num::Zero;
+    use std::collections::HashSet;
 
+    #[test]
+    fn assure_all_teams_in_stats_map() {
+        let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
+        let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
+            .unwrap()
+            .play(Score::from((2, 1)), FairPlayScore::default());
+        let group = Group::try_new(vec![game_1], vec![game_2]).unwrap();
+        let truth: HashSet<TeamId> = [1, 2, 3, 4].iter().map(|x| TeamId::from(*x)).collect();
+        let stat_teams = GroupPoint::team_stats(&group)
+            .into_iter()
+            .map(|(id, _stat)| id)
+            .collect();
+        assert_eq!(truth, stat_teams);
+    }
     #[test]
     fn mock_teams_stats() {
         let (groups, _) = mock_data();

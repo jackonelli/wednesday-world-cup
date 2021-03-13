@@ -292,9 +292,9 @@ pub enum GroupError {
     GenericError,
 }
 
-use crate::team::{Team, TeamRank};
+use crate::team::{Team, TeamRank, Teams};
 use crate::Date;
-pub fn mock_data() -> (Groups, HashMap<TeamId, Team>) {
+pub fn mock_data() -> (Groups, Teams) {
     let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
     let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
         .unwrap()
