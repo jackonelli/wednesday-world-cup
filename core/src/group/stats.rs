@@ -163,7 +163,7 @@ impl num::Zero for NumWins {
 
 ///Convenience struct for combining all common stats
 ///
-///Does not impl UnaryStat even though it could in principle do it.
+///Impl. UnaryStat but not Ord.
 ///Defining an order (impl Ord) defeats the purpose of composing rules.
 #[derive(Add, AddAssign, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TableStats {

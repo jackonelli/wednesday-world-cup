@@ -274,10 +274,10 @@ impl<T: UnaryStat> InternalGroupStat<T> {
 
 impl<T: UnaryStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
-        let stats_all_teams = T::internal_team_stats(group, &HashSet::from_iter(&order));
+        let internal_stats = T::internal_team_stats(group, &HashSet::from_iter(&order));
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
-            .map(|id| (id, stats_all_teams.get(&id)))
+            .map(|id| (id, internal_stats.get(&id)))
             .filter(|(_, x)| x.is_some())
             .map(|(id, x)| (id, *x.unwrap()))
             .collect();
