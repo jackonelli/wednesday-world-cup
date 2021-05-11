@@ -96,8 +96,8 @@ impl Group {
     ) -> Result<Self, GroupError> {
         if Self::game_ids_unique(&played_games, &unplayed_games) {
             Ok(Self {
-                unplayed_games,
                 played_games,
+                unplayed_games,
             })
         } else {
             Err(GroupError::GameIdsNotUnique)
@@ -228,7 +228,7 @@ impl Group {
             .map(|unpl| {
                 let goal_count = Uniform::new(0, 5);
                 let score = Score::new(goal_count.sample(&mut rng), goal_count.sample(&mut rng));
-                unpl.clone().play(score, FairPlayScore::default())
+                unpl.play(score, FairPlayScore::default())
             })
             .collect();
         Group::try_new(unpl.to_vec(), pl).unwrap()
@@ -278,7 +278,7 @@ impl num::Zero for GroupPoint {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Copy, Clone)]
 pub enum GroupError {
     #[error("Teams in game not unique")]
     GameTeamsNotUnique,

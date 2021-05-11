@@ -2,16 +2,7 @@ use crate::game::GoalCount;
 use crate::team::TeamId;
 use thiserror::Error;
 
-pub enum PlayoffGame {
-    FirstRound(Game),
-    Final(Game),
-    Bronze(Game),
-    Other(Game),
-}
-
-impl PlayoffGame {}
-
-pub struct Game {
+pub struct PlayoffGame {
     home: Option<TeamId>,
     away: Option<TeamId>,
     score: Option<Score>,

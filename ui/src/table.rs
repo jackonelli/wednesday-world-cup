@@ -15,12 +15,7 @@ impl DisplayTable {
         let full_table = TableStats::team_stats(group);
         let tmp = group_order
             .iter()
-            .map(|id| {
-                (
-                    *id,
-                    DisplayTableRow::from(full_table.get(id).unwrap().clone()),
-                )
-            })
+            .map(|id| (*id, DisplayTableRow::from(*full_table.get(id).unwrap())))
             .collect();
         DisplayTable(tmp)
     }

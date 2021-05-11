@@ -50,7 +50,7 @@ impl PlayerPredictions {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Prediction(pub GameId, pub Score);
 
 impl From<PlayedGroupGame> for Prediction {

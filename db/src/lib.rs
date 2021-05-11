@@ -107,7 +107,7 @@ pub fn insert_preds(preds_: &PlayerPredictions) -> Result<(), DbError> {
     diesel::delete(preds.filter(player_id.eq(player_id_))).execute(&connection)?;
     let preds_: Vec<NewPred> = preds_
         .preds()
-        .map(move |pred| NewPred::from(&(preds_.id, pred.clone())))
+        .map(move |pred| NewPred::from(&(preds_.id, *pred)))
         .collect();
     diesel::insert_into(preds)
         .values(&preds_)

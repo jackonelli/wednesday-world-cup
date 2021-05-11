@@ -19,6 +19,7 @@ pub trait PredScoreFn {
 // Here is an example of a concrete type that implements the `PredScoreFn` trait.
 // We are free to give it any parameters we want, here the weights for the two terms in the score
 // fn.
+#[derive(Debug, Clone, Copy)]
 pub struct SimplePredScoreFn {
     outcome: f32,
     result: f32,

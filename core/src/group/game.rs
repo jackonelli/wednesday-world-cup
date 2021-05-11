@@ -16,7 +16,7 @@ use crate::Date;
 use serde::{Deserialize, Serialize};
 
 /// Unplayed group game
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub struct UnplayedGroupGame {
     pub id: GameId,
     pub home: TeamId,
@@ -78,7 +78,7 @@ impl Game for UnplayedGroupGame {
 /// Played group game
 ///
 /// Can only be constructed by invoking the [`UnplayedGroupGame::play`] method.
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct PlayedGroupGame {
     pub id: GameId,
     pub home: TeamId,

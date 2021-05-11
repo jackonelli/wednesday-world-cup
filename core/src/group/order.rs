@@ -340,6 +340,7 @@ impl Tiebreaker for Manual {
 }
 
 /// Random tiebreaker
+#[derive(Debug, Clone, Copy)]
 pub struct Random;
 
 impl Tiebreaker for Random {

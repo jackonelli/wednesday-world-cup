@@ -17,7 +17,7 @@ use thiserror::Error;
 /// Score associated with [`PlayedGroupGame`]
 ///
 /// Determines the outcome of a game which can be, win, loss or draw.
-#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, Eq, PartialEq)]
 pub struct Score {
     pub home: GoalCount,
     pub away: GoalCount,

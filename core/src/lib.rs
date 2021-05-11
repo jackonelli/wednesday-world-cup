@@ -20,7 +20,7 @@
 // also enable `trivial_casts`, but we're waiting for
 // https://github.com/rust-lang/rust/issues/23416.
 #![warn(
-    //missing_copy_implementations,
+    missing_copy_implementations,
     //missing_debug_implementations,
     //TODO Enable
     //missing_docs,
@@ -49,7 +49,6 @@ pub mod error;
 pub mod fair_play;
 pub mod game;
 pub mod group;
-// pub mod playoff;
 pub mod player;
 // pub mod playoff;
 pub mod pred_score;

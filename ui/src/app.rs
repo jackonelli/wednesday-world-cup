@@ -132,7 +132,7 @@ fn model_preds(model: &Model) -> PlayerPredictions {
             .iter()
             .map(|(_, group)| group.played_games())
             .flatten()
-            .map(|game| (Prediction::from(game.clone())))
+            .map(|game| (Prediction::from(*game)))
             .collect(),
     )
 }

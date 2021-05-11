@@ -165,7 +165,7 @@ impl num::Zero for NumWins {
 ///
 ///Does not impl UnaryStat even though it could in principle do it.
 ///Defining an order (impl Ord) defeats the purpose of composing rules.
-#[derive(Add, AddAssign, Debug, Clone, Eq, PartialEq)]
+#[derive(Add, AddAssign, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TableStats {
     pub points: GroupPoint,
     pub goal_diff: GoalDiff,
