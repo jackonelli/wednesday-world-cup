@@ -8,6 +8,18 @@ pub struct PlayoffGame {
     score: Option<Score>,
 }
 
+pub struct PlayoffScore(GoalCount, GoalCount);
+
+impl PlayoffScore {
+    pub fn try_new(home: GoalCount, away: GoalCount) -> Result<Self, PlayoffError> {
+        if home == away {
+            Err(PlayoffError::NoWinner)
+        } else {
+            Ok(PlayoffScore(home, away))
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct Score {
     pub home: GoalCount,

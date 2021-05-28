@@ -50,7 +50,7 @@ pub mod fair_play;
 pub mod game;
 pub mod group;
 pub mod player;
-// pub mod playoff;
+pub mod playoff;
 pub mod pred_score;
 pub mod team;
 pub mod utils;
