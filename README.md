@@ -50,7 +50,7 @@ To get the full app up and running, you need to have
 
 The backend consists of the tightly linked `server` and `db` crates. The `db` crate is a pure lib and it provides rust bindings to a `sqlite3` database containing the raw data for the application (teams, games, betters et c.). The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with database data.
 
-First, we setup the database.
+First, setup the database.
 This requires the `diesel-cli`, get it with:
 
 ```bash
@@ -90,7 +90,7 @@ cargo run --bin wwc_server
 
 ### UI setup
 
-The UI is a webpage that we host with a generic server program. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate 'web assembly _WASM_' from rust.
+The UI is a webpage, hosted with some generic web server. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate 'web assembly _WASM_' from rust.
 Specifically, the rust code in `ui` is written with a web framework called [Seed](https://seed-rs.org/), which looks even stranger than normal rust since it uses macros to generate the html.
 
 #### Local hosting
