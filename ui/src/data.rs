@@ -28,7 +28,9 @@ pub(crate) async fn save_preds(preds: PlayerPredictions) -> Result<(), UiError> 
         .method(Method::Put)
         .json(&preds)
         .expect("Could not serialise PlayerPredictions")
-        .fetch().await?.check_status()?;
+        .fetch()
+        .await?
+        .check_status()?;
     Ok(())
 }
 
@@ -76,7 +78,9 @@ pub(crate) async fn get_groups_played_with_preds(player_id: PlayerId) -> Result<
 
     preds.iter().for_each(|pred| {
         game_group_map.get(&pred.0).map(|group_id| {
-            groups.get_mut(group_id).map(|group| group.play_game(pred.0, pred.1))
+            groups
+                .get_mut(group_id)
+                .map(|group| group.play_game(pred.0, pred.1))
         });
     });
     Ok(groups)
