@@ -1,11 +1,10 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
 #[macro_use]
 extern crate rocket;
 use itertools::Itertools;
 use rocket::http::Method;
+use rocket::{Rocket, Build};
 use rocket::response::status::BadRequest;
-use rocket_contrib::json::Json;
+use rocket::serde::{Serialize, json::Json};
 use rocket_cors::{Cors, CorsOptions};
 use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
@@ -156,8 +155,9 @@ fn make_cors() -> Cors {
     .expect("error while building CORS")
 }
 
-fn rocket() -> rocket::Rocket {
-    rocket::ignite()
+#[launch]
+fn rocket() -> _ {
+    rocket::build()
         .mount(
             "/",
             routes![get_teams, get_groups, save_preds, get_preds, clear_preds],
@@ -165,10 +165,6 @@ fn rocket() -> rocket::Rocket {
         // Can't get this catch_all... to work.
         // .mount("/", catch_all_options_routes())
         .attach(make_cors())
-}
-
-fn main() {
-    rocket().launch();
 }
 
 #[derive(Error, Debug)]
