@@ -54,6 +54,16 @@ impl LsvData for Fifa2018Data {
     }
 }
 
+impl Fifa2018Data {
+    pub fn group_winners(&self) -> impl Iterator<Item = (GroupId, TeamId)> + '_ {
+        self.groups.iter().map(|(id, pg)| (*id, pg.winner))
+    }
+
+    pub fn group_runner_ups(&self) -> impl Iterator<Item = (GroupId, TeamId)> + '_ {
+        self.groups.iter().map(|(id, pg)| (*id, pg.runner_up))
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 struct ParseTeam {
     id: TeamId,

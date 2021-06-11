@@ -2,14 +2,13 @@
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
 use crate::lsv::{GameType, LsvData, LsvParseError};
-use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GameId, GoalCount, Score};
 use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Team, TeamId, TeamRank, Teams};
+use wwc_core::team::{fifa_code_to_iso2_map, Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
 
 type TeamMap = HashMap<String, TeamId>;
@@ -87,15 +86,6 @@ struct ParseTeam {
     rank: Option<TeamRank>,
 }
 
-fn iso2_hack(name: &str) -> String {
-    let lower_name = name.to_ascii_lowercase();
-    let mut chars = lower_name.chars();
-    (0..2).fold(String::new(), |mut acc, _| {
-        acc.push(chars.next().unwrap());
-        acc
-    })
-}
-
 impl ParseTeam {
     fn try_parse_team(self, team_map: &TeamMap) -> Result<Team, LsvParseError> {
         let id = team_map.get(&self.fifa_code).unwrap();
@@ -104,7 +94,7 @@ impl ParseTeam {
                 *id,
                 &self.name,
                 &self.fifa_code,
-                &iso2_hack(&self.name),
+                &fifa_code_to_iso2_map(&self.name),
                 rank,
             ))
         } else {
@@ -114,7 +104,7 @@ impl ParseTeam {
                 *id,
                 &self.name,
                 &self.fifa_code,
-                &iso2_hack(&self.name),
+                &fifa_code_to_iso2_map(&self.name),
                 TeamRank(0),
             ))
         }

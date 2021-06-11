@@ -6,6 +6,7 @@ use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{Group, GroupId};
 use wwc_core::team::Team;
+use wwc_data::lsv::get_data;
 use wwc_data::lsv::LsvParseError;
 use wwc_data::lsv::{Euro2021Data, Fifa2018Data, LsvData};
 
@@ -59,13 +60,8 @@ fn register_player(name: String) -> Result<(), CliError> {
     Ok(wwc_db::register_player(&name)?)
 }
 
-fn get_data<T: LsvData>() -> Result<T, CliError> {
-    let data = T::try_data_from_file(DATA_PATH)?;
-    Ok(data)
-}
-
 fn add_teams() -> Result<(), CliError> {
-    let teams = get_data::<Tournament>()?
+    let teams = get_data::<Tournament>(DATA_PATH)?
         .try_teams()?
         .values()
         .cloned()
@@ -74,7 +70,7 @@ fn add_teams() -> Result<(), CliError> {
 }
 
 fn add_games() -> Result<(), CliError> {
-    let groups = get_data::<Tournament>()?
+    let groups = get_data::<Tournament>(DATA_PATH)?
         .try_groups()?
         .values()
         .cloned()
@@ -96,7 +92,7 @@ fn add_games() -> Result<(), CliError> {
 }
 
 fn add_groups() -> Result<(), CliError> {
-    let groups = get_data::<Tournament>()?.try_groups()?;
+    let groups = get_data::<Tournament>(DATA_PATH)?.try_groups()?;
 
     let group_games: Vec<(GroupId, GameId)> = groups
         .iter()

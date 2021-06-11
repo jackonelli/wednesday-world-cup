@@ -1,10 +1,7 @@
-use wwc_data::file_io;
-use wwc_data::lsv;
+use wwc_data::lsv::{get_data, Fifa2018Data, LsvData};
 
 #[test]
 fn teams_from_full_data() {
-    let data_json = file_io::read_json_file_to_str("tests/data/wc-2018.json")
-        .expect("Could not read from file");
-    let data: lsv::Data = serde_json::from_str(&data_json).expect("JSON format error.");
-    assert_eq!(data.teams().count(), 32);
+    let data: Fifa2018Data = get_data("tests/data/wc-2018.json").unwrap();
+    assert_eq!(data.try_teams().unwrap().len(), 32);
 }

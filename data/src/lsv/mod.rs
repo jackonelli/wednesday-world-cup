@@ -10,6 +10,11 @@ pub mod fifa_2018;
 pub use euro_2021::Euro2021Data;
 pub use fifa_2018::Fifa2018Data;
 
+pub fn get_data<T: LsvData>(data_path: &str) -> Result<T, LsvParseError> {
+    let data = T::try_data_from_file(data_path)?;
+    Ok(data)
+}
+
 pub trait LsvData: Sized {
     fn try_data_from_file(filename: &str) -> Result<Self, LsvParseError>;
     fn try_groups(&self) -> Result<Groups, LsvParseError>;

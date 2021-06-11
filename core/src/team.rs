@@ -58,6 +58,15 @@ impl Team {
     }
 }
 
+pub fn fifa_code_to_iso2_map(name: &str) -> String {
+    let lower_name = name.to_ascii_lowercase();
+    let mut chars = lower_name.chars();
+    (0..2).fold(String::new(), |mut acc, _| {
+        acc.push(chars.next().unwrap());
+        acc
+    })
+}
+
 impl std::fmt::Display for Team {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.fifa_code)
