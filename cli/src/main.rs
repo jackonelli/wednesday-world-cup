@@ -1,13 +1,16 @@
 #![forbid(unsafe_code)]
 use itertools::Itertools;
-use std::convert::TryFrom;
 use structopt::StructOpt;
 use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
-use wwc_core::group::{Group, GroupError, GroupId, Groups};
+use wwc_core::group::{Group, GroupId};
 use wwc_core::team::Team;
-use wwc_data::lsv::{lsv_data_from_file, LsvParseError};
+use wwc_data::lsv::LsvParseError;
+use wwc_data::lsv::{Euro2021Data, Fifa2018Data, LsvData};
+
+type Tournament = Euro2021Data;
+const DATA_PATH: &str = "data/tests/data/euro-2021.json";
 
 fn main() -> Result<(), CliError> {
     let opt = Opt::from_args();
@@ -56,25 +59,27 @@ fn register_player(name: String) -> Result<(), CliError> {
     Ok(wwc_db::register_player(&name)?)
 }
 
-fn add_teams() -> Result<(), CliError> {
-    let data = lsv_data_from_file("data/tests/data/wc-2018.json");
+fn get_data<T: LsvData>() -> Result<T, CliError> {
+    let data = T::try_data_from_file(DATA_PATH)?;
+    Ok(data)
+}
 
-    let teams: Result<Vec<Team>, CliError> = data
-        .teams()
-        .map(|parse_team| Team::try_from(parse_team).map_err(CliError::from))
-        .collect();
-    match teams {
-        Ok(teams) => Ok(wwc_db::insert_teams(&teams)?),
-        Err(err) => Err(err),
-    }
+fn add_teams() -> Result<(), CliError> {
+    let teams = get_data::<Tournament>()?
+        .try_teams()?
+        .values()
+        .cloned()
+        .collect::<Vec<Team>>();
+    Ok(wwc_db::insert_teams(&teams)?)
 }
 
 fn add_games() -> Result<(), CliError> {
-    let data = lsv_data_from_file("data/tests/data/wc-2018.json");
+    let groups = get_data::<Tournament>()?
+        .try_groups()?
+        .values()
+        .cloned()
+        .collect::<Vec<Group>>();
 
-    let groups: Result<Vec<Group>, GroupError> =
-        data.groups().map(|(_, pg)| Group::try_from(pg)).collect();
-    let groups = groups.map_err(WwcError::from)?;
     let unplayed_games: Vec<_> = groups
         .iter()
         .flat_map(|group| group.unplayed_games())
@@ -91,16 +96,8 @@ fn add_games() -> Result<(), CliError> {
 }
 
 fn add_groups() -> Result<(), CliError> {
-    let data = lsv_data_from_file("data/tests/data/wc-2018.json");
+    let groups = get_data::<Tournament>()?.try_groups()?;
 
-    let groups: Result<Groups, GroupError> = data
-        .groups()
-        .map(|(id, pg)| match Group::try_from(pg) {
-            Ok(group) => Ok((id, group)),
-            Err(_) => Err(GroupError::GenericError),
-        })
-        .collect();
-    let groups = groups.expect("Could not parse groups");
     let group_games: Vec<(GroupId, GameId)> = groups
         .iter()
         .flat_map(move |(id, group)| {

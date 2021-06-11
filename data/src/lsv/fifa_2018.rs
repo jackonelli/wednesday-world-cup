@@ -1,71 +1,62 @@
 //! LSV JSON data interface
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
+use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use thiserror::Error;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GoalCount, Score};
 use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{Team, TeamId, TeamRank};
+use wwc_core::team::{Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
 
-pub fn lsv_data_from_file(filename: &str) -> Data {
-    let data_json =
-        crate::file_io::read_json_file_to_str(filename).expect("Could not read from file");
-    let mut data: Data = serde_json::from_str(&data_json).expect("JSON format error.");
-    data.groups = data
-        .groups
-        .into_iter()
-        .map(|(id, pg)| (id.into_uppercase(), pg))
-        .collect();
-    data
-}
-
-pub fn try_groups_from_data(data: &Data) -> Result<Groups, LsvParseError> {
-    let groups_with_err = data.groups.iter().map(|(id, group)| {
-        let group: Result<Group, GroupError> = (group.clone()).try_into();
-        let id = GroupId::from(char::from(*id).to_ascii_uppercase());
-        (id, group)
-    });
-    if groups_with_err.clone().any(|(_, group)| group.is_err()) {
-        Err(LsvParseError::GroupError)
-    } else {
-        Ok(groups_with_err
-            .map(|(id, group)| (id, group.unwrap()))
-            .collect())
-    }
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Data {
+pub struct Fifa2018Data {
     teams: Vec<ParseTeam>,
     groups: HashMap<GroupId, ParseGroup>,
 }
 
-impl Data {
-    pub fn teams(self) -> impl Iterator<Item = ParseTeam> {
-        self.teams.into_iter()
+impl LsvData for Fifa2018Data {
+    fn try_data_from_file(filename: &str) -> Result<Fifa2018Data, LsvParseError> {
+        let data_json = crate::file_io::read_json_file_to_str(filename)?;
+        let mut data: Fifa2018Data = serde_json::from_str(&data_json)?;
+        data.groups = data
+            .groups
+            .into_iter()
+            .map(|(id, pg)| (id.into_uppercase(), pg))
+            .collect();
+        Ok(data)
     }
 
-    pub fn groups(self) -> impl Iterator<Item = (GroupId, ParseGroup)> {
-        self.groups.into_iter()
+    fn try_groups(&self) -> Result<Groups, LsvParseError> {
+        Ok(self
+            .groups
+            .iter()
+            .map(|(id, group)| {
+                group
+                    .clone()
+                    .try_into()
+                    .map(|g| (GroupId::from(char::from(*id).to_ascii_uppercase()), g))
+            })
+            .collect::<Result<Groups, GroupError>>()?)
     }
 
-    pub fn group_winners(&self) -> impl Iterator<Item = (&GroupId, &TeamId)> {
-        self.groups.iter().map(|(id, group)| (id, &group.winner))
-    }
-
-    pub fn group_runner_ups(&self) -> impl Iterator<Item = (&GroupId, &TeamId)> {
-        self.groups.iter().map(|(id, group)| (id, &group.runner_up))
+    fn try_teams(&self) -> Result<Teams, LsvParseError> {
+        let tmp = self
+            .clone()
+            .teams
+            .into_iter()
+            .map(|team| team.try_into())
+            .collect::<Result<Vec<Team>, LsvParseError>>()?;
+        Ok(tmp.into_iter().map(|t| (t.id, t)).collect())
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct ParseTeam {
-    pub id: TeamId,
+struct ParseTeam {
+    id: TeamId,
     name: String,
     #[serde(rename = "fifaCode")]
     fifa_code: String,
@@ -99,7 +90,7 @@ impl TryFrom<ParseTeam> for Team {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct ParseGroup {
+struct ParseGroup {
     name: String,
     winner: TeamId,
     #[serde(rename = "runnerup")]
@@ -135,7 +126,7 @@ impl TryFrom<ParseGroup> for Group {
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-pub struct ParseGame {
+struct ParseGame {
     #[serde(rename = "name")]
     id: u32,
     #[serde(rename = "type")]
@@ -183,21 +174,4 @@ impl TryFrom<ParseGame> for PlayedGroupGame {
         };
         Ok(game.play(score, fair_play_score))
     }
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-enum GameType {
-    Group,
-    Qualified,
-    Winner,
-    Loser,
-}
-
-#[derive(Error, Debug)]
-pub enum LsvParseError {
-    #[error("Error parsing team")]
-    TeamError,
-    #[error("Error parsing group")]
-    GroupError,
 }

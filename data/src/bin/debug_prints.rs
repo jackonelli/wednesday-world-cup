@@ -1,29 +1,29 @@
 use std::collections::HashMap;
-use std::convert::TryInto;
 use wwc_core::group::game::PlayedGroupGame;
 use wwc_core::group::order::fifa_2018;
 use wwc_core::group::stats::{TableStats, UnaryStat};
 use wwc_core::group::{GroupId, GroupOrder};
-use wwc_core::team::{Team, TeamId, Teams};
-use wwc_data::lsv;
+use wwc_core::team::{TeamId, Teams};
+use wwc_data::lsv::euro_2021 as euro_2021_data;
+use wwc_data::lsv::fifa_2018 as fifa_2018_data;
+use wwc_data::lsv::LsvData;
+use wwc_data::lsv::LsvParseError;
 
-fn main() {
+fn main() -> Result<(), LsvParseError> {
     let rules = fifa_2018();
-    let data = lsv::lsv_data_from_file("data/tests/data/wc-2018.json");
+    let data = euro_2021_data::Euro2021Data::try_data_from_file("data/tests/data/euro-2021.json")?;
+    // let data = fifa_2018_data::Fifa2018Data::try_data_from_file("data/tests/data/wc-2018.json")?;
 
-    let teams: HashMap<TeamId, Team> = data
-        .clone()
-        .teams()
-        .map(|team| (team.id, team.try_into().unwrap()))
-        .collect();
+    let teams: Teams = data.try_teams()?;
 
-    let groups = lsv::try_groups_from_data(&data).expect("Could not parse groups from data");
+    let groups = data.try_groups()?;
 
     for (id, group) in groups {
         let rank = group.rank_teams(&rules);
         let table = TableStats::team_stats(&group);
         print_group(id, rank, &teams, table);
     }
+    Ok(())
 }
 
 fn _print_game(game: &PlayedGroupGame, teams: &Teams) {

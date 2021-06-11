@@ -36,7 +36,7 @@ pub type Teams = HashMap<TeamId, Team>;
 )]
 pub struct TeamRank(pub u32);
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Team {
     pub id: TeamId,
     pub name: TeamName,
