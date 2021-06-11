@@ -46,25 +46,11 @@ To get the full app up and running, you need to have
 - a running `server`
 - hosting of the to-wasm-compiled UI.
 
-The code requires a nightly version of the rust compiler.
-Get the code and switch to the nightly compiler
-
-```bash
-git clone git@github.com:jackonelli/wednesday-world-cup.git wwc
-cd wwc
-# NB. this switches to the nightly compiler in the current repo only.
-rustup override set nightly
-```
-
-The nightly requirement comes from the `server`, which is built with a rust framework called [Rocket](https://rocket.rs/).
-[Presumably](https://github.com/SergioBenitez/Rocket/issues/19) Rocket is already available on stable, though not yet on the official registry (crates.io).
-Anyway, it doesn't bother me enough to track the master branch, just to leave nightly.
-
 ### Backend setup
 
-The backend consists of the tightly linked `server` and `db` crates. The `db` crate is a pure lib provides rust bindings to a `sqlite3` database containing the raw data for the application (teams, games, betters et c.). The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with database data.
+The backend consists of the tightly linked `server` and `db` crates. The `db` crate is a pure lib and it provides rust bindings to a `sqlite3` database containing the raw data for the application (teams, games, betters et c.). The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with database data.
 
-First, we setup the database.
+First, setup the database.
 This requires the `diesel-cli`, get it with:
 
 ```bash
@@ -104,7 +90,7 @@ cargo run --bin wwc_server
 
 ### UI setup
 
-The UI is a webpage that we host with a generic server program. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate 'web assembly _WASM_' from rust.
+The UI is a webpage, hosted with some generic web server. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate 'web assembly _WASM_' from rust.
 Specifically, the rust code in `ui` is written with a web framework called [Seed](https://seed-rs.org/), which looks even stranger than normal rust since it uses macros to generate the html.
 
 #### Local hosting

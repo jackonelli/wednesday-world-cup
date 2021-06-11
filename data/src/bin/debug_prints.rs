@@ -12,7 +12,6 @@ use wwc_data::lsv::LsvParseError;
 fn main() -> Result<(), LsvParseError> {
     let rules = fifa_2018();
     let data = euro_2021_data::Euro2021Data::try_data_from_file("data/tests/data/euro-2021.json")?;
-    // let data = fifa_2018_data::Fifa2018Data::try_data_from_file("data/tests/data/wc-2018.json")?;
 
     let teams: Teams = data.try_teams()?;
 

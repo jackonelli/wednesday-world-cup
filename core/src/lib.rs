@@ -11,8 +11,6 @@
 //! are repeated unecessarily, but then again, the size of the average tournament is very small and
 //! the overhead will be miniscule.
 #![forbid(unsafe_code)]
-// Rocket
-#![feature(proc_macro_hygiene, decl_macro)]
 // Enable clippy if our Cargo.toml file asked us to do so.
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
