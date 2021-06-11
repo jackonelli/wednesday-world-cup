@@ -10,6 +10,7 @@ use wwc_data::lsv;
 fn main() {
     let rules = fifa_2018();
     let data = lsv::lsv_data_from_file("data/tests/data/wc-2018.json");
+    let data = lsv::lsv_data_from_file("data/tests/data/eu-2021.json");
 
     let teams: HashMap<TeamId, Team> = data
         .clone()

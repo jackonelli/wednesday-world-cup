@@ -1,8 +1,10 @@
 use crate::game::GoalCount;
 use crate::team::TeamId;
+use crate::game::GameId;
 use thiserror::Error;
 
 pub struct PlayoffGame {
+    game_id: GameId,
     home: Option<TeamId>,
     away: Option<TeamId>,
     score: Option<Score>,
