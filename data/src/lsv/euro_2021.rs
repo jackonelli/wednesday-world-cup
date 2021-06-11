@@ -8,7 +8,7 @@ use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GameId, GoalCount, Score};
 use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{fifa_code_to_iso2_map, Team, TeamId, TeamRank, Teams};
+use wwc_core::team::{FifaCode, Iso2, Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
 
 type TeamMap = HashMap<String, TeamId>;
@@ -94,7 +94,7 @@ impl ParseTeam {
                 *id,
                 &self.name,
                 &self.fifa_code,
-                &fifa_code_to_iso2_map(&self.name),
+                &String::from(Iso2::from(&FifaCode::from(self.fifa_code.clone()))),
                 rank,
             ))
         } else {
@@ -104,7 +104,7 @@ impl ParseTeam {
                 *id,
                 &self.name,
                 &self.fifa_code,
-                &fifa_code_to_iso2_map(&self.name),
+                &String::from(Iso2::from(&FifaCode::from(self.fifa_code.clone()))),
                 TeamRank(0),
             ))
         }

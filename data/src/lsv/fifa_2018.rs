@@ -54,6 +54,7 @@ impl LsvData for Fifa2018Data {
     }
 }
 
+/// Used for testing only
 impl Fifa2018Data {
     pub fn group_winners(&self) -> impl Iterator<Item = (GroupId, TeamId)> + '_ {
         self.groups.iter().map(|(id, pg)| (*id, pg.winner))

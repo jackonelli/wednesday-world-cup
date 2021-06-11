@@ -58,15 +58,6 @@ impl Team {
     }
 }
 
-pub fn fifa_code_to_iso2_map(name: &str) -> String {
-    let lower_name = name.to_ascii_lowercase();
-    let mut chars = lower_name.chars();
-    (0..2).fold(String::new(), |mut acc, _| {
-        acc.push(chars.next().unwrap());
-        acc
-    })
-}
-
 impl std::fmt::Display for Team {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.fifa_code)
@@ -83,6 +74,37 @@ pub struct FifaCode(String);
 #[as_ref(forward)]
 pub struct Iso2(String);
 
+const FIFA_CODE_ISO2_MAP: &[(&str, &str)] = &[
+    ("ENG", "gb-eng"),
+    ("POL", "pl"),
+    ("POR", "pt"),
+    ("SLO", "sk"),
+    ("SUI", "ch"),
+    ("SWE", "se"),
+    ("TUR", "tr"),
+    ("UKR", "ua"),
+    ("WAL", "gb-wls"),
+];
+
+/// Ad hoc mapping for 'Fifa code -> ISO2' codes
+/// Look up, or the first two letters of the Fifa code in lowercase
+impl From<&FifaCode> for Iso2 {
+    fn from(fifa_code: &FifaCode) -> Iso2 {
+        if let Some((_, iso2)) = FIFA_CODE_ISO2_MAP
+            .iter()
+            .find(|(code, _)| *code == fifa_code.0)
+        {
+            Iso2::from(String::from(*iso2))
+        } else {
+            let lower_name = fifa_code.0.to_ascii_lowercase();
+            let mut chars = lower_name.chars();
+            Iso2((0..2).fold(String::new(), |mut acc, _| {
+                acc.push(chars.next().unwrap());
+                acc
+            }))
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
