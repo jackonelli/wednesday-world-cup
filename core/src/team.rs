@@ -47,10 +47,16 @@ pub struct Team {
 }
 
 impl Team {
-    pub fn new(id: TeamId, name: &str, fifa_code: &str, iso2: &str, rank: TeamRank) -> Self {
+    pub fn new<TN: AsRef<str> + ?Sized>(
+        id: TeamId,
+        name: &TN,
+        fifa_code: &str,
+        iso2: &str,
+        rank: TeamRank,
+    ) -> Self {
         Team {
             id,
-            name: TeamName(String::from(name)),
+            name: TeamName(String::from(name.as_ref())),
             fifa_code: FifaCode(String::from(fifa_code)),
             iso2: Iso2(String::from(iso2)),
             rank,

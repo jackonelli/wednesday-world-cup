@@ -94,7 +94,7 @@ impl ParseTeam {
                 *id,
                 &self.name,
                 &self.fifa_code,
-                &String::from(Iso2::from(&FifaCode::from(self.fifa_code.clone()))),
+                Iso2::from(&FifaCode::from(self.fifa_code.clone())).as_ref(),
                 rank,
             ))
         } else {
