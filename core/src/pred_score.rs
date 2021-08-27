@@ -17,12 +17,12 @@ pub trait PredScoreFn {
 }
 
 // Here is an example of a concrete type that implements the `PredScoreFn` trait.
-// We are free to give it any parameters we want, here the weights for the two terms in the score
+// We are free to give it any parameters (fields) we want, here the weights for the two terms in the score
 // fn.
 #[derive(Debug, Clone, Copy)]
 pub struct SimplePredScoreFn {
-    outcome: f32,
-    result: f32,
+    outcome_weight: f32,
+    result_weight: f32,
 }
 
 // A trait is implemented by providing this type of `impl TraitX for ConcreteTypeY` block
@@ -37,8 +37,8 @@ impl PredScoreFn for SimplePredScoreFn {
         // The variables above are bool's. We need to cast them to type f32 in order to do the
         // multiplication. There is no direct way from bool -> f32, that is why we do the casting
         // bool -> u8 -> f32
-        let score =
-            correct_outcome as u8 as f32 * self.outcome + correct_result as u8 as f32 * self.result;
+        let score = correct_outcome as u8 as f32 * self.outcome_weight
+            + correct_result as u8 as f32 * self.result_weight;
         // Finally we wrap the f32 value in our type.
         // The last (non-comment) line of a rust function is returned, as long as it does not end with a ';'.
         PredScore(score)
@@ -49,10 +49,13 @@ impl PredScoreFn for SimplePredScoreFn {
 }
 
 // This is a typical construct in this code.
-// The pred. score is really represented by a floating number, but to ensure type safety we wrap it in a
-// new type `PredScore` to prevent misuse.
+// The pred. score is really represented by a floating number (f32), but to ensure type safety we wrap it in a
+// new type `PredScore` to prevent misuse. See, the README.md in the repo root for a motivation for
+// this.
 // The `derive` macro here is where we specify which traits we want to auto-implement for this new
 // type.
+// Some common derives (auto-impl's) are built-in, e.g. `Default`, `Debug` and some are provided by
+// third-party lib's (crates), e.g. from `derive_more`, `serde`.
 #[derive(
     Default,
     Debug,
@@ -72,6 +75,9 @@ impl PredScoreFn for SimplePredScoreFn {
 )]
 pub struct PredScore(f32);
 
+// Simple unit tests are written in the same source file.
+// The tests are still in a separate module, which is only compiled during testing, i.e. when
+// running `cargo test`.
 #[cfg(test)]
 mod test {
     use super::*;
@@ -80,10 +86,10 @@ mod test {
     #[test]
     fn test_simple_score_fn() {
         let score_fn = SimplePredScoreFn {
-            outcome: 3.0,
-            result: 2.0,
+            outcome_weight: 3.0,
+            result_weight: 2.0,
         };
-        // Correct outcome and correct result: score = 3 * 1 + 2 * 1
+        // Correct outcome and correct result: score = 3 * 1 + 2 * 1 = 5
         let true_score = Score::new(2, 2);
         let pred = Score::new(2, 2);
         assert_approx_eq!(score_fn.pred_score(pred, true_score).0, PredScore(5.0).0);

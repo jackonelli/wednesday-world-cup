@@ -48,9 +48,10 @@ To get the full app up and running, you need to have
 
 ### Backend setup
 
-The backend consists of the tightly linked `server` and `db` crates. The `db` crate is a pure lib and it provides rust bindings to a `sqlite3` database containing the raw data for the application (teams, games, betters et c.). The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with database data.
+The backend consists of the tightly linked `server` and `db` crates. The `db` crate is a pure lib. It provides rust bindings to a `sqlite3` database containing the raw data for the application (teams, games, betters et c.).
+The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with or manipulates database data.
 
-First, setup the database.
+First, setup the database. We use a rust object relational mapping _ORM_ called Diesel.
 This requires the `diesel-cli`, get it with:
 
 ```bash
@@ -68,7 +69,7 @@ export WWC_ROOT=$(pwd)
 export DATABASE_URL=$WWC_ROOT/<path_to_db>
 ```
 
-The variable `WWC_ROOT` is not strictly necessary, but I will use it here to reference the repo root.
+The variable `WWC_ROOT` is not necessary, but I will use it here to reference the repo root.
 To create and fill the db with data, run:
 
 ```bash
@@ -76,9 +77,12 @@ cd $WWC_ROOT/db
 diesel setup
 cd $WWC_ROOT
 cargo run --bin wwc_cli add all
+# To verify that it worked, run
+cargo run --bin wwc_cli list all
+# Which should list a lot of hard-to-read data
 ```
 
-Now, the database is set up and the only remaining thing is to start the server.
+Now, the database is set up and the only remaining backend thing is to start the server.
 The server expects a config file `Rocket.toml` in the repo root.
 An actual config is placed in `server/Rocket.toml`, which is symlinked to the repo root.
 If there is an issue with the symlinking, simply copy the actual file from `server/` to the repo root.
@@ -138,6 +142,10 @@ mmdc -i assets/dep_graph.mmd -o assets/dep_graph.svg
 
 The frontend user interface `ui` is written in the same language as the `core` library (rust), which both compile to webassembly [_wasm_](https://webassembly.org/).
 This enables a trivial backend, which does no more than serve up raw data and leaves all calculations to be done in the browser.
+The great benefit of this is that code -- functions, types and implementations -- can be re-used, as opposed to having two implementations of everthing in rust for the backend and js for the frontend.
+This is especially good given the high level of abstraction used here with the type safety described in the next section.
+Of course, somewhere in the pipeline the well-structured types need to be passed around as raw data (JSON in this case) in the communication between database and ui, but this can all be hidden since rust excels at this conversion,
+i.e. in serialisation and deserialisation of data.
 
 ### Type safety
 
@@ -150,11 +158,13 @@ To avoid that -- and in fact to make this class of bugs unrepresentable -- this 
 pub struct GoalCount(u32);
 ```
 
+So instead of using a non-negative integer `u32` to represent a goal count, we _wrap_ it in a new type `GoalCount`.
 It is more verbose to implement in the first place but when it's in place it's ergonomic and hard to misuse.
 
 One particularly nice consequence is that the newtype pattern opts out of all the trait implementations of the wrapped type,
 i.e. the newtype does not "inherit" any functionality from the inner type.
-In the `GoalCount` example above, the new type does not have any functionality that we associate with an unsigned integer, like arithmetic, unless we specifically enable it. Enabling requires a trait implementation for the desired functionality, either through a manual implementation or with a derive macro.
+In the `GoalCount` example above, the new type does not have any functionality that we associate with an unsigned integer, like arithmetics, unless we specifically enable it.
+Enabling requires a trait implementation for the desired functionality, either through a manual implementation or with a derive macro.
 
 Above you see how the `Add` trait (i.e. enabling the `+` operator) is auto-impl. with the [`derive_more`](https://crates.io/crates/derive_more) crate
 (NB. the auto impl _only_ allows for addition where both values are of type `GoalCount`).
@@ -169,8 +179,9 @@ impl Sub for GoalCount {
 }
 ```
 
-Similarly, addition for the type `TeamRank` has no semantic meaning and subsequently does not impl `Add` with any types.
-Trying to add two `TeamRank` values will result in a compilation error, catching potential logic bugs which would have gone undetected if everything was of the standard integer type.
+Conversely, addition for the type `TeamRank` has no semantic meaning and subsequently does not impl `Add` with any types.
+Trying to add two `TeamRank` (or a `TeamRank` with another type like `GoalCount`) values will result in a compilation error,
+catching potential logic bugs which would have gone undetected if everything was of the standard integer type.
 
 ### Parse, don't validate
 
@@ -179,7 +190,8 @@ Rust is a stickler for error handling: potential errors must be dealt with expli
 
 Consider the score of a playoff game. It can be represented by two non-negative integers, except that some combinations of integers would be invalid since a playoff game must have a winner.
 
-Every function that takes such a score tuple as input, would require validation of the score, returning an error when it encounters a draw result. This pollutes the API and failure to perform this validation could cause weird results (not really for this example due to rust's inherent type safety but for more complex examples it certainly would).
+Every function that takes such a score tuple as input, would require validation of the score, returning an error when it encounters a draw result.
+This pollutes the API and failure to perform this validation could cause weird results (not really for this example due to rust's inherent type safety but for more complex examples it certainly would).
 
 Instead of validating a general tuple we use the newtype pattern to create
 
@@ -198,8 +210,9 @@ impl PlayoffScore {
 }
 ```
 
-By making the inner types private (by not adding public identifiers: `PlayoffScore(pub GoalCount, pub GoalCount)`), the only way to construct a `PlayoffScore` is via the `try_new` constructor which _parses_ the goal counts into a validated score.
-Every function that deals with playoff scores can now take input of the `PlayoffScore` type and not have to worry about equal results and the API is spared `Result<T, E>` return types in every function.
+By making the inner types private (by not adding public identifiers: `PlayoffScore(pub GoalCount, pub GoalCount)`),
+the only way to construct a `PlayoffScore` is via the `try_new` constructor which _parses_ the goal counts into a validated score.
+Every function that deals with playoff scores can now take inputs of type `PlayoffScore` and not have to worry about equal results and the API is spared `Result<T, E>` return types (which, in rust, is a must for functions that can fail) in every function.
 
 ### Functional
 
