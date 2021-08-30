@@ -14,27 +14,28 @@ use wwc_core::Date;
 type TeamMap = HashMap<String, TeamId>;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Euro2021Data {
+pub struct Euro2020Data {
     teams: Vec<ParseTeam>,
     groups: Vec<ParseGroup>,
     team_map: TeamMap,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-struct ParseEuro2021Data {
+struct ParseEuro2020Data {
     teams: Vec<ParseTeam>,
     groups: Vec<ParseGroup>,
 }
 
-impl LsvData for Euro2021Data {
-    fn try_data_from_file(filename: &str) -> Result<Euro2021Data, LsvParseError> {
+impl LsvData for Euro2020Data {
+    fn try_data_from_file(filename: &str) -> Result<Euro2020Data, LsvParseError> {
         let data_json = crate::file_io::read_json_file_to_str(filename)?;
-        let mut data: ParseEuro2021Data = serde_json::from_str(&data_json)?;
+        let mut data: ParseEuro2020Data = serde_json::from_str(&data_json)?;
         data.groups = data
             .groups
             .into_iter()
             .map(|mut pg| {
-                pg.id = pg.id.to_ascii_uppercase();
+                // Ugly, can be fixed with custom deserialisation, but I won't bother.
+                pg.id = GroupId::from(char::from(pg.id).to_ascii_uppercase());
                 pg
             })
             .collect();
@@ -68,13 +69,24 @@ impl LsvData for Euro2021Data {
     }
 }
 
-impl Euro2021Data {
+impl Euro2020Data {
     fn team_map(teams: &[ParseTeam]) -> TeamMap {
         teams
             .iter()
             .enumerate()
             .map(|(id, t)| (t.fifa_code.clone(), TeamId(id as u32)))
             .collect()
+    }
+}
+
+/// Used for testing only
+impl Euro2020Data {
+    pub fn group_winners(&self) -> impl Iterator<Item = (GroupId, Option<FifaCode>)> + '_ {
+        self.groups.iter().map(|pg| (pg.id, pg.winner.clone()))
+    }
+
+    pub fn group_runner_ups(&self) -> impl Iterator<Item = (GroupId, Option<FifaCode>)> + '_ {
+        self.groups.iter().map(|pg| (pg.id, pg.runner_up.clone()))
     }
 }
 
@@ -113,11 +125,11 @@ impl ParseTeam {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct ParseGroup {
-    id: char,
+    id: GroupId,
     name: String,
-    winner: Option<TeamId>,
+    winner: Option<FifaCode>,
     #[serde(rename = "runnerup")]
-    runner_up: Option<TeamId>,
+    runner_up: Option<FifaCode>,
     #[serde(rename = "matches")]
     games: Vec<ParseGame>,
 }

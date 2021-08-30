@@ -4,10 +4,10 @@ use wwc_core::group::GroupError;
 use wwc_core::group::Groups;
 use wwc_core::team::Teams;
 
-pub mod euro_2021;
+pub mod euro_2020;
 pub mod fifa_2018;
 
-pub use euro_2021::Euro2021Data;
+pub use euro_2020::Euro2020Data;
 pub use fifa_2018::Fifa2018Data;
 
 pub fn get_data<T: LsvData>(data_path: &str) -> Result<T, LsvParseError> {

@@ -56,11 +56,11 @@ impl LsvData for Fifa2018Data {
 
 /// Used for testing only
 impl Fifa2018Data {
-    pub fn group_winners(&self) -> impl Iterator<Item = (GroupId, TeamId)> + '_ {
+    pub fn group_winners(&self) -> impl Iterator<Item = (GroupId, Option<TeamId>)> + '_ {
         self.groups.iter().map(|(id, pg)| (*id, pg.winner))
     }
 
-    pub fn group_runner_ups(&self) -> impl Iterator<Item = (GroupId, TeamId)> + '_ {
+    pub fn group_runner_ups(&self) -> impl Iterator<Item = (GroupId, Option<TeamId>)> + '_ {
         self.groups.iter().map(|(id, pg)| (*id, pg.runner_up))
     }
 }
@@ -103,9 +103,9 @@ impl TryFrom<ParseTeam> for Team {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 struct ParseGroup {
     name: String,
-    winner: TeamId,
+    winner: Option<TeamId>,
     #[serde(rename = "runnerup")]
-    runner_up: TeamId,
+    runner_up: Option<TeamId>,
     #[serde(rename = "matches")]
     games: Vec<ParseGame>,
 }
