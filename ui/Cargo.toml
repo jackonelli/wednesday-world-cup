@@ -1,5 +1,8 @@
 [package]
 name = "wwc_ui"
+repository = "https://github.com/jackonelli/wwc_ui/"
+description = "WASM/Seed crate, defining a UI for WWC"
+license = "MIT OR Apache-2.0"
 version = "0.1.0"
 authors = ["Jacko Jackonelli"]
 edition = "2018"
