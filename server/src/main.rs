@@ -2,9 +2,8 @@
 extern crate rocket;
 use itertools::Itertools;
 use rocket::http::Method;
-use rocket::{Rocket, Build};
 use rocket::response::status::BadRequest;
-use rocket::serde::{Serialize, json::Json};
+use rocket::serde::json::Json;
 use rocket_cors::{Cors, CorsOptions};
 use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
@@ -18,7 +17,8 @@ use wwc_core::team::Teams;
 #[put("/save_preds", format = "application/json", data = "<player_preds>")]
 fn save_preds(player_preds: Json<PlayerPredictions>) -> Result<(), BadRequest<String>> {
     let player_preds = player_preds.into_inner();
-    println!("Preds:\n{:?}", player_preds);
+    println!("Saving predictions for player {}", player_preds.id);
+    player_preds.preds().for_each(|pred| println!("{}", pred));
     let tmp = wwc_db::insert_preds(&player_preds)
         .map_err(ServerError::from)
         .map_err(BadRequest::from);
@@ -49,10 +49,10 @@ fn get_preds(player_id: i32) -> Result<Json<Vec<Prediction>>, BadRequest<String>
 /// Clear predictions
 #[get("/clear_preds")]
 fn clear_preds() -> Result<(), BadRequest<String>> {
-    let preds = wwc_db::clear_preds()
+    wwc_db::clear_preds()
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
-    println!("Clear preds res {:?}", preds);
+    println!("Predictions cleared.");
     Ok(())
 }
 
