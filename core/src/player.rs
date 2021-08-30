@@ -53,6 +53,12 @@ impl PlayerPredictions {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Prediction(pub GameId, pub Score);
 
+impl std::fmt::Display for Prediction {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Game {}: {}", self.0, self.1)
+    }
+}
+
 impl From<PlayedGroupGame> for Prediction {
     fn from(game: PlayedGroupGame) -> Self {
         Prediction(game.id, game.score)

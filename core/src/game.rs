@@ -46,6 +46,12 @@ impl Score {
     }
 }
 
+impl std::fmt::Display for Score {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}", self.home, self.away)
+    }
+}
+
 impl<T: Into<GoalCount>> From<(T, T)> for Score {
     fn from(x: (T, T)) -> Self {
         let (home, away) = x;
