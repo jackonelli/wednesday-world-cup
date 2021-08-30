@@ -63,7 +63,7 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder
     }
 }
 
-/// Try ordering a NonStrictGroupOrder
+/// Try ordering a [`NonStrictGroupOrder`]
 ///
 /// Returns the input group order if it is strict or if there are no more rules left to apply.
 /// Otherwise recursively calls itself with the next rule.
@@ -211,7 +211,7 @@ impl IntoIterator for NonStrictGroupOrder {
 ///
 /// A complete order of a group is defined by a prioritised list of orders
 /// which implements this trait. I.e. they can take a vector of teams and split them into a
-/// NonStrictGroupOrder.
+/// [`NonStrictGroupOrder`].
 pub trait SubOrdering {
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
 }
@@ -233,17 +233,19 @@ impl<T: UnaryStat> AllGroupStat<T> {
 }
 
 impl<T: UnaryStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
+    /// Ordering for stats over the full group
+    ///
+    /// # Panics
+    ///
+    /// Does not panic since the [`UnaryStat::team_stats`] returns a hashmap which has all group
+    /// teams as keys: The teams in `order` is a subset of the keys in `stats_all_teams`.
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
         // here.
         let stats_all_teams = T::team_stats(group);
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
-            .map(|id| (id, stats_all_teams.get(&id)))
-            // TODO: remove the is_some filter: simply unwrapping the hashmap access should be
-            // safe?
-            .filter(|(_, x)| x.is_some())
-            .map(|(id, x)| (id, *x.unwrap()))
+            .map(|id| (id, *stats_all_teams.get(&id).unwrap()))
             .collect();
         team_stats.sort_by_key(|x| x.1);
         let team_stats = team_stats;
@@ -263,7 +265,7 @@ impl<T: UnaryStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
 
 /// Ordering stat based on the internal games in a teams subset
 ///
-/// SubOrdering which orders by a metric based on a UnaryStat.
+/// SubOrdering which orders by a metric based on a `UnaryStat`.
 /// The metric is calculated from the games in the group, where both teams involved are members of
 /// the subset of teams being ordered.
 struct InternalGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
@@ -275,13 +277,17 @@ impl<T: UnaryStat> InternalGroupStat<T> {
 }
 
 impl<T: UnaryStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
+    /// Ordering for stats over internal results within the order.
+    ///
+    /// # Panics
+    ///
+    /// Does not panic since the [`UnaryStat::internal_team_stats`] returns a hashmap which has the internal
+    /// teams as keys: The teams in `order` is equivalent to the set of keys in `internal_stats`.
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         let internal_stats = T::internal_team_stats(group, &HashSet::from_iter(&order));
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
-            .map(|id| (id, internal_stats.get(&id)))
-            .filter(|(_, x)| x.is_some())
-            .map(|(id, x)| (id, *x.unwrap()))
+            .map(|id| (id, *internal_stats.get(&id).unwrap()))
             .collect();
         team_stats.sort_by_key(|x| x.1);
         let team_stats = team_stats;
@@ -377,6 +383,8 @@ impl UefaRanking {
 
 impl Tiebreaker for UefaRanking {
     /// Comparison by Uefa ranking
+    ///
+    /// # Panics
     ///
     /// Panics if the team id's are not in `self.ranking_map`
     /// Internally ok since the fallible constructor [`UefaRanking::try_new`] ensures that the teams in the groups are a subset of the `ranking_map`.

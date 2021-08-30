@@ -1,7 +1,7 @@
 //! Group game
 //!
 //! Data and functionality related to games in the group stage of the tournament.
-//! This group is less restricted than a [`PlayoffGame`] since the [`Score`] is freer,
+//! This group is less restricted than a [`crate::playoff::game::PlayoffGame`] since the [`Score`] is freer,
 //! e.g. draws are allowed and there are no additional penalty shoot-out score.
 //!
 //! The two game structs [`UnplayedGroupGame`] and [`PlayedGroupGame`]

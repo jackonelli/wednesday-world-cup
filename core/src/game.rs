@@ -14,7 +14,7 @@ use thiserror::Error;
 /// General game score.
 ///
 /// Accepts any pair of non-negative integers
-/// Score associated with [`PlayedGroupGame`]
+/// Score used for [`crate::group::game::PlayedGroupGame`]
 ///
 /// Determines the outcome of a game which can be, win, loss or draw.
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, Eq, PartialEq)]
