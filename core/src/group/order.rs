@@ -76,6 +76,8 @@ fn non_strict_ordering(
         sub_order
     } else {
         let (current_rule, remaining_rules) = rules.split_at(1);
+        // current_rule is always a vec with a single element,
+        let current_rule = &current_rule[0];
         let sub_order = sub_order
             .into_iter()
             .fold(NonStrictGroupOrder::empty(), |acc, x| {
@@ -83,7 +85,7 @@ fn non_strict_ordering(
                 // i.e. if x consists of a single TeamId
                 // TODO: benchmark, possible that the allocation in the else branch is more costly.
                 let new_order = if x.len() > 1 {
-                    current_rule[0].order(group, x)
+                    current_rule.order(group, x)
                 } else {
                     NonStrictGroupOrder::single(x)
                 };

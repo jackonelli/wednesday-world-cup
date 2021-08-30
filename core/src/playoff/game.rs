@@ -1,8 +1,9 @@
+use crate::game::GameId;
 use crate::game::GoalCount;
 use crate::team::TeamId;
-use crate::game::GameId;
 use thiserror::Error;
 
+#[derive(Debug, Clone, Copy)]
 pub struct PlayoffGame {
     game_id: GameId,
     home: Option<TeamId>,
@@ -10,6 +11,7 @@ pub struct PlayoffGame {
     score: Option<Score>,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct PlayoffScore(GoalCount, GoalCount);
 
 impl PlayoffScore {
@@ -22,7 +24,7 @@ impl PlayoffScore {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Score {
     pub home: GoalCount,
     pub away: GoalCount,
@@ -52,7 +54,7 @@ impl Score {
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Copy, Clone)]
 pub enum PlayoffError {
     #[error("No winner in playoff game")]
     NoWinner,
