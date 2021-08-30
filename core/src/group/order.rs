@@ -29,7 +29,7 @@ use std::iter::FromIterator;
 
 /// Group ordering rules
 ///
-/// All ordering rules have an ordered list (vector) of subrules.
+/// All ordering rules have an ordered list of subrules.
 /// These subrules may define a non-strict ordering,
 /// therefore a proper ordering rule must also define a tiebreaker which maps a (possibly)
 /// non-strict ordering to a strict one.
@@ -240,6 +240,8 @@ impl<T: UnaryStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
         let mut team_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, stats_all_teams.get(&id)))
+            // TODO: remove the is_some filter: simply unwrapping the hashmap access should be
+            // safe?
             .filter(|(_, x)| x.is_some())
             .map(|(id, x)| (id, *x.unwrap()))
             .collect();
