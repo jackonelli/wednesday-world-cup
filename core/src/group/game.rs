@@ -8,12 +8,14 @@
 //! are the fundamental datastructure for the group; all other properties and statistics are
 //! derived from them.
 use crate::fair_play::FairPlayScore;
-use crate::game::{Game, GameId, GoalCount, GoalDiff, Score};
+use crate::game::{Game, GameId, GoalCount, GoalDiff};
 use crate::group::stats::UnaryStat;
 use crate::group::{GroupError, GroupPoint};
 use crate::team::TeamId;
 use crate::Date;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use std::str::FromStr;
 
 /// Unplayed group game
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
@@ -54,7 +56,7 @@ impl UnplayedGroupGame {
     /// Transform unplayed game to played.
     ///
     /// Only (public) way of constructing a [`PlayedGroupGame`].
-    pub fn play(self, score: Score, fair_play: FairPlayScore) -> PlayedGroupGame {
+    pub fn play(self, score: GroupGameScore, fair_play: FairPlayScore) -> PlayedGroupGame {
         PlayedGroupGame {
             id: self.id,
             home: self.home,
@@ -83,7 +85,7 @@ pub struct PlayedGroupGame {
     pub id: GameId,
     pub home: TeamId,
     pub away: TeamId,
-    pub score: Score,
+    pub score: GroupGameScore,
     pub(crate) fair_play: FairPlayScore,
     pub(crate) date: Date,
 }
@@ -100,7 +102,7 @@ impl PlayedGroupGame {
     pub(crate) fn try_new<
         G: Into<GameId>,
         T: Into<TeamId>,
-        S: Into<Score>,
+        S: Into<GroupGameScore>,
         F: Into<FairPlayScore>,
     >(
         id: G,
@@ -161,8 +163,87 @@ impl Game for PlayedGroupGame {
     }
 }
 
+/// Group game score.
+///
+/// Accepts any pair of non-negative integers
+/// Score used for [`crate::group::game::PlayedGroupGame`]
+///
+/// Determines the outcome of a game which can be, win, loss or draw.
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, Eq, PartialEq)]
+pub struct GroupGameScore {
+    pub home: GoalCount,
+    pub away: GoalCount,
+}
+
+impl GroupGameScore {
+    pub fn new<T: Into<GoalCount>>(home_goals: T, away_goals: T) -> Self {
+        GroupGameScore {
+            home: home_goals.into(),
+            away: away_goals.into(),
+        }
+    }
+    pub fn home_outcome(&self) -> GroupGameOutcome {
+        match self.home.cmp(&self.away) {
+            Ordering::Greater => GroupGameOutcome::Win,
+            Ordering::Less => GroupGameOutcome::Lose,
+            Ordering::Equal => GroupGameOutcome::Draw,
+        }
+    }
+    pub fn away_outcome(&self) -> GroupGameOutcome {
+        match self.home_outcome() {
+            GroupGameOutcome::Win => GroupGameOutcome::Lose,
+            GroupGameOutcome::Draw => GroupGameOutcome::Draw,
+            GroupGameOutcome::Lose => GroupGameOutcome::Win,
+        }
+    }
+}
+
+impl std::fmt::Display for GroupGameScore {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}-{}", self.home, self.away)
+    }
+}
+
+impl<T: Into<GoalCount>> From<(T, T)> for GroupGameScore {
+    fn from(x: (T, T)) -> Self {
+        let (home, away) = x;
+        Self {
+            home: home.into(),
+            away: away.into(),
+        }
+    }
+}
+
+// TODO test.
+impl FromStr for GroupGameScore {
+    type Err = GroupError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let score_split: Vec<&str> = s.split('-').collect();
+        let (home, away) = if score_split.len() != 2 {
+            return Err(GroupError::GameScoreParse(String::from(s)));
+        } else {
+            (score_split[0], score_split[1])
+        };
+        //TODO: Better error handling
+        let home = home
+            .parse::<u32>()
+            .map_err(|_err| GroupError::GameScoreParse(String::from(s)))?;
+        let away = away
+            .parse::<u32>()
+            .map_err(|_err| GroupError::GameScoreParse(String::from(s)))?;
+        Ok(GroupGameScore::from((home, away)))
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, Eq, PartialEq)]
+pub enum GroupGameOutcome {
+    Win,
+    Draw,
+    Lose,
+}
+
 #[cfg(test)]
-mod tests {
+mod group_game {
     use super::*;
     #[test]
     fn home_win() {
@@ -192,5 +273,29 @@ mod tests {
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));
+    }
+}
+
+#[cfg(test)]
+mod score {
+    use super::*;
+    #[test]
+    fn correct_single_digits() {
+        let true_score = GroupGameScore::new(1, 2);
+        let parsed_score = GroupGameScore::from_str("1-2").unwrap();
+        assert_eq!(true_score, parsed_score);
+    }
+
+    #[test]
+    fn correct_double_digits() {
+        let true_score = GroupGameScore::new(11, 22);
+        let parsed_score = GroupGameScore::from_str("11-22").unwrap();
+        assert_eq!(true_score, parsed_score);
+    }
+
+    #[test]
+    fn fails_gibberish() {
+        let parsed_score = GroupGameScore::from_str("asödkfaäe");
+        assert!(parsed_score.is_err());
     }
 }

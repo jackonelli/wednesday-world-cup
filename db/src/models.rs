@@ -4,8 +4,8 @@ use serde::Serialize;
 use std::convert::{TryFrom, TryInto};
 use wwc_core::error::WwcError;
 use wwc_core::fair_play::FairPlayScore;
-use wwc_core::game::{GameId, Score};
-use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::game::GameId;
+use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::player::{PlayerId, Prediction};
 use wwc_core::team::{FifaCode, Iso2, TeamId, TeamName, TeamRank};
 
@@ -158,7 +158,7 @@ impl TryFrom<Game> for PlayedGroupGame {
         .map_err(WwcError::from)
         .map_err(DbError::from)?
         .play(
-            Score::from((
+            GroupGameScore::from((
                 u32::try_from(game.home_result.unwrap()).unwrap(),
                 u32::try_from(game.away_result.unwrap()).unwrap(),
             )),
@@ -222,7 +222,7 @@ pub struct Pred {
 
 impl From<Pred> for Prediction {
     fn from(pred: Pred) -> Prediction {
-        let score = Score::from((
+        let score = GroupGameScore::from((
             u32::try_from(pred.home_result).unwrap(),
             u32::try_from(pred.away_result).unwrap(),
         ));

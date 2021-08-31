@@ -89,13 +89,13 @@ impl UnaryStat for GroupPoint {
     ///
     /// ```
     /// # use wwc_core::group::stats::UnaryStat;
-    /// # use wwc_core::group::game::{UnplayedGroupGame};
-    /// # use wwc_core::game::{Score, GameId};
+    /// # use wwc_core::group::game::{GroupGameScore, UnplayedGroupGame};
+    /// # use wwc_core::game::GameId;
     /// # use wwc_core::group::GroupPoint;
     /// # use wwc_core::team::TeamId;
     /// # use wwc_core::Date;
     /// # use wwc_core::fair_play::{FairPlay, FairPlayScore};
-    /// let score = Score::from((1, 0));
+    /// let score = GroupGameScore::from((1, 0));
     /// let fair_play_score = FairPlayScore::new(FairPlay::new(1, 0, 0, 0), FairPlay::new(0, 0, 0, 0));
     /// let game = UnplayedGroupGame::try_new(GameId::from(0), TeamId::from(1), TeamId::from(2), Date::mock())
     ///     .unwrap()
@@ -282,8 +282,7 @@ impl std::fmt::Display for TableStats {
 mod tests {
     use super::*;
     use crate::fair_play::FairPlayScore;
-    use crate::game::Score;
-    use crate::group::game::UnplayedGroupGame;
+    use crate::group::game::{GroupGameScore, UnplayedGroupGame};
     use crate::group::mock_data;
     use crate::group::GroupId;
     use crate::Date;
@@ -295,7 +294,7 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
             .unwrap()
-            .play(Score::from((2, 1)), FairPlayScore::default());
+            .play(GroupGameScore::from((2, 1)), FairPlayScore::default());
         let group = Group::try_new(vec![game_1], vec![game_2]).unwrap();
         let truth: HashSet<TeamId> = [1, 2, 3, 4].iter().map(|x| TeamId::from(*x)).collect();
         let stat_teams = GroupPoint::team_stats(&group)
@@ -306,7 +305,7 @@ mod tests {
     }
     #[test]
     fn mock_teams_stats() {
-        let (groups, _) = mock_data();
+        let (groups, _) = mock_data::groups_and_teams();
         let group_a = groups.get(&GroupId::from('A')).unwrap();
         let mut truth = HashMap::new();
         truth.insert(TeamId::from(1), TableStats::new(3, 2, 1, 0, 1, 0, 0));

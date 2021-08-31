@@ -5,8 +5,8 @@ use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
-use wwc_core::game::{GameId, GoalCount, Score};
-use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::game::{GameId, GoalCount};
+use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{FifaCode, Iso2, Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
@@ -195,7 +195,7 @@ impl ParseGame {
             parse_game.date,
         )?;
         let score = match (parse_game.home_result, parse_game.away_result) {
-            (Some(home), Some(away)) => Score::from((home, away)),
+            (Some(home), Some(away)) => GroupGameScore::from((home, away)),
             _ => return Err(GroupError::GenericError),
         };
         let fair_play_score = match (parse_game.home_fair_play, parse_game.away_fair_play) {

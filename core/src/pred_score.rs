@@ -2,7 +2,7 @@
 //!
 //! The objective when betting on a tournament is to give accurate predictions
 //! This module defines various measurements of the quality of a prediction
-use crate::game::Score;
+use crate::group::game::GroupGameScore;
 use derive_more::{Add, AddAssign, Display, From, Into, Neg, Sub};
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 // implement this trait. That way we can write generic functions and easily change the actual
 // calculation of the score.
 pub trait PredScoreFn {
-    fn pred_score(&self, pred: Score, truth: Score) -> PredScore;
+    fn pred_score(&self, pred: GroupGameScore, truth: GroupGameScore) -> PredScore;
 }
 
 // Here is an example of a concrete type that implements the `PredScoreFn` trait.
@@ -29,7 +29,7 @@ pub struct SimplePredScoreFn {
 // if this block does not implement all the functions specified in the above `PredScoreFn` trait,
 // the compiler will give an error.
 impl PredScoreFn for SimplePredScoreFn {
-    fn pred_score(&self, pred: Score, truth: Score) -> PredScore {
+    fn pred_score(&self, pred: GroupGameScore, truth: GroupGameScore) -> PredScore {
         // We check whether the prediction is correct both in terms of the outcome, win/draw/loose
         // and whether the exact result has been guessed.
         let correct_outcome = pred.home_outcome() == truth.home_outcome();
@@ -90,13 +90,13 @@ mod test {
             result_weight: 2.0,
         };
         // Correct outcome and correct result: score = 3 * 1 + 2 * 1 = 5
-        let true_score = Score::new(2, 2);
-        let pred = Score::new(2, 2);
+        let true_score = GroupGameScore::new(2, 2);
+        let pred = GroupGameScore::new(2, 2);
         assert_approx_eq!(score_fn.pred_score(pred, true_score).0, PredScore(5.0).0);
 
         // Correct outcome but incorrect result: score = 3 * 1
-        let true_score = Score::new(2, 1);
-        let pred = Score::new(3, 1);
+        let true_score = GroupGameScore::new(2, 1);
+        let pred = GroupGameScore::new(3, 1);
         assert_approx_eq!(score_fn.pred_score(pred, true_score).0, PredScore(3.0).0);
     }
 }

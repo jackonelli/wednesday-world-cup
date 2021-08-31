@@ -1,8 +1,8 @@
 //! Player
 //!
 //! Player/User/Better representation
-use crate::game::{GameId, Score};
-use crate::group::game::PlayedGroupGame;
+use crate::game::GameId;
+use crate::group::game::{GroupGameScore, PlayedGroupGame};
 use derive_more::{Display, From, Into};
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +51,7 @@ impl PlayerPredictions {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct Prediction(pub GameId, pub Score);
+pub struct Prediction(pub GameId, pub GroupGameScore);
 
 impl std::fmt::Display for Prediction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -2,8 +2,8 @@ use crate::app::Msg;
 use crate::format::Format;
 use crate::team::format_team_flag;
 use seed::{prelude::*, *};
-use wwc_core::game::{GameId, Score};
-use wwc_core::group::game::{PlayedGroupGame, UnplayedGroupGame};
+use wwc_core::game::GameId;
+use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::GroupId;
 use wwc_core::team::Teams;
 
@@ -53,7 +53,7 @@ impl<'a> Format<'a> for UnplayedGroupGame {
                 C!["game-score-input"],
                 attrs![At::Size => 2],
                 input_ev(Ev::Input, move |score| {
-                    if let Ok(score) = score.parse::<Score>() {
+                    if let Ok(score) = score.parse::<GroupGameScore>() {
                         Msg::PlayGame(ScoreInput::new(score, group_id, game_id))
                     } else {
                         Msg::UnfinishedScoreInput
@@ -69,13 +69,13 @@ impl<'a> Format<'a> for UnplayedGroupGame {
 
 #[derive(Debug, Clone)]
 pub(crate) struct ScoreInput {
-    pub(crate) score: Score,
+    pub(crate) score: GroupGameScore,
     pub(crate) group_id: GroupId,
     pub(crate) game_id: GameId,
 }
 
 impl ScoreInput {
-    fn new(score: Score, group_id: GroupId, game_id: GameId) -> Self {
+    fn new(score: GroupGameScore, group_id: GroupId, game_id: GameId) -> Self {
         ScoreInput {
             score,
             group_id,
