@@ -95,7 +95,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             group.unplay_game(game_id);
         }
         Msg::SavePreds => {
-            let player_preds = model_preds(&model);
+            let player_preds = model_preds(model);
             log!("Saving preds");
             orders.skip().perform_cmd(async {
                 Msg::PredsSaved(save_preds(player_preds).await.map_err(UiError::from))

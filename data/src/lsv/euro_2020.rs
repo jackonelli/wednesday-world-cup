@@ -52,7 +52,7 @@ impl LsvData for Euro2020Data {
             .groups
             .iter()
             .map(|pg| {
-                let id = GroupId::from(pg.id);
+                let id = pg.id;
                 pg.clone().try_parse_group(&self.team_map).map(|g| (id, g))
             })
             .collect::<Result<Groups, GroupError>>()?)

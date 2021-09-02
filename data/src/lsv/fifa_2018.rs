@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
-use wwc_core::game::{GameId, GoalCount};
+use wwc_core::game::GoalCount;
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
 use wwc_core::team::{Team, TeamId, TeamRank, Teams};

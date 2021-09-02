@@ -49,16 +49,13 @@ pub struct Rules<T: Tiebreaker> {
 ///
 /// First orders by a list of non-strict sub-orders.
 /// If the sub-order is not strict, the rules' tiebreaker is used.
-///
-/// # Panics
-///
-/// Does not panic since the unwrapping match arm is checked to be strict.
 pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
     let possibly_non_strict =
         non_strict_ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
     if !possibly_non_strict.is_strict() {
         rules.tiebreaker.order(group, possibly_non_strict)
     } else {
+        // Does not panic since the unwrapping match arm is checked to be strict.
         possibly_non_strict.try_into().unwrap()
     }
 }
@@ -395,7 +392,7 @@ impl Tiebreaker for UefaRanking {
         let rank_2 = self.0.get(&id_2).unwrap();
         // Switch the order of comparison here so that a small rank is considered better than a
         // large one.
-        rank_2.cmp(&rank_1)
+        rank_2.cmp(rank_1)
     }
 }
 

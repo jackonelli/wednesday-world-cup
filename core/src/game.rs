@@ -7,7 +7,6 @@ use crate::team::TeamId;
 use derive_more::{Add, AddAssign, Display, From, Into, Neg};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
-use thiserror::Error;
 
 pub trait Game {
     fn home_team(&self) -> TeamId;

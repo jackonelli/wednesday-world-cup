@@ -119,13 +119,17 @@ fn list_players() -> Result<(), CliError> {
 
 fn list_teams() -> Result<(), CliError> {
     let teams = wwc_db::get_teams()?;
-    teams.for_each(|team| println!("{:?}", team));
+    println!("TEAMS:");
+    teams.for_each(|team| println!("{}", team));
+    println!();
     Ok(())
 }
 
 fn list_games() -> Result<(), CliError> {
     let games = wwc_db::get_games()?;
+    println!("GAMES:");
     games.iter().for_each(|game| println!("{:?}", game));
+    println!();
     Ok(())
 }
 

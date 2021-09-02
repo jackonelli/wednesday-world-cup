@@ -203,7 +203,7 @@ impl<'a> From<&'a (String, GameId)> for NewGroupGameMap<'a> {
         let (group_id, game_id) = group_game_map;
         NewGroupGameMap {
             id: i32::try_from(u32::from(*game_id)).unwrap(),
-            group_id_: &group_id,
+            group_id_: group_id,
         }
     }
 }

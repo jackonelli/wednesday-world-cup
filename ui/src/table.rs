@@ -34,7 +34,7 @@ impl Format<'_> for DisplayTable {
                 tr![th![""], th![""], th!["pl"], th!["+/-"], th!["p"]],
                 self.iter().map(|(team_id, stat)| {
                     let team = ctx
-                        .get(&team_id)
+                        .get(team_id)
                         .unwrap_or_else(|| panic!("No team id: {}", team_id));
                     stat.format(team)
                 })
