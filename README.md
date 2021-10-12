@@ -13,7 +13,7 @@ The core library defines all the tournament types, traits and logic.
 ### `ui`
 
 The user interface is la pièce de résistance! A frontend written entirely in rust (okok, there is some html and css as well but not a single line of javasript is used in this product).
-It compiles to a wasm module, creating a webpage where everything is displayed.
+It compiles to a web assembly (WASM) module, creating a webpage where everything is displayed.
 It is built with a framework called [Seed](https://seed-rs.org/).
 
 ### `db`
@@ -22,7 +22,7 @@ The database library exposes a rust interface to read and write data to a `sqlit
 
 ### `server`
 
-The executable `wwc_server` is a very simple http server. The wasm `ui` cannot, for sand-boxing reasons, interact directly with the database.
+The executable `wwc_server` is a very simple http server. The WASM `ui` cannot, for sand-boxing reasons, interact directly with the database.
 Instead, the `wwc_server` acts as a bridge to enable the `ui` to make database calls through a http api.
 The intention is to have an as ~stupid~ simple as possible combination of `db` and `server` and leave the complexity for the UI.
 This means storing a raw, basic representation of the data in the database and having the server provide access to it as is.
@@ -94,7 +94,7 @@ cargo run --bin wwc_server
 
 ### UI setup
 
-The UI is a webpage, hosted with some generic web server. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate 'web assembly _WASM_' from rust.
+The UI is a webpage, hosted with some generic web server. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate WASM from rust.
 Specifically, the rust code in `ui` is written with a web framework called [Seed](https://seed-rs.org/), which looks even stranger than normal rust since it uses macros to generate the html.
 
 #### Local hosting
@@ -122,6 +122,9 @@ I don't love `cargo-make` but it is kind of helpful to document all the build co
 
 ## Docs
 
+The `core` crate is reasonably well documented, while the remaining are not.
+Adding documentation is a great first issue!
+
 Generate and open documentation:
 
 ```bash
@@ -129,18 +132,18 @@ cd $WWC_ROOT
 cargo doc --workspace --no-deps --document-private-items --open
 ```
 
-Generate the dependency graph:
+Generate the dependency graph figure (requires [Mermaid-CLI](https://github.com/mermaid-js/mermaid-cli)):
 
 ```bash
 cd $WWC_ROOT
 mmdc -i assets/dep_graph.mmd -o assets/dep_graph.svg
 ```
 
-## Design ideas
+## Design patterns
 
 ### Dumb backend, smart frontend.
 
-The frontend user interface `ui` is written in the same language as the `core` library (rust), which both compile to webassembly [_wasm_](https://webassembly.org/).
+The frontend user interface `ui` is written in the same language as the `core` library (rust), which both compile to web assembly [_WASM_](https://webassembly.org/).
 This enables a trivial backend, which does no more than serve up raw data and leaves all calculations to be done in the browser.
 The great benefit of this is that code -- functions, types and implementations -- can be re-used, as opposed to having two implementations of everthing in rust for the backend and js for the frontend.
 This is especially good given the high level of abstraction used here with the type safety described in the next section.
@@ -151,7 +154,7 @@ i.e. in serialisation and deserialisation of data.
 
 Many of the data in this lib: goals scored, number of games, team rank, group point, et c, are in principle (non-negative) integers.
 Having many data types with shared representation but wildly differing semantics is to beg for bugs.
-To avoid that -- and in fact to make this class of bugs unrepresentable -- this lib consistently implements types with the newtype pattern, e.g.
+To avoid that -- and in fact to make this class of bugs unrepresentable -- this lib consistently implements types with the [newtype pattern](https://rust-unofficial.github.io/patterns/patterns/behavioural/newtype.html), e.g.
 
 ```rust
 #derive[..., Add, ...]
@@ -161,8 +164,8 @@ pub struct GoalCount(u32);
 So instead of using a non-negative integer `u32` to represent a goal count, we _wrap_ it in a new type `GoalCount`.
 It is more verbose to implement in the first place but when it's in place it's ergonomic and hard to misuse.
 
-One particularly nice consequence is that the newtype pattern opts out of all the trait implementations of the wrapped type,
-i.e. the newtype does not "inherit" any functionality from the inner type.
+One particularly nice consequence is that the newtype pattern opts out of all the [trait implementations](https://doc.rust-lang.org/stable/book/ch10-02-traits.html) of the wrapped type,
+i.e. the new type does not "inherit" any functionality from the inner type.
 In the `GoalCount` example above, the new type does not have any functionality that we associate with an unsigned integer, like arithmetics, unless we specifically enable it.
 Enabling requires a trait implementation for the desired functionality, either through a manual implementation or with a derive macro.
 
@@ -185,10 +188,10 @@ catching potential logic bugs which would have gone undetected if everything was
 
 ### Parse, don't validate
 
-Another benefit of the [Type safety design](#type-safety) is that we can realise the [parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/) idea.
-Rust is a stickler for error handling: potential errors must be dealt with explicitly.
+Another benefit of the [Type safety design](#type-safety) is that we can realise the [parse, don't validate](https://lexi-lambda.github.io/blog/2019/11/05/parse-don-t-validate/) pattern.
+Rust is a stickler for [error handling](https://doc.rust-lang.org/stable/book/ch09-00-error-handling.html): potential errors must be dealt with explicitly.
 
-Consider the score of a playoff game. It can be represented by two non-negative integers, except that some combinations of integers would be invalid since a playoff game must have a winner.
+Consider the score of a playoff game. It can be represented by two non-negative integers (specifically a tuple of `GoalCount`s), except that some combinations of integers would be invalid since a playoff game must have a winner.
 
 Every function that takes such a score tuple as input, would require validation of the score, returning an error when it encounters a draw result.
 This pollutes the API and failure to perform this validation could cause weird results (not really for this example due to rust's inherent type safety but for more complex examples it certainly would).
@@ -213,6 +216,37 @@ impl PlayoffScore {
 By making the inner types private (by not adding public identifiers: `PlayoffScore(pub GoalCount, pub GoalCount)`),
 the only way to construct a `PlayoffScore` is via the `try_new` constructor which _parses_ the goal counts into a validated score.
 Every function that deals with playoff scores can now take inputs of type `PlayoffScore` and not have to worry about equal results and the API is spared `Result<T, E>` return types (which, in rust, is a must for functions that can fail) in every function.
+
+### Panicking
+
+Rust has no `null` value, so you can't set a value to `null` if certain conditions aren't met.
+Instead, Rust's standard lib. provides the enum types [`Result<T, E>`](https://doc.rust-lang.org/std/result/index.html) and [`Option<T>`](https://doc.rust-lang.org/std/option/index.html) to represent fallible and optional values respectively.
+This is one of the best features in the language, since the compiler forces you to handle all edge cases.
+There is an escape hatch though, called `.unwrap()` that converts `Result<T, E> --> T` and `Option<T> --> T`.
+In the "happy path" (i.e. where the desired value is present) you unwrap the enum to get the value you want, if not the program "panics":
+
+```rust
+// Happy path: Unwrap accesses the inner value.
+let happy_option: Option<u32> = Some(232);
+let unwrapped_int: u32 = happy_option.unwrap();
+assert_eq!(unwrapped_int, 232);
+// The optinal value is `None`, program panics.
+let null_option: Option<u32> = None;
+let unwrapped_int: u32 = null_option.unwrap();
+```
+
+(The `.unwrap()` method is implemented for `Result<T, E>` as well.)
+
+The term "panic" is very alarmistic; panics do not cause a C style segfault but is more like an exception. On a panic, the stack is safely unwinded and the program exits.
+_NB: you can also cause panic by invoking the [`panic!` macro](https://doc.rust-lang.org/std/macro.panic.html)._
+
+Even so, any panic inducing code should not be used in this project. If we avoid using it, we can trust the app to never fail which is nice when it will be running on some remote instance "in production".
+Presently, there are some panics in the codebase, and there is an [open issue](https://github.com/jackonelli/wednesday-world-cup/issues/17) for their removal.
+There are some exceptions to this rule though:
+
+- In tests it is fine to panic. Test code does not run in production (it is not even compiled).
+- There are some internal functions that unwraps results and options since you can "prove" that the unhappy path can never occur.
+  These case must be well-documented and well-tested though. See examples in `core::group::stats`.
 
 ### Functional
 
