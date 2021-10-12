@@ -7,14 +7,13 @@ use wwc_core::fair_play::FairPlayScore;
 use wwc_core::game::GameId;
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::player::{PlayerId, Prediction};
-use wwc_core::team::{FifaCode, Iso2, TeamId, TeamName, TeamRank};
+use wwc_core::team::{FifaCode, TeamId, TeamName, TeamRank};
 
 #[derive(Debug, Serialize, Queryable, Identifiable)]
 pub struct Team {
     pub id: i32,
     pub name: String,
     pub fifa_code: String,
-    pub iso2: String,
     pub rank_: i32,
 }
 

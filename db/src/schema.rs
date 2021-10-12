@@ -43,7 +43,6 @@ table! {
         id -> Integer,
         name -> Text,
         fifa_code -> Text,
-        iso2 -> Text,
         rank_ -> Integer,
     }
 }
