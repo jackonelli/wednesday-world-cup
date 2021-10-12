@@ -299,7 +299,7 @@ pub enum GroupError {
 #[cfg(test)]
 mod mock_data {
     use super::*;
-    use crate::team::{Team, TeamRank, Teams};
+    use crate::team::{Team, TeamError, TeamRank, Teams};
     use crate::Date;
     pub fn groups_and_teams() -> (Groups, Teams) {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
@@ -314,15 +314,19 @@ mod mock_data {
         groups.insert(GroupId('A'), group_a);
         groups.insert(GroupId('B'), group_b);
         let teams = vec![
-            Team::new(TeamId(1), "Sweden", "SWE", "se", TeamRank(0)),
-            Team::new(TeamId(2), "England", "ENG", "gb-eng", TeamRank(1)),
-            Team::new(TeamId(3), "France", "FRA", "fr", TeamRank(2)),
-            Team::new(TeamId(4), "Brazil", "BRA", "br", TeamRank(3)),
-            Team::new(TeamId(5), "Canada", "CAN", "ca", TeamRank(4)),
-            Team::new(TeamId(6), "Spain", "ESP", "es", TeamRank(5)),
-            Team::new(TeamId(7), "Japan", "JAP", "jp", TeamRank(6)),
-            Team::new(TeamId(8), "Norway", "NOR", "no", TeamRank(6)),
+            Team::try_new(TeamId(1), "Sweden", "SWE", "se", TeamRank(0)),
+            Team::try_new(TeamId(2), "England", "ENG", "gb-eng", TeamRank(1)),
+            Team::try_new(TeamId(3), "France", "FRA", "fr", TeamRank(2)),
+            Team::try_new(TeamId(4), "Brazil", "BRA", "br", TeamRank(3)),
+            Team::try_new(TeamId(5), "Canada", "CAN", "ca", TeamRank(4)),
+            Team::try_new(TeamId(6), "Spain", "ESP", "es", TeamRank(5)),
+            Team::try_new(TeamId(7), "Japan", "JAP", "jp", TeamRank(6)),
+            Team::try_new(TeamId(8), "Norway", "NOR", "no", TeamRank(6)),
         ];
+        let teams = teams
+            .into_iter()
+            .collect::<Result<Vec<Team>, TeamError>>()
+            .expect("Team creation should not fail");
         let teams: HashMap<TeamId, Team> = teams.into_iter().map(|team| (team.id, team)).collect();
         (groups, teams)
     }

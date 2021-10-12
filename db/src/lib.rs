@@ -27,19 +27,13 @@ use wwc_core::group::{
 };
 use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
 
-fn establish_connection() -> Result<SqliteConnection, DbError> {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").map_err(|_| DbError::DbUrlMissing)?;
-    Ok(SqliteConnection::establish(&database_url)?)
-}
-
 pub fn register_player(name_: &str) -> Result<(), DbError> {
     let connection = establish_connection()?;
     let db_players = players
         .filter(player_name.eq(name_))
         .load::<Player>(&connection)?;
-    let player = NewPlayer { name: name_ };
     if db_players.is_empty() {
+        let player = NewPlayer { name: name_ };
         diesel::insert_into(players)
             .values(&player)
             .execute(&connection)?;
@@ -75,13 +69,28 @@ pub fn get_group_games() -> Result<(Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>
     let connection = establish_connection()?;
     let group_games = games.filter(type_.eq("group")).load::<Game>(&connection)?;
 
-    Ok(group_games.into_iter().partition_map(|game| {
-        if game.played {
-            Either::Left(PlayedGroupGame::try_from(game).unwrap())
-        } else {
-            Either::Right(UnplayedGroupGame::try_from(game).unwrap())
-        }
-    }))
+    // Games in the db make no distinction b/w played and unplayed but has a boolean field `played`
+    // we use this to return two sep. vec's of played/unplayed games respectively.
+    // Formally, the returned types are.
+    type FetchedPlayedGroupGame = Vec<Result<PlayedGroupGame, DbError>>;
+    type FetchedUnplayedGroupGame = Vec<Result<UnplayedGroupGame, DbError>>;
+    // i.e. vec's of conversion attempts
+    let (played_games, unplayed_games): (FetchedPlayedGroupGame, FetchedUnplayedGroupGame) =
+        group_games.into_iter().partition_map(|game| {
+            if game.played {
+                Either::Left(PlayedGroupGame::try_from(game))
+            } else {
+                Either::Right(UnplayedGroupGame::try_from(game))
+            }
+        });
+    // Turn Vec<Result> into Result<Vec> with collect
+    let played_games = played_games
+        .into_iter()
+        .collect::<Result<Vec<PlayedGroupGame>, DbError>>()?;
+    let unplayed_games = unplayed_games
+        .into_iter()
+        .collect::<Result<Vec<UnplayedGroupGame>, DbError>>()?;
+    Ok((played_games, unplayed_games))
 }
 
 pub fn get_teams() -> Result<impl Iterator<Item = wwc_core::Team>, DbError> {
@@ -189,6 +198,12 @@ pub fn clear_group_game_maps() -> Result<(), DbError> {
         .execute(&connection)
         .expect("Could not clear table");
     Ok(())
+}
+
+fn establish_connection() -> Result<SqliteConnection, DbError> {
+    dotenv().ok();
+    let database_url = env::var("DATABASE_URL").map_err(|_| DbError::DbUrlMissing)?;
+    Ok(SqliteConnection::establish(&database_url)?)
 }
 
 #[derive(Error, Debug)]

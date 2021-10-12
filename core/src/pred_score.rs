@@ -48,14 +48,18 @@ impl PredScoreFn for SimplePredScoreFn {
     }
 }
 
-// This is a typical construct in this code.
-// The pred. score is really represented by a floating number (f32), but to ensure type safety we wrap it in a
+// Perhaps you noticed that the `PredScoreFn.pred_score` function in the trait above had `PredScore` as the return type,
+// and that in the impl. for `SimplePredScoreFn` we computed an f32 value `score` and then returned
+// `PredScore(score)`
+//
+// This is a typical construct in this codebase.
+// The pred. score is really represented by a floating point number (f32), but to ensure type safety we wrap it in a
 // new type `PredScore` to prevent misuse. See, the README.md in the repo root for a motivation for
 // this.
 // The `derive` macro here is where we specify which traits we want to auto-implement for this new
 // type.
 // Some common derives (auto-impl's) are built-in, e.g. `Default`, `Debug` and some are provided by
-// third-party lib's (crates), e.g. from `derive_more`, `serde`.
+// third-party crates (lib's), e.g. from `derive_more`, `serde`.
 #[derive(
     Default,
     Debug,
@@ -75,9 +79,9 @@ impl PredScoreFn for SimplePredScoreFn {
 )]
 pub struct PredScore(f32);
 
-// Simple unit tests are written in the same source file.
-// The tests are still in a separate module, which is only compiled during testing, i.e. when
-// running `cargo test`.
+// Simple unit tests are written in the same source file,
+// but still in a separate modules, which are prefaced by the `#[cfg(test)]`.
+// The test modules are only compiled during testing, i.e. when running `cargo test`.
 #[cfg(test)]
 mod test {
     use super::*;

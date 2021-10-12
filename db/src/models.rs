@@ -28,11 +28,12 @@ pub struct NewTeam<'a> {
     pub rank_: i32,
 }
 
+// TODO: fix panics
 impl From<Team> for wwc_core::Team {
     fn from(db_team: Team) -> wwc_core::Team {
         let id = TeamId(u32::try_from(db_team.id).unwrap());
         let name = TeamName::from(db_team.name);
-        let fifa_code = FifaCode::from(db_team.fifa_code);
+        let fifa_code = FifaCode::try_from(db_team.fifa_code).unwrap();
         let iso2 = Iso2::from(db_team.iso2);
         let rank = TeamRank(u32::try_from(db_team.rank_).unwrap());
         wwc_core::Team {

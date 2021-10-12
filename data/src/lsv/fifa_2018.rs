@@ -78,25 +78,26 @@ struct ParseTeam {
 impl TryFrom<ParseTeam> for Team {
     type Error = LsvParseError;
     fn try_from(parse_team: ParseTeam) -> Result<Team, Self::Error> {
-        if let Some(rank) = parse_team.rank {
-            Ok(Team::new(
+        let team = if let Some(rank) = parse_team.rank {
+            Team::try_new(
                 parse_team.id,
                 &parse_team.name,
                 &parse_team.fifa_code,
                 &parse_team.iso2,
                 rank,
-            ))
+            )
         } else {
             //Err(Self::Error::TeamError)
             //TODO: How to solve missing rank?
-            Ok(Team::new(
+            Team::try_new(
                 parse_team.id,
                 &parse_team.name,
                 &parse_team.fifa_code,
                 &parse_team.iso2,
                 TeamRank(0),
-            ))
-        }
+            )
+        };
+        team.map_err(|_| LsvParseError::TeamParse)
     }
 }
 

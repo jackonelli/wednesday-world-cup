@@ -1,6 +1,4 @@
-//! Player
-//!
-//! Player/User/Better representation
+//! Player/User/Better/Predictor
 use crate::game::GameId;
 use crate::group::game::{GroupGameScore, PlayedGroupGame};
 use derive_more::{Display, From, Into};

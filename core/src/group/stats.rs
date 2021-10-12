@@ -26,6 +26,7 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
     // It looks like this could be more efficient with the cool grouping
     // https://docs.rs/itertools/0.10.0/itertools/trait.Itertools.html#method.into_grouping_map
     // i.e. don't fold but map all games to (team_id, stat), then eff. fold to team stats map.
+    //
     // I tested it and it is indeed faster when all teams occur in the played games. This is of course
     // not true in general and adding that extra hashmap merge makes it solidly slower than the naive
     // impl (also requires an additional 'Clone' constraint on the 'UnaryStat' trait).
