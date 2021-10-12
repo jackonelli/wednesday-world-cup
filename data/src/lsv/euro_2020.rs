@@ -4,12 +4,11 @@
 use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GameId, GoalCount};
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
-use wwc_core::team::{FifaCode, Iso2, Team, TeamId, TeamRank, Teams};
+use wwc_core::team::{FifaCode, Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
 
 type TeamMap = HashMap<String, TeamId>;
@@ -103,28 +102,11 @@ impl ParseTeam {
     fn try_parse_team(self, team_map: &TeamMap) -> Result<Team, LsvParseError> {
         let id = team_map.get(&self.fifa_code).unwrap();
         let team = if let Some(rank) = self.rank {
-            Team::try_new(
-                *id,
-                &self.name,
-                &self.fifa_code,
-                Iso2::from(
-                    &FifaCode::try_from(self.fifa_code.clone()).expect("Failed parsing Fifa code"),
-                )
-                .as_ref(),
-                rank,
-            )
+            Team::try_new(*id, &self.name, &self.fifa_code, rank)
         } else {
             //Err(Self::Error::TeamError)
             //TODO: How to solve missing rank?
-            Team::try_new(
-                *id,
-                &self.name,
-                &self.fifa_code,
-                &String::from(Iso2::from(
-                    &FifaCode::try_from(self.fifa_code.clone()).expect("Failed parsing Fifa code"),
-                )),
-                TeamRank(0),
-            )
+            Team::try_new(*id, &self.name, &self.fifa_code, TeamRank(0))
         };
         team.map_err(|_| LsvParseError::TeamParse)
     }

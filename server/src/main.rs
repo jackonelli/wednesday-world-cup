@@ -34,6 +34,7 @@ fn get_teams() -> Result<Json<Teams>, BadRequest<String>> {
         .map_err(BadRequest::from)?
         .map(|x| (x.id, x))
         .collect();
+    println!("TEAMS:\n{:?}", teams);
     Ok(Json(teams))
 }
 

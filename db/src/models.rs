@@ -24,7 +24,6 @@ pub struct NewTeam<'a> {
     pub id: i32,
     pub name: &'a str,
     pub fifa_code: &'a str,
-    pub iso2: &'a str,
     pub rank_: i32,
 }
 
@@ -34,13 +33,11 @@ impl From<Team> for wwc_core::Team {
         let id = TeamId(u32::try_from(db_team.id).unwrap());
         let name = TeamName::from(db_team.name);
         let fifa_code = FifaCode::try_from(db_team.fifa_code).unwrap();
-        let iso2 = Iso2::from(db_team.iso2);
         let rank = TeamRank(u32::try_from(db_team.rank_).unwrap());
         wwc_core::Team {
             id,
             name,
             fifa_code,
-            iso2,
             rank,
         }
     }
@@ -52,7 +49,6 @@ impl<'a> From<&'a wwc_core::Team> for NewTeam<'a> {
             id: u32::from(team.id).try_into().expect("team id u32 -> i32"),
             name: team.name.as_ref(),
             fifa_code: team.fifa_code.as_ref(),
-            iso2: team.iso2.as_ref(),
             rank_: u32::from(team.rank).try_into().expect("team id u32 -> i32"),
         }
     }

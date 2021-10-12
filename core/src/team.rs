@@ -34,7 +34,6 @@ pub struct Team {
     pub name: TeamName,
     #[serde(rename = "fifaCode")]
     pub fifa_code: FifaCode,
-    pub iso2: Iso2,
     pub rank: TeamRank,
 }
 
@@ -47,16 +46,18 @@ impl Team {
         id: TeamId,
         name: &str,
         fifa_code: &str,
-        iso2: &str,
         rank: TeamRank,
     ) -> Result<Self, TeamError> {
         FifaCode::try_from(String::from(fifa_code)).map(|fifa_code| Self {
             id,
             name: TeamName(String::from(name)),
             fifa_code: FifaCode(String::from(fifa_code)),
-            iso2: Iso2(String::from(iso2)), // TODO make fallible.
             rank,
         })
+    }
+
+    pub fn iso2(&self) -> Iso2 {
+        Iso2::from(&self.fifa_code)
     }
 }
 
@@ -192,7 +193,7 @@ mod tests {
             "rank": 14
         }"#;
         let parsed_team: Team = serde_json::from_str(data).unwrap();
-        let true_team = Team::try_new(0.into(), "Sweden", "SWE", "se", 14.into())
+        let true_team = Team::try_new(0.into(), "Sweden", "SWE", 14.into())
             .expect("Team creation should not fail.");
         assert_eq!(parsed_team, true_team);
     }
