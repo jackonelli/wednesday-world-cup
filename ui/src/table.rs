@@ -4,7 +4,7 @@ use crate::team::format_team_flag;
 use seed::{prelude::*, *};
 use std::convert::From;
 use wwc_core::game::{GoalDiff, NumGames};
-use wwc_core::group::{stats::TableStats, stats::UnaryStat, Group};
+use wwc_core::group::{stats::GameStat, stats::TableStats, Group};
 use wwc_core::group::{GroupOrder, GroupPoint};
 use wwc_core::team::{Team, TeamId, Teams};
 

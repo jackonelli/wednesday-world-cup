@@ -1,24 +1,25 @@
-//! Group ordering
+//! # Group ordering
 //!
-//! A group is ordered by a list of sub-orders, see [`Rules`] followed
-//! by a final [`Tiebreaker`].
+//! A group is ordered by a list of sub-orders, followed by a final [`Tiebreaker`], see [`Rules`].
 //! The ordering is greedy in the sense that the next sub-order is only applied if the ordering is non-strict.
 //! If there are no more sub-orders to apply, a tiebreaker ensures a strict ordering.
 //!
 //! A system of greedy, atomic sub-orders is flexible since new rules can easily be composed from them.
 //! The [`SubOrdering`] trait is auto-implemented for every struct that
-//! implements [`UnaryStat`] + [`Ord`] + [`Copy`], making the
+//! implements [`GameStat`] + [`Ord`] + [`Copy`], making the
 //! composition of new rules straightforward, see ([`euro_2020`], [`fifa_2018`]).
 //!
+//! ### A note on performance
+//!
 //! Smaller sub-orders can also be grouped together. E.g., you could group points, goal diff.
-//! and goals scored into one struct, implement `UnaryStat` and `Ord` for it and use that as a
+//! and goals scored into one struct, implement `GameStat` and `Ord` for it and use that as a
 //! sub-order. This might be more efficient since you would avoid iterating over the played games
 //! once for each stat. This would be better in the worst case scenario but if it is likely that teams are
 //! separable by points alone, then it would be wasteful not to take advantage of the greedy
 //! approach.
 use crate::fair_play::{FifaFairPlayValue, UefaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff};
-use crate::group::stats::{NumWins, UnaryStat};
+use crate::group::stats::{GameStat, NumWins};
 use crate::group::{Group, GroupError, GroupPoint};
 use crate::team::{TeamId, TeamRank};
 use rand::Rng;
@@ -97,7 +98,7 @@ fn non_strict_ordering(
 #[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub struct GroupRank(pub usize);
 
-/// List of TeamId's
+/// Sorted list of [`TeamId`]'s
 ///
 /// Sorted from best to worst team.
 #[derive(Debug, PartialEq)]
@@ -217,26 +218,26 @@ pub trait SubOrdering {
 
 /// Ordering stat based on all games in the group
 ///
-/// SubOrdering which orders by a metric based on a UnaryStat.
+/// SubOrdering which orders by a metric based on a [`GameStat`].
 /// The metric is calculated from all games in the group, regardless of the subset of teams being
 /// ordered.
 ///
 /// AllGroupStat sub-orderings based on points, goal difference and goals scored are commonly the
 /// first three sub-orderings in a group rule.
-struct AllGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
+struct AllGroupStat<T: GameStat>(std::marker::PhantomData<T>);
 
-impl<T: UnaryStat> AllGroupStat<T> {
+impl<T: GameStat> AllGroupStat<T> {
     fn new() -> Self {
         AllGroupStat(std::marker::PhantomData::<T>)
     }
 }
 
-impl<T: UnaryStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
+impl<T: GameStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
     /// Ordering for stats over the full group
     ///
     /// # Panics
     ///
-    /// Does not panic since the [`UnaryStat::team_stats`] returns a hashmap which has all group
+    /// Does not panic since the [`GameStat::team_stats`] returns a hashmap which has all group
     /// teams as keys: The teams in `order` is a subset of the keys in `stats_all_teams`.
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
@@ -264,23 +265,23 @@ impl<T: UnaryStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
 
 /// Ordering stat based on the internal games in a teams subset
 ///
-/// SubOrdering which orders by a metric based on a `UnaryStat`.
+/// SubOrdering which orders by a metric based on a `GameStat`.
 /// The metric is calculated from the games in the group, where both teams involved are members of
 /// the subset of teams being ordered.
-struct InternalGroupStat<T: UnaryStat>(std::marker::PhantomData<T>);
+struct InternalGroupStat<T: GameStat>(std::marker::PhantomData<T>);
 
-impl<T: UnaryStat> InternalGroupStat<T> {
+impl<T: GameStat> InternalGroupStat<T> {
     fn new() -> Self {
         InternalGroupStat(std::marker::PhantomData::<T>)
     }
 }
 
-impl<T: UnaryStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
+impl<T: GameStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     /// Ordering for stats over internal results within the order.
     ///
     /// # Panics
     ///
-    /// Does not panic since the [`UnaryStat::internal_team_stats`] returns a hashmap which has the internal
+    /// Does not panic since the [`GameStat::internal_team_stats`] returns a hashmap which has the internal
     /// teams as keys: The teams in `order` is equivalent to the set of keys in `internal_stats`.
     fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
         let internal_stats = T::internal_team_stats(group, &HashSet::from_iter(&order));

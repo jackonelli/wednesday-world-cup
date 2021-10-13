@@ -1,4 +1,4 @@
-//! Tournament group play
+//! # Tournament group play
 pub mod game;
 pub mod order;
 pub mod stats;
@@ -16,7 +16,7 @@ use rand::{
     thread_rng, SeedableRng,
 };
 use serde::{Deserialize, Serialize};
-use stats::UnaryStat;
+use stats::GameStat;
 use std::collections::{BTreeMap, HashMap};
 use std::iter;
 use thiserror::Error;

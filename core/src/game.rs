@@ -1,4 +1,4 @@
-//! General tournament game
+//! # General tournament game
 //!
 //! Specification and implementation in this module is strictly limited, compared to what one would
 //! expect from data structures describing a game.

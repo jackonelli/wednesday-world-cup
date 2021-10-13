@@ -2,7 +2,7 @@
 extern crate test;
 use test::{black_box, Bencher};
 use wwc_core::group::{
-    stats::{TableStats, UnaryStat},
+    stats::{GameStat, TableStats},
     Group,
 };
 #[bench]

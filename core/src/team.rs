@@ -83,7 +83,7 @@ pub struct Iso2(String);
 ///
 /// A Fifa code is a trigram or trigraph, i.e. a three letter id.
 /// Furthermore, the codes are all upper case ASCII letters, e.g. "DEN"
-/// https://en.wikipedia.org/wiki/List_of_FIFA_country_codes
+/// <https://en.wikipedia.org/wiki/List_of_FIFA_country_codes>
 #[derive(Display, Debug, Clone, Into, AsRef, Deserialize, Serialize, PartialEq)]
 #[as_ref(forward)]
 pub struct FifaCode(String);
@@ -127,7 +127,7 @@ pub type Teams = HashMap<TeamId, Team>;
 )]
 pub struct TeamRank(pub u32);
 
-/// Look-up table for Fifa code to iso2 value
+/// Look-up table for Fifa code to iso2 value.
 ///
 /// Taking the lower case first two letters of the Fifa code is a good heuristic for this
 /// conversion but for some countries it fails. These failed states are added to this look-up
@@ -144,7 +144,8 @@ const FIFA_CODE_ISO2_MAP: &[(&str, &str)] = &[
     ("WAL", "gb-wls"),
 ];
 
-/// Heuristic mapping for 'Fifa code -> ISO2' codes
+/// Heuristic mapping for 'Fifa code -> ISO2' codes.
+///
 /// Look-up, or the first two letters of the Fifa code in lower case
 ///
 /// # Panics

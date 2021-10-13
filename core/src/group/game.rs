@@ -1,4 +1,4 @@
-//! Group game
+//! # Group game
 //!
 //! Data and functionality related to games in the group stage of the tournament.
 //! This group is less restricted than a [`crate::playoff::game::PlayoffGame`] since the [`GroupGameScore`] is freer,
@@ -9,7 +9,7 @@
 //! derived from them.
 use crate::fair_play::FairPlayScore;
 use crate::game::{Game, GameId, GoalCount, GoalDiff};
-use crate::group::stats::UnaryStat;
+use crate::group::stats::GameStat;
 use crate::group::{GroupError, GroupPoint};
 use crate::team::TeamId;
 use crate::Date;

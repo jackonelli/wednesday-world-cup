@@ -1,4 +1,14 @@
-//! Group statistics
+//! # Group statistics
+//!
+//! The [`Group`] struct does not have any computed values.
+//! Instead, all statistics are computed when needed from the results in the played games.
+//!
+//! The most important stats category is where the stats are independently computed for every game,
+//! Such as points, goals scored, played games et c.
+//! This category is represented with the trait [`GameStat`].
+//!
+//! The trait is used in defining generic `SubOrderings` in the [`super::order`] module which enables
+//! ergonomic creation of new group ordering rules.
 use crate::fair_play::{FairPlayValue, FifaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff, NumGames};
 use crate::group::game::PlayedGroupGame;
@@ -10,15 +20,15 @@ use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::ops;
 
-/// Statistic calculated from a single game.
+/// Unary statistic calculated from a single game.
 ///
-/// Implentor needs to provide the actual [`UnaryStat::stat`] function,
+/// Implentor needs to provide the actual [`GameStat::stat`] function,
 /// which calculates the statistics (for both teams) for a single game.
 /// The trait then provides default methods to calculate the statistic on group level.
-pub trait UnaryStat: num::Zero + ops::AddAssign {
+pub trait GameStat: num::Zero + ops::AddAssign {
     /// Calculate statistic for a game.
     ///
-    /// Unary statistics are necessarily symmetric: the game is the basis for the statistic for
+    /// Unary statistics are necessarily paired: The one game is the basis for the statistic for
     /// both home and away team.
     /// The tuple returned is (Home team stat, Away team stat).
     fn stat(game: &PlayedGroupGame) -> (Self, Self);
@@ -29,7 +39,7 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
     //
     // I tested it and it is indeed faster when all teams occur in the played games. This is of course
     // not true in general and adding that extra hashmap merge makes it solidly slower than the naive
-    // impl (also requires an additional 'Clone' constraint on the 'UnaryStat' trait).
+    // impl (also requires an additional 'Clone' constraint on the 'GameStat' trait).
     /// Calculate statistic for all played games in a group.
     ///
     /// Statistics for all games are summed up and stored in a map of the teams.
@@ -60,17 +70,17 @@ pub trait UnaryStat: num::Zero + ops::AddAssign {
 
 /// Calculate stat for a game and assign to team map.
 ///
-/// Internal helper function for the [`UnaryStat`] trait.
+/// Internal helper function for the [`GameStat`] trait.
 ///
 /// # Panics
 ///
 /// Unwrap's do not panic if [`TeamId`]'s of `game.home` and `game.away` are members of `acc`:
-/// - Calling this from [`UnaryStat::team_stats`], [`TeamId`]'s will always be present, checked in [Group] constructor.
-/// - Calling this from [`UnaryStat::internal_team_stats`] is ok since the unwrap's would panic iff `acc` would
+/// - Calling this from [`GameStat::team_stats`], [`TeamId`]'s will always be present, checked in [Group] constructor.
+/// - Calling this from [`GameStat::internal_team_stats`] is ok since the unwrap's would panic iff `acc` would
 ///   not contain `game.home` or `game.away`, which is exactly the predicate that the
 ///   `group.played_games` are filtered by.
 /// - Other calls do not exist (private fn), when adding a call: Take care to uphold this invariant!
-fn calc_and_assign_stat<T: UnaryStat>(
+fn calc_and_assign_stat<T: GameStat>(
     acc: HashMap<TeamId, T>,
     game: &PlayedGroupGame,
 ) -> HashMap<TeamId, T> {
@@ -85,11 +95,11 @@ fn calc_and_assign_stat<T: UnaryStat>(
     acc
 }
 
-impl UnaryStat for GroupPoint {
+impl GameStat for GroupPoint {
     /// Group points from played game.
     ///
     /// ```
-    /// # use wwc_core::group::stats::UnaryStat;
+    /// # use wwc_core::group::stats::GameStat;
     /// # use wwc_core::group::game::{GroupGameScore, UnplayedGroupGame};
     /// # use wwc_core::game::GameId;
     /// # use wwc_core::group::GroupPoint;
@@ -115,20 +125,20 @@ impl UnaryStat for GroupPoint {
     }
 }
 
-impl UnaryStat for GoalDiff {
+impl GameStat for GoalDiff {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let goal_diff = game.score.home - game.score.away;
         (goal_diff, -goal_diff)
     }
 }
 
-impl UnaryStat for GoalCount {
+impl GameStat for GoalCount {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         (game.score.home, game.score.away)
     }
 }
 
-impl<T> UnaryStat for T
+impl<T> GameStat for T
 where
     T: FairPlayValue + num::Zero + ops::AddAssign,
 {
@@ -140,10 +150,11 @@ where
     }
 }
 
+/// Number of wins for a team in a group
 #[derive(Add, AddAssign, Eq, PartialEq, Ord, PartialOrd, Debug, Clone, Copy)]
 pub struct NumWins(NumGames);
 
-impl UnaryStat for NumWins {
+impl GameStat for NumWins {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let (points_home, points_away) = GroupPoint::stat(game);
         let wins_home = NumWins(NumGames((points_home == GroupPoint(3)) as u32));
@@ -164,8 +175,8 @@ impl num::Zero for NumWins {
 
 ///Convenience struct for combining all common stats
 ///
-///Impl. UnaryStat but not Ord.
-///Defining an order (impl Ord) defeats the purpose of composing rules.
+///Impl. [`GameStat`] but not [`Ord`].
+///Defining an order (impl `Ord`) defeats the purpose of composing rules.
 #[derive(Add, AddAssign, Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TableStats {
     pub points: GroupPoint,
@@ -209,7 +220,7 @@ impl TableStats {
     }
 }
 
-impl UnaryStat for TableStats {
+impl GameStat for TableStats {
     fn stat(game: &PlayedGroupGame) -> (Self, Self) {
         let (points_home, points_away) = GroupPoint::stat(game);
         let (goals_scored_home, goals_scored_away) = GoalCount::stat(game);

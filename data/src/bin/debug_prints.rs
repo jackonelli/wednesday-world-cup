@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use wwc_core::group::game::PlayedGroupGame;
 use wwc_core::group::order::fifa_2018;
-use wwc_core::group::stats::{TableStats, UnaryStat};
+use wwc_core::group::stats::{GameStat, TableStats};
 use wwc_core::group::{GroupId, GroupOrder};
 use wwc_core::team::{TeamId, Teams};
 use wwc_data::lsv::euro_2020 as euro_2020_data;

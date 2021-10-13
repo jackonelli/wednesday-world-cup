@@ -1,22 +1,14 @@
-//! Fair play scoring
+//! # Fair play scoring
+//!
+//! Miscreants who receive cards in any form obtain a negative score which is used in the group
+//! ordering.
 use derive_more::{Add, AddAssign, Display, From};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
 /// Fair play data
 ///
-/// Currently based on the Fifa World Cup 2018 Rules:
-///
-/// - Yellow card: -1 points;
-/// - Indirect red card (second yellow card): -3 points;
-/// - Direct red card: -4 points;
-/// - Yellow card and direct red card: -5 points;
-///
-/// ```
-/// # use wwc_core::fair_play::{FairPlay, FifaFairPlayValue, FairPlayValue};
-/// let fair_play = FairPlay::new(1, 2, 3, 4);
-/// assert_eq!(FifaFairPlayValue::from(39), FifaFairPlayValue::from_fair_play(&fair_play));
-/// ```
+/// Represent the actual card count and is (barring huge changes) invariant under Fifa/Uefa/other rules changes.
 #[derive(Default, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct FairPlay {
     yellow: CardCount,
@@ -41,6 +33,7 @@ impl FairPlay {
     }
 }
 
+/// Fair play outcome of a game.
 #[derive(Copy, Clone, Deserialize, Serialize, Debug, Default)]
 pub struct FairPlayScore {
     pub home: FairPlay,
@@ -53,10 +46,23 @@ impl FairPlayScore {
     }
 }
 
+/// Turn a [`FairPlay`] card count into a scalar value.
 pub trait FairPlayValue {
     fn from_fair_play(fp: &FairPlay) -> Self;
 }
 
+/// Fifa fair play rules (2018)
+///
+/// - Yellow card: -1 points;
+/// - Indirect red card (second yellow card): -3 points;
+/// - Direct red card: -4 points;
+/// - Yellow card and direct red card: -5 points;
+///
+/// ```
+/// # use wwc_core::fair_play::{FairPlay, FifaFairPlayValue, FairPlayValue};
+/// let fair_play = FairPlay::new(1, 2, 3, 4);
+/// assert_eq!(FifaFairPlayValue::from(39), FifaFairPlayValue::from_fair_play(&fair_play));
+/// ```
 #[derive(
     Copy,
     Clone,
@@ -99,6 +105,13 @@ impl num::Zero for FifaFairPlayValue {
     }
 }
 
+/// Uefa fair play rules (2020)
+///
+/// - Yellow card: -1 points;
+/// - Indirect red card (second yellow card): -3 points;
+/// - Direct red card: -3 points;
+/// - Yellow card and direct red card: -5 points;
+///
 #[derive(
     Copy,
     Clone,
@@ -116,7 +129,7 @@ impl num::Zero for FifaFairPlayValue {
 pub struct UefaFairPlayValue(i32);
 
 impl FairPlayValue for UefaFairPlayValue {
-    /// Calculate fair play value based on Fifa rules.
+    /// Calculate fair play value based on Uefa rules.
     fn from_fair_play(fp: &FairPlay) -> Self {
         Self(fp.yellow * -1 + fp.indirect_red * -3 + fp.direct_red * -3 + fp.yellow_and_direct * -5)
     }
@@ -140,6 +153,7 @@ impl num::Zero for UefaFairPlayValue {
     }
 }
 
+/// Non-negative int. count of cards.
 #[derive(
     Debug, Copy, Clone, Default, Serialize, Deserialize, Eq, PartialEq, From, Add, AddAssign,
 )]
