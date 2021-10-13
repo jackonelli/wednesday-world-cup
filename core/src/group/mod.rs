@@ -320,8 +320,8 @@ mod mock_data {
             Team::try_new(TeamId(4), "Brazil", "BRA", TeamRank(3)),
             Team::try_new(TeamId(5), "Canada", "CAN", TeamRank(4)),
             Team::try_new(TeamId(6), "Spain", "ESP", TeamRank(5)),
-            Team::try_new(TeamId(7), "Japan", "JAP",  TeamRank(6)),
-            Team::try_new(TeamId(8), "Norway", "NOR",  TeamRank(6)),
+            Team::try_new(TeamId(7), "Japan", "JAP", TeamRank(6)),
+            Team::try_new(TeamId(8), "Norway", "NOR", TeamRank(6)),
         ];
         let teams = teams
             .into_iter()
