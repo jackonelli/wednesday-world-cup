@@ -314,14 +314,14 @@ mod mock_data {
         groups.insert(GroupId('A'), group_a);
         groups.insert(GroupId('B'), group_b);
         let teams = vec![
-            Team::try_new(TeamId(1), "Sweden", "SWE", "se", TeamRank(0)),
-            Team::try_new(TeamId(2), "England", "ENG", "gb-eng", TeamRank(1)),
-            Team::try_new(TeamId(3), "France", "FRA", "fr", TeamRank(2)),
-            Team::try_new(TeamId(4), "Brazil", "BRA", "br", TeamRank(3)),
-            Team::try_new(TeamId(5), "Canada", "CAN", "ca", TeamRank(4)),
-            Team::try_new(TeamId(6), "Spain", "ESP", "es", TeamRank(5)),
-            Team::try_new(TeamId(7), "Japan", "JAP", "jp", TeamRank(6)),
-            Team::try_new(TeamId(8), "Norway", "NOR", "no", TeamRank(6)),
+            Team::try_new(TeamId(1), "Sweden", "SWE", TeamRank(0)),
+            Team::try_new(TeamId(2), "England", "ENG", TeamRank(1)),
+            Team::try_new(TeamId(3), "France", "FRA", TeamRank(2)),
+            Team::try_new(TeamId(4), "Brazil", "BRA", TeamRank(3)),
+            Team::try_new(TeamId(5), "Canada", "CAN", TeamRank(4)),
+            Team::try_new(TeamId(6), "Spain", "ESP", TeamRank(5)),
+            Team::try_new(TeamId(7), "Japan", "JAP",  TeamRank(6)),
+            Team::try_new(TeamId(8), "Norway", "NOR",  TeamRank(6)),
         ];
         let teams = teams
             .into_iter()
