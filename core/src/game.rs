@@ -8,6 +8,7 @@ use derive_more::{Add, AddAssign, Display, From, Into, Neg};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
+/// Common game functionality
 pub trait Game {
     fn home_team(&self) -> TeamId;
     fn away_team(&self) -> TeamId;
@@ -33,6 +34,9 @@ pub trait Game {
 )]
 pub struct GameId(u32);
 
+/// Non-negative int. of goals.
+///
+/// Either in a single game or aggregated, like in number of goals scored in a group stage.
 #[derive(
     Default,
     Debug,
@@ -68,6 +72,10 @@ impl num::Zero for GoalCount {
     }
 }
 
+/// Integer goal difference.
+///
+/// Number of goals scored minus number of goals conceded.
+/// Either in a single game or aggregated, e.g. in a group stage.
 #[derive(
     Default,
     Debug,
@@ -96,6 +104,9 @@ impl num::Zero for GoalDiff {
     }
 }
 
+/// Non-negative int. games count.
+///
+/// Used for example in group ordering with number of wins/draws/losses.
 #[derive(
     Default,
     Debug,
