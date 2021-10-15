@@ -35,10 +35,12 @@ impl LsvData for Fifa2018Data {
             .groups
             .iter()
             .map(|(id, group)| {
-                group
-                    .clone()
-                    .try_into()
-                    .map(|g| (GroupId::from(char::from(*id).to_ascii_uppercase()), g))
+                group.clone().try_into().map(|g| {
+                    (
+                        GroupId::try_from(char::from(*id).to_ascii_uppercase()).unwrap(),
+                        g,
+                    )
+                })
             })
             .collect::<Result<Groups, GroupError>>()?)
     }

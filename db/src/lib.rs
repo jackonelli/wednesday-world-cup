@@ -105,7 +105,7 @@ pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, 
     Ok(db_teams.into_iter().map(|map_| {
         (
             GameId::from(u32::try_from(map_.id).unwrap()),
-            GroupId::from(map_.group_id_.chars().next().unwrap()),
+            GroupId::try_from(map_.group_id_.chars().next().unwrap()).unwrap(),
         )
     }))
 }

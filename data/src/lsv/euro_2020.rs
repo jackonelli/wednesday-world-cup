@@ -1,13 +1,16 @@
 //! LSV JSON data interface
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
+use crate::file_io::read_json_file_to_str;
 use crate::lsv::{GameType, LsvData, LsvParseError};
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::convert::TryFrom;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GameId, GoalCount};
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
-use wwc_core::group::{Group, GroupError, GroupId, Groups};
+use wwc_core::group::{Group, GroupError, GroupId, GroupOutcome, Groups};
 use wwc_core::team::{FifaCode, Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
 
@@ -24,18 +27,84 @@ pub struct Euro2020Data {
 struct ParseEuro2020Data {
     teams: Vec<ParseTeam>,
     groups: Vec<ParseGroup>,
+    #[serde(rename = "knockoutphases")]
+    playoff: ParsePlayoff,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ParsePlayoff {
+    round16: ParseFirstRound,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ParseFirstRound {
+    #[serde(rename = "matches")]
+    games: Vec<ParsePlayoffGame>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ParsePlayoffGame {
+    id: GameId,
+    qualification: ParseQualification,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ParseQualification {
+    home_team: ParseQualificationTeam,
+    away_team: ParseQualificationTeam,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+struct ParseQualificationTeam {
+    qualificationtype: ParseGroupOutcome,
+    group: String,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ParseGroupOutcome {
+    Winner,
+    RunnerUp,
+    ThirdPlace,
+}
+
+impl TryFrom<ParseQualificationTeam> for GroupOutcome {
+    type Error = LsvParseError;
+
+    fn try_from(x: ParseQualificationTeam) -> Result<Self, Self::Error> {
+        match x.qualificationtype {
+            ParseGroupOutcome::Winner => {
+                let id = &x.group;
+                if id.len() == 1 {
+                    let id = id.chars().next().unwrap();
+                    let id = GroupId::try_from(id)
+                        .map_err(|_err| LsvParseError::ThirdPlaceGroupId(x.group))?;
+                    Ok(GroupOutcome::Winner(id))
+                } else {
+                    Err(LsvParseError::ThirdPlaceGroupId(x.group))
+                }
+            }
+            ParseGroupOutcome::RunnerUp => {
+                let ids = parse_group_id_set(&x.group);
+                todo!()
+            }
+            ParseGroupOutcome::ThirdPlace => {
+                todo!()
+            }
+        }
+    }
 }
 
 impl LsvData for Euro2020Data {
     fn try_data_from_file(filename: &str) -> Result<Euro2020Data, LsvParseError> {
-        let data_json = crate::file_io::read_json_file_to_str(filename)?;
+        let data_json = read_json_file_to_str(filename)?;
         let mut data: ParseEuro2020Data = serde_json::from_str(&data_json)?;
         data.groups = data
             .groups
             .into_iter()
             .map(|mut pg| {
                 // Ugly, can be fixed with custom deserialisation, but I won't bother.
-                pg.id = GroupId::from(char::from(pg.id).to_ascii_uppercase());
+                pg.id = GroupId::try_from(char::from(pg.id).to_ascii_uppercase()).unwrap();
                 pg
             })
             .collect();
@@ -192,5 +261,55 @@ impl ParseGame {
             _ => FairPlayScore::default(),
         };
         Ok(game.play(score, fair_play_score))
+    }
+}
+
+fn parse_group_id_set(ids: &str) -> Result<HashSet<GroupId>, LsvParseError> {
+    let chars = ids.split('/');
+    let (mut count, chars) = chars.tee();
+    if count.all(|x| x.len() == 1) {
+        let id_set = chars
+            .map(|id| id.chars().next().unwrap())
+            .map(|c| GroupId::try_from(c))
+            .collect::<Result<HashSet<GroupId>, GroupError>>()
+            .map_err(|err| LsvParseError::GroupParse(err))?;
+        match id_set.len() {
+            3..=4 => Ok(id_set),
+            _ => Err(LsvParseError::ThirdPlaceGroupId(String::from(ids))),
+        }
+    } else {
+        Err(LsvParseError::ThirdPlaceGroupId(String::from(ids)))
+    }
+}
+
+#[cfg(test)]
+mod lsv_euro_2020_tests {
+    use super::*;
+    use std::iter::FromIterator;
+
+    #[test]
+    fn group_id_set_parsing_three_groups() {
+        let raw = String::from("D/E/F");
+        let true_set: HashSet<GroupId> = HashSet::from_iter(
+            vec!['D', 'E', 'F']
+                .iter()
+                .map(|id| GroupId::try_from(*id).unwrap()),
+        );
+        let parsed = parse_group_id_set(&raw).unwrap();
+        println!("{:?}", parsed);
+        assert_eq!(true_set, parsed);
+    }
+
+    #[test]
+    fn group_id_set_parsing_four_groups() {
+        let raw = String::from("A/B/C/D");
+        let true_set: HashSet<GroupId> = HashSet::from_iter(
+            vec!['A', 'B', 'C', 'D']
+                .iter()
+                .map(|id| GroupId::try_from(*id).unwrap()),
+        );
+        let parsed = parse_group_id_set(&raw).unwrap();
+        println!("{:?}", parsed);
+        assert_eq!(true_set, parsed);
     }
 }

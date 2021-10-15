@@ -1,5 +1,6 @@
 //! Tournament playoff
 pub mod game;
+pub mod group_trans;
 use self::game::PlayoffGame;
 use crate::game::GameId;
 use std::collections::HashMap;

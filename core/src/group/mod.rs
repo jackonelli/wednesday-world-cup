@@ -17,55 +17,11 @@ use rand::{
 };
 use serde::{Deserialize, Serialize};
 use stats::GameStat;
+use std::collections::HashSet;
 use std::collections::{BTreeMap, HashMap};
+use std::convert::TryFrom;
 use std::iter;
 use thiserror::Error;
-
-/// Type alias for a mapping of `GroupId` to `Group`
-pub type Groups = BTreeMap<GroupId, Group>;
-
-/// Group Id
-///
-/// Uses a `char` as an identifier.
-/// At least in football, groups are often labelled with an upper case character.
-/// The char is currently limited to ascii alphabetic char's, i.e. A-Z, a-z.
-/// This restriction is totally arbitrary and could be lifted, but for now I think it's nice to
-/// have it.
-#[derive(
-    Deserialize,
-    Serialize,
-    Debug,
-    Display,
-    Clone,
-    Copy,
-    std::cmp::Eq,
-    std::cmp::PartialEq,
-    std::cmp::Ord,
-    std::cmp::PartialOrd,
-    std::hash::Hash,
-    From,
-    Into,
-)]
-pub struct GroupId(char);
-
-impl GroupId {
-    /// Fallible `GroupId` constructor
-    ///
-    /// # Errors
-    ///
-    /// Errors if the arbitrary ascii check fails.
-    pub fn try_new(id: char) -> Result<Self, GroupError> {
-        if id.is_ascii_alphabetic() {
-            Ok(GroupId(id))
-        } else {
-            Err(GroupError::InvalidGroupId(id))
-        }
-    }
-
-    pub fn into_uppercase(self) -> Self {
-        Self(self.0.to_ascii_uppercase())
-    }
-}
 
 /// Single group data structure
 ///
@@ -258,6 +214,54 @@ impl Group {
     }
 }
 
+/// Group Id
+///
+/// Uses a `char` as an identifier.
+/// At least in football, groups are often labelled with an upper case character.
+/// The char is currently limited to ascii alphabetic char's, i.e. A-Z, a-z.
+/// This restriction is totally arbitrary and could be lifted, but for now I think it's nice to
+/// have it.
+#[derive(
+    Deserialize,
+    Serialize,
+    Debug,
+    Display,
+    Clone,
+    Copy,
+    std::cmp::Eq,
+    std::cmp::PartialEq,
+    std::cmp::Ord,
+    std::cmp::PartialOrd,
+    std::hash::Hash,
+    Into,
+)]
+pub struct GroupId(char);
+
+impl GroupId {
+    pub fn into_uppercase(self) -> Self {
+        Self(self.0.to_ascii_uppercase())
+    }
+}
+
+impl TryFrom<char> for GroupId {
+    type Error = GroupError;
+    /// Fallible `GroupId` constructor
+    ///
+    /// # Errors
+    ///
+    /// Errors if the arbitrary ascii check fails.
+    fn try_from(id: char) -> Result<Self, Self::Error> {
+        if id.is_ascii_alphabetic() {
+            Ok(GroupId(id))
+        } else {
+            Err(GroupError::InvalidGroupId(id))
+        }
+    }
+}
+
+/// Type alias for a mapping of `GroupId` to `Group`
+pub type Groups = BTreeMap<GroupId, Group>;
+
 /// Group point
 ///
 /// Represents the primary score of a team in a group, either accumulated over multiple games or
@@ -296,8 +300,15 @@ pub enum GroupError {
     GenericError,
 }
 
+#[derive(Debug, Clone)]
+pub enum GroupOutcome {
+    Winner(GroupId),
+    RunnerUp(GroupId),
+    ThirdPlace(HashSet<GroupId>),
+}
+
 #[cfg(test)]
-mod mock_data {
+pub(crate) mod mock_data {
     use super::*;
     use crate::team::{Team, TeamError, TeamRank, Teams};
     use crate::Date;

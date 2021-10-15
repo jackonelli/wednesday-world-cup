@@ -17,6 +17,7 @@ use crate::team::TeamId;
 use derive_more::{Add, AddAssign};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
+use std::convert::TryFrom;
 use std::fmt;
 use std::ops;
 
@@ -318,7 +319,7 @@ mod tests {
     #[test]
     fn mock_teams_stats() {
         let (groups, _) = mock_data::groups_and_teams();
-        let group_a = groups.get(&GroupId::from('A')).unwrap();
+        let group_a = groups.get(&GroupId::try_from('A').unwrap()).unwrap();
         let mut truth = HashMap::new();
         truth.insert(TeamId::from(1), TableStats::new(3, 2, 1, 0, 1, 0, 0));
         truth.insert(TeamId::from(2), TableStats::new(0, 1, 2, 0, 0, 1, 0));

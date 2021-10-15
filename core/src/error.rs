@@ -3,6 +3,7 @@ use crate::group::GroupError;
 use crate::team::TeamError;
 use thiserror::Error;
 
+/// Top-level error type for wwc_core
 #[derive(Error, Debug, Clone)]
 pub enum WwcError {
     #[error("Group error: {0}")]

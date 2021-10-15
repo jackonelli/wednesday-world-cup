@@ -40,4 +40,6 @@ pub enum LsvParseError {
     TeamParse,
     #[error("Error parsing group: {0}")]
     GroupParse(#[from] GroupError),
+    #[error("Error parsing third place group id: {0}")]
+    ThirdPlaceGroupId(String),
 }
