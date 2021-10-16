@@ -11,7 +11,6 @@
 use crate::group::game::GroupGameScore;
 use derive_more::{Add, AddAssign, Display, From, Into, Neg, Sub, Sum};
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 
 // We define a `Trait`. It is the rust version of an interface.
 // We say that a concrete type implements the PredScoreFn if it provides implementations of the
@@ -112,6 +111,7 @@ mod test {
     use crate::group::GroupId;
     use assert_approx_eq::assert_approx_eq;
     use itertools::Itertools;
+    use std::convert::TryFrom;
 
     #[test]
     fn simple_score_fn() {

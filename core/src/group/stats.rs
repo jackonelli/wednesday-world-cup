@@ -17,7 +17,6 @@ use crate::team::TeamId;
 use derive_more::{Add, AddAssign};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use std::convert::TryFrom;
 use std::fmt;
 use std::ops;
 
@@ -301,6 +300,7 @@ mod tests {
     use crate::Date;
     use num::Zero;
     use std::collections::HashSet;
+    use std::convert::TryFrom;
 
     #[test]
     fn assure_all_teams_in_stats_map() {

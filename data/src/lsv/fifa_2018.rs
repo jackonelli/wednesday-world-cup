@@ -1,6 +1,7 @@
 //! LSV JSON data interface
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
+use crate::file_io::read_json_file_to_str;
 use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -9,6 +10,7 @@ use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::GoalCount;
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId, Groups};
+use wwc_core::playoff::transition::PlayoffTransitions;
 use wwc_core::team::{Team, TeamId, TeamRank, Teams};
 use wwc_core::Date;
 
@@ -20,7 +22,7 @@ pub struct Fifa2018Data {
 
 impl LsvData for Fifa2018Data {
     fn try_data_from_file(filename: &str) -> Result<Fifa2018Data, LsvParseError> {
-        let data_json = crate::file_io::read_json_file_to_str(filename)?;
+        let data_json = read_json_file_to_str(filename)?;
         let mut data: Fifa2018Data = serde_json::from_str(&data_json)?;
         data.groups = data
             .groups
@@ -53,6 +55,9 @@ impl LsvData for Fifa2018Data {
             .map(|team| team.try_into())
             .collect::<Result<Vec<Team>, LsvParseError>>()?;
         Ok(tmp.into_iter().map(|t| (t.id, t)).collect())
+    }
+    fn try_playoff_transitions(&self) -> Result<PlayoffTransitions, LsvParseError> {
+        todo!()
     }
 }
 

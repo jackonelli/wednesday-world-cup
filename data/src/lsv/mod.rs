@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use wwc_core::group::GroupError;
 use wwc_core::group::Groups;
+use wwc_core::playoff::transition::PlayoffTransitions;
+use wwc_core::playoff::PlayoffError;
 use wwc_core::team::Teams;
 
 pub mod euro_2020;
@@ -19,6 +21,7 @@ pub trait LsvData: Sized {
     fn try_data_from_file(filename: &str) -> Result<Self, LsvParseError>;
     fn try_groups(&self) -> Result<Groups, LsvParseError>;
     fn try_teams(&self) -> Result<Teams, LsvParseError>;
+    fn try_playoff_transitions(&self) -> Result<PlayoffTransitions, LsvParseError>;
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
@@ -42,4 +45,6 @@ pub enum LsvParseError {
     GroupParse(#[from] GroupError),
     #[error("Error parsing third place group id: {0}")]
     ThirdPlaceGroupId(String),
+    #[error("Error parsing playoff: {0}")]
+    Playoff(#[from] PlayoffError),
 }

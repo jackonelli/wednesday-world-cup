@@ -15,7 +15,7 @@ use rand::{
     distributions::Distribution, distributions::Uniform, rngs::StdRng, seq::IteratorRandom,
     thread_rng, SeedableRng,
 };
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use stats::GameStat;
 use std::collections::HashSet;
 use std::collections::{BTreeMap, HashMap};
@@ -222,7 +222,6 @@ impl Group {
 /// This restriction is totally arbitrary and could be lifted, but for now I think it's nice to
 /// have it.
 #[derive(
-    Deserialize,
     Serialize,
     Debug,
     Display,
@@ -251,7 +250,7 @@ impl TryFrom<char> for GroupId {
     ///
     /// Errors if the arbitrary ascii check fails.
     fn try_from(id: char) -> Result<Self, Self::Error> {
-        if id.is_ascii_alphabetic() {
+        if id.is_ascii_alphabetic() && id.is_ascii_uppercase() {
             Ok(GroupId(id))
         } else {
             Err(GroupError::InvalidGroupId(id))
@@ -259,6 +258,22 @@ impl TryFrom<char> for GroupId {
     }
 }
 
+/// Custom deserializer for [`GroupId`].
+/// Parses valid (ASCII alphabetic) char into its uppercase version.
+impl<'de> Deserialize<'de> for GroupId {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = char::deserialize(deserializer)?;
+        if s.is_ascii_alphabetic() {
+            Ok(GroupId(s.to_ascii_uppercase()))
+        } else {
+            Err(de::Error::custom("GroupId must be ASCII"))
+        }
+
+    }
+}
 /// Type alias for a mapping of `GroupId` to `Group`
 pub type Groups = BTreeMap<GroupId, Group>;
 
