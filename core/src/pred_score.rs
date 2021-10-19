@@ -27,7 +27,7 @@ pub trait PredScoreFn {
     //
     // Don't worry about the content in the angle brackets for now.
     // They have to do with lifetimes and generics.
-    fn group_score<'a, T: Iterator<Item = (GroupGameScore, GroupGameScore)>>(
+    fn group_score<T: Iterator<Item = (GroupGameScore, GroupGameScore)>>(
         &self,
         games: T,
     ) -> PredScore {

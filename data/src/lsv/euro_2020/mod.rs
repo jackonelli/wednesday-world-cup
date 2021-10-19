@@ -7,7 +7,7 @@ use crate::file_io::read_json_file_to_str;
 use crate::lsv::euro_2020::playoff::ParsePlayoff;
 use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GameId, GoalCount};
@@ -44,7 +44,7 @@ impl LsvData for Euro2020Data {
             trans,
             &groups.iter().map(|pg| pg.id).collect::<HashSet<GroupId>>(),
         )
-        .map_err(|err| LsvParseError::Playoff(err))?;
+        .map_err(LsvParseError::Playoff)?;
         Ok(Self {
             teams: data.teams,
             groups,
@@ -88,9 +88,9 @@ impl Euro2020Data {
             .collect()
     }
 
-    pub(crate) fn parse_transitions<'a>(
-        data: &'a ParsePlayoff,
-    ) -> impl Iterator<Item = (GameId, PlayoffTransition)> + 'a {
+    pub(crate) fn parse_transitions(
+        data: &ParsePlayoff,
+    ) -> impl Iterator<Item = (GameId, PlayoffTransition)> + '_ {
         data.games().map(|game| {
             // TODO unwrap
             let home = GroupOutcome::try_from(game.qualification.home_team.clone()).unwrap();
