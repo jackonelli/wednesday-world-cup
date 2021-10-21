@@ -2,7 +2,7 @@
 name = "wwc_server"
 version = "0.1.0"
 authors = ["Jakob <jakob.lindqvist@chalmers.se>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 wwc_core = {path = "../core"}

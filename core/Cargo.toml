@@ -2,7 +2,7 @@
 name = "wwc_core"
 version = "0.1.0"
 authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 derive_more = ">=0.99"

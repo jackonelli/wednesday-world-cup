@@ -2,7 +2,7 @@
 name = "wwc_data"
 version = "0.1.0"
 authors = ["Jacko Jackonelli <jakob.lindqvist.92@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["rlib"]
