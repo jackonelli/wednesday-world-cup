@@ -28,7 +28,7 @@ use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
 
-/// Group ordering rules
+/// Ordering rules
 ///
 /// All ordering rules have an ordered list of subrules.
 /// These subrules may define a non-strict ordering,
@@ -50,26 +50,46 @@ pub struct Rules<T: Tiebreaker> {
 ///
 /// First orders by a list of non-strict sub-orders.
 /// If the sub-order is not strict, the rules' tiebreaker is used.
-pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> GroupOrder {
-    let possibly_non_strict =
-        non_strict_ordering(group, &rules.non_strict, NonStrictGroupOrder::init(group));
+pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> TeamOrder {
+    let possibly_non_strict = non_strict_group_ordering(
+        group,
+        &rules.non_strict,
+        NonStrictOrder::init_from_group(group),
+    );
     if !possibly_non_strict.is_strict() {
-        rules.tiebreaker.order(group, possibly_non_strict)
+        rules.tiebreaker.order_teams(possibly_non_strict)
     } else {
         // Does not panic since the unwrapping match arm is checked to be strict.
         possibly_non_strict.try_into().unwrap()
     }
 }
 
-/// Try ordering a [`NonStrictGroupOrder`]
+pub(crate) fn order_teams<T: Tiebreaker>(
+    teams: &[(TeamId, &Group)],
+    rules: &Rules<T>,
+) -> TeamOrder {
+    let possibly_non_strict = non_strict_team_ordering(
+        teams,
+        &rules.non_strict,
+        NonStrictOrder::init_from_teams(teams.iter().map(|(id, _)| *id)),
+    );
+    if !possibly_non_strict.is_strict() {
+        rules.tiebreaker.order_teams(possibly_non_strict)
+    } else {
+        // Does not panic since the unwrapping match arm is checked to be strict.
+        possibly_non_strict.try_into().unwrap()
+    }
+}
+
+/// Try ordering teams across groups
 ///
 /// Returns the input group order if it is strict or if there are no more rules left to apply.
 /// Otherwise recursively calls itself with the next rule.
-fn non_strict_ordering(
-    group: &Group,
+fn non_strict_team_ordering(
+    teams: &[(TeamId, &Group)],
     rules: &[Box<dyn SubOrdering>],
-    sub_order: NonStrictGroupOrder,
-) -> NonStrictGroupOrder {
+    sub_order: NonStrictOrder,
+) -> NonStrictOrder {
     if sub_order.is_strict() || rules.is_empty() {
         sub_order
     } else {
@@ -78,38 +98,72 @@ fn non_strict_ordering(
         let current_rule = &current_rule[0];
         let sub_order = sub_order
             .into_iter()
-            .fold(NonStrictGroupOrder::empty(), |acc, x| {
+            .fold(NonStrictOrder::empty(), |acc, x| {
                 // Don't apply rule if the sub-order is already strict,
                 // i.e. if x consists of a single TeamId
                 // TODO: benchmark, possible that the allocation in the else branch is more costly.
                 let new_order = if x.len() > 1 {
-                    current_rule.order(group, x)
+                    // current_rule.order_group(group, x)
                 } else {
-                    NonStrictGroupOrder::single(x)
+                    NonStrictOrder::single(x)
                 };
 
                 acc.extend(new_order)
             });
-        non_strict_ordering(group, remaining_rules, sub_order)
+        todo!()
+        // non_strict_group_ordering(group, remaining_rules, sub_order)
     }
 }
 
-/// Indexes [`GroupOrder`]
-#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
-pub struct GroupRank(pub usize);
+/// Try ordering a group
+///
+/// Returns the input group order if it is strict or if there are no more rules left to apply.
+/// Otherwise recursively calls itself with the next rule.
+fn non_strict_group_ordering(
+    group: &Group,
+    rules: &[Box<dyn SubOrdering>],
+    sub_order: NonStrictOrder,
+) -> NonStrictOrder {
+    if sub_order.is_strict() || rules.is_empty() {
+        sub_order
+    } else {
+        let (current_rule, remaining_rules) = rules.split_at(1);
+        // current_rule is always a vec with a single element,
+        let current_rule = &current_rule[0];
+        let sub_order = sub_order
+            .into_iter()
+            .fold(NonStrictOrder::empty(), |acc, x| {
+                // Don't apply rule if the sub-order is already strict,
+                // i.e. if x consists of a single TeamId
+                // TODO: benchmark, possible that the allocation in the else branch is more costly.
+                let new_order = if x.len() > 1 {
+                    current_rule.order_group(group, x)
+                } else {
+                    NonStrictOrder::single(x)
+                };
+
+                acc.extend(new_order)
+            });
+        non_strict_group_ordering(group, remaining_rules, sub_order)
+    }
+}
 
 /// Sorted list of [`TeamId`]'s
 ///
 /// Sorted from best to worst team.
 #[derive(Debug, PartialEq)]
-pub struct GroupOrder(Vec<TeamId>);
+pub struct TeamOrder(Vec<TeamId>);
 
-impl GroupOrder {
+impl TeamOrder {
     pub fn winner(&self) -> TeamId {
-        self[GroupRank(0)]
+        self[OrderIdx(0)]
     }
     pub fn runner_up(&self) -> TeamId {
-        self[GroupRank(1)]
+        self[OrderIdx(1)]
+    }
+
+    pub fn third_place(&self) -> TeamId {
+        self[OrderIdx(2)]
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &TeamId> {
@@ -117,7 +171,11 @@ impl GroupOrder {
     }
 }
 
-impl IntoIterator for GroupOrder {
+/// Indexes [`TeamOrder`]
+#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub(crate) struct OrderIdx(pub(crate) usize);
+
+impl IntoIterator for TeamOrder {
     type Item = TeamId;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -126,37 +184,37 @@ impl IntoIterator for GroupOrder {
     }
 }
 
-impl std::ops::Index<GroupRank> for GroupOrder {
+impl std::ops::Index<OrderIdx> for TeamOrder {
     type Output = TeamId;
-    fn index(&self, idx: GroupRank) -> &Self::Output {
+    fn index(&self, idx: OrderIdx) -> &Self::Output {
         &self.0[idx.0]
     }
 }
 
-impl TryFrom<NonStrictGroupOrder> for GroupOrder {
+impl TryFrom<NonStrictOrder> for TeamOrder {
     type Error = GroupError;
 
-    fn try_from(value: NonStrictGroupOrder) -> Result<Self, Self::Error> {
+    fn try_from(value: NonStrictOrder) -> Result<Self, Self::Error> {
         if value.is_strict() {
-            Ok(GroupOrder(value.0.into_iter().map(|x| x[0]).collect()))
+            Ok(TeamOrder(value.0.into_iter().map(|x| x[0]).collect()))
         } else {
             Err(GroupError::NonStrictOrder)
         }
     }
 }
 
-/// Intermediate group order representation
+/// Intermediate team order representation
 ///
-/// A non-strict group order is represented as a sorted vector of vectors of equal teams.
+/// A non-strict team order is represented as a sorted vector of vectors of equal teams.
 #[derive(Debug, PartialEq)]
-pub struct NonStrictGroupOrder(Vec<Vec<TeamId>>);
+pub struct NonStrictOrder(Vec<Vec<TeamId>>);
 
-impl NonStrictGroupOrder {
+impl NonStrictOrder {
     fn single(x: Vec<TeamId>) -> Self {
-        NonStrictGroupOrder(vec![x])
+        NonStrictOrder(vec![x])
     }
     fn empty() -> Self {
-        NonStrictGroupOrder(vec![])
+        NonStrictOrder(vec![])
     }
 
     // TODO: Did not manage to impl w/ Iterator trait.
@@ -164,19 +222,23 @@ impl NonStrictGroupOrder {
         self.0.iter()
     }
 
-    /// Initialise an equal order
+    /// Initialise an equal order for a group
     ///
     /// A group with all teams equal are represented as a vector with a single element,
     /// where this element is a vector containing all the teams in the group.
-    fn init(group: &Group) -> Self {
-        NonStrictGroupOrder(vec![group.team_ids().collect()])
+    fn init_from_group(group: &Group) -> Self {
+        NonStrictOrder(vec![group.team_ids().collect()])
+    }
+
+    fn init_from_teams(teams: impl Iterator<Item = TeamId>) -> Self {
+        NonStrictOrder(vec![teams.collect()])
     }
 
     /// Strict ordering check
     ///
-    /// Check if all subgroups (with equal elements) are of size 1.
-    /// Subgroup s with |s| > 1 => non-strict ordering
-    /// Subgroup s with |s| < 1 (= 0) => Bug, trivial subgroups are not removed correctly.
+    /// Check if all suborders (with equal elements) are of size 1.
+    /// Suborder s with |s| > 1 => non-strict ordering
+    /// Suborder s with |s| < 1 (= 0) => Bug, trivial suborder are not removed correctly.
     fn is_strict(&self) -> bool {
         self.iter().all(|x| x.len() == 1)
     }
@@ -193,12 +255,12 @@ impl NonStrictGroupOrder {
         self
     }
 
-    fn extend(self, sub_order: NonStrictGroupOrder) -> Self {
-        NonStrictGroupOrder([&self.0[..], &sub_order.0[..]].concat())
+    fn extend(self, sub_order: NonStrictOrder) -> Self {
+        NonStrictOrder([&self.0[..], &sub_order.0[..]].concat())
     }
 }
 
-impl IntoIterator for NonStrictGroupOrder {
+impl IntoIterator for NonStrictOrder {
     type Item = Vec<TeamId>;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -213,7 +275,29 @@ impl IntoIterator for NonStrictGroupOrder {
 /// which implements this trait. I.e. they can take a vector of teams and split them into a
 /// [`NonStrictGroupOrder`].
 pub trait SubOrdering {
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder;
+    fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder;
+}
+
+// TODO:
+// - order_group to static
+// - HashMap<TeamId, Stat> -> Vec<(TeamId, Stat)>
+// - Trait method
+fn common_team_order<S: Ord + Copy>(team_stats: Vec<(TeamId, S)>) -> NonStrictOrder {
+    let mut team_stats = team_stats;
+    team_stats.sort_by_key(|x| x.1);
+    let team_stats = team_stats;
+    let (_, new_order) =
+        team_stats
+            .iter()
+            .rev()
+            .fold((team_stats[0].1, NonStrictOrder::empty()), |acc, x| {
+                if acc.0 == x.1 {
+                    (x.1, acc.1.extend_sub_order(x.0))
+                } else {
+                    (x.1, acc.1.add_sub_order(x.0))
+                }
+            });
+    new_order
 }
 
 /// Ordering stat based on all games in the group
@@ -239,27 +323,15 @@ impl<T: GameStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
     ///
     /// Does not panic since the [`GameStat::team_stats`] returns a hashmap which has all group
     /// teams as keys: The teams in `order` is a subset of the keys in `stats_all_teams`.
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
+    fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
         // here.
         let stats_all_teams = T::team_stats(group);
-        let mut team_stats: Vec<(TeamId, T)> = order
+        let team_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, *stats_all_teams.get(&id).unwrap()))
             .collect();
-        team_stats.sort_by_key(|x| x.1);
-        let team_stats = team_stats;
-        let (_, new_order) = team_stats.iter().rev().fold(
-            (team_stats[0].1, NonStrictGroupOrder::empty()),
-            |acc, x| {
-                if acc.0 == x.1 {
-                    (x.1, acc.1.extend_sub_order(x.0))
-                } else {
-                    (x.1, acc.1.add_sub_order(x.0))
-                }
-            },
-        );
-        new_order
+        common_team_order(team_stats)
     }
 }
 
@@ -283,48 +355,38 @@ impl<T: GameStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     ///
     /// Does not panic since the [`GameStat::internal_team_stats`] returns a hashmap which has the internal
     /// teams as keys: The teams in `order` is equivalent to the set of keys in `internal_stats`.
-    fn order(&self, group: &Group, order: Vec<TeamId>) -> NonStrictGroupOrder {
+    fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder {
         let internal_stats = T::internal_team_stats(group, &HashSet::from_iter(&order));
-        let mut team_stats: Vec<(TeamId, T)> = order
+        let team_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, *internal_stats.get(&id).unwrap()))
             .collect();
-        team_stats.sort_by_key(|x| x.1);
-        let team_stats = team_stats;
-        let (_, new_order) = team_stats.iter().rev().fold(
-            (team_stats[0].1, NonStrictGroupOrder::empty()),
-            |acc, x| {
-                if acc.0 == x.1 {
-                    (x.1, acc.1.extend_sub_order(x.0))
-                } else {
-                    (x.1, acc.1.add_sub_order(x.0))
-                }
-            },
-        );
-        new_order
+        common_team_order(team_stats)
     }
 }
 
 /// Associated with [`Rules`] to ensure strict total order.
 pub trait Tiebreaker {
-    fn order(&self, group: &Group, non_strict: NonStrictGroupOrder) -> GroupOrder {
-        GroupOrder(non_strict.0.into_iter().fold(Vec::new(), |mut acc, x| {
+    fn order_teams(&self, non_strict: NonStrictOrder) -> TeamOrder {
+        TeamOrder(non_strict.0.into_iter().fold(Vec::new(), |mut acc, x| {
             if x.len() == 1 {
                 acc.push(x[0]);
                 acc
             } else {
-                [acc, self.order_sub_group(group, &x).0].concat()
+                [acc, self.order_sub_order(&x).0].concat()
             }
         }))
     }
 
-    fn order_sub_group(&self, _: &Group, order: &[TeamId]) -> GroupOrder {
+    fn order_sub_order(&self, order: &[TeamId]) -> TeamOrder {
         //TODO: There must be a more efficient way to do this?
         let mut tmp_order = order.to_vec();
         tmp_order.sort_by(|a, b| self.cmp(*a, *b));
-        GroupOrder(tmp_order.into_iter().rev().collect())
+        TeamOrder(tmp_order.into_iter().rev().collect())
     }
 
+    /// Strict comparison of teams
+    ///
     /// Answers a comparison posed like this:
     /// "Compare id_1 to id_2". I.e. if the return value is `Ordering::Greater` it means that id_1
     /// is greater than id_2.
@@ -516,7 +578,7 @@ mod fifa_2018_ordering_tests {
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![3, 1, 2, 0].iter().map(|x| TeamId(*x)).collect());
+        let true_order = TeamOrder(vec![3, 1, 2, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
@@ -538,7 +600,7 @@ mod fifa_2018_ordering_tests {
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
+        let true_order = TeamOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
@@ -555,7 +617,7 @@ mod fifa_2018_ordering_tests {
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
+        let true_order = TeamOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
@@ -578,7 +640,7 @@ mod fifa_2018_ordering_tests {
         let group = Group::try_new(vec![], vec![game_1]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![1, 0].iter().map(|x| TeamId(*x)).collect());
+        let true_order = TeamOrder(vec![1, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 
@@ -604,7 +666,7 @@ mod fifa_2018_ordering_tests {
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4, game_5]).unwrap();
         let rules = fifa_2018();
         let group_order = order_group(&group, &rules);
-        let true_order = GroupOrder(vec![0, 1, 3, 2].iter().map(|x| TeamId(*x)).collect());
+        let true_order = TeamOrder(vec![0, 1, 3, 2].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
     }
 }

@@ -1,15 +1,13 @@
 //! Tournament playoff
 pub mod game;
 pub mod transition;
-use crate::group::order::{Rules, Tiebreaker};
-use crate::group::{GroupOutcome, Groups};
+use crate::group::order::{order_teams, OrderIdx, Rules, Tiebreaker};
+use crate::group::{Group, GroupId, GroupOutcome, Groups};
 use crate::playoff::game::PlayoffGame;
 use crate::playoff::transition::{PlayoffTransition, PlayoffTransitions};
 use crate::team::TeamId;
+use std::collections::{HashMap, HashSet};
 use thiserror::Error;
-
-use crate::game::GameId;
-use std::collections::HashMap;
 
 struct Playoff {
     rounds: HashMap<RoundIdx, Round>,
@@ -48,14 +46,34 @@ fn teams_from_groups<T: Tiebreaker, U: Tiebreaker>(
     let home = match &trans.home {
         GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(group_rules),
         GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(group_rules),
-        GroupOutcome::ThirdPlace(ids) => todo!(),
+        GroupOutcome::ThirdPlace(ids) => {
+            best_third_place(groups, ids, group_rules, third_place_rules)
+        }
     };
     let away = match &trans.away {
         GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(group_rules),
         GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(group_rules),
-        GroupOutcome::ThirdPlace(ids) => todo!(),
+        GroupOutcome::ThirdPlace(ids) => {
+            best_third_place(groups, ids, group_rules, third_place_rules)
+        }
     };
     (home, away)
+}
+
+fn best_third_place<T: Tiebreaker, U: Tiebreaker>(
+    groups: &Groups,
+    group_ids: &HashSet<GroupId>,
+    group_rules: &Rules<T>,
+    third_place_rules: &Rules<U>,
+) -> TeamId {
+    let candidates = group_ids
+        .iter()
+        .map(|id| {
+            let group = groups.get(id).unwrap();
+            (group.third_place(group_rules), group)
+        })
+        .collect::<Vec<(TeamId, &Group)>>();
+    order_teams(&candidates, third_place_rules)[OrderIdx(0)]
 }
 
 struct RoundIdx(u8);

@@ -10,7 +10,7 @@ use crate::Date;
 use derive_more::{Add, AddAssign, Display, From, Into};
 use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
-pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
+pub use order::{order_group, Rules, TeamOrder, Tiebreaker};
 use rand::{
     distributions::Distribution, distributions::Uniform, rngs::StdRng, seq::IteratorRandom,
     thread_rng, SeedableRng,
@@ -112,7 +112,7 @@ impl Group {
     /// Calculate group winner
     ///
     /// Order group according to `rules`
-    pub fn rank_teams<T: Tiebreaker>(&self, rules: &Rules<T>) -> GroupOrder {
+    pub fn rank_teams<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamOrder {
         order_group(self, rules)
     }
 
@@ -128,6 +128,13 @@ impl Group {
     /// Order group according to `rules` and return second in order.
     pub fn runner_up<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
         order_group(self, rules).runner_up()
+    }
+
+    /// Calculate group third place
+    ///
+    /// Order group according to `rules` and return third in order.
+    pub fn third_place<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
+        order_group(self, rules).third_place()
     }
 
     /// Calculate points for group teams
