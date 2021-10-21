@@ -1,11 +1,11 @@
 //! Tournament playoff
 pub mod game;
 pub mod transition;
+use crate::group::order::{Rules, Tiebreaker};
 use crate::group::{GroupOutcome, Groups};
 use crate::playoff::game::PlayoffGame;
 use crate::playoff::transition::{PlayoffTransition, PlayoffTransitions};
 use crate::team::TeamId;
-use crate::group::order::{Rules, Tiebreaker};
 use thiserror::Error;
 
 use crate::game::GameId;
@@ -16,28 +16,43 @@ struct Playoff {
 }
 
 struct Round {
-    games: HashMap<GameId, PlayoffGame>,
+    games: Vec<PlayoffGame>,
 }
 
 impl Round {
-    pub fn first_round_from_group_stage<T: Tiebreaker>(
+    pub fn first_round_from_group_stage<T: Tiebreaker, U: Tiebreaker>(
         groups: &Groups,
         transitions: &PlayoffTransitions,
-        rules: &Rules<T>,
+        group_rules: &Rules<T>,
+        third_place_rules: &Rules<U>,
     ) -> Self {
-        transitions.iter().map(|(id, trans)| {})
+        Self {
+            games: transitions
+                .iter()
+                .map(|(id, trans)| {
+                    let (home, away) =
+                        teams_from_groups(groups, trans, group_rules, third_place_rules);
+                    PlayoffGame::new(*id, home, away)
+                })
+                .collect(),
+        }
     }
 }
 
-fn teams_from_groups<T: Tiebreaker>(groups: &Groups, trans: &PlayoffTransition, rules: &Rules<T>) -> (TeamId, TeamId) {
-    let home = match trans.home {
-        GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(rules),
-        GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(rules),
+fn teams_from_groups<T: Tiebreaker, U: Tiebreaker>(
+    groups: &Groups,
+    trans: &PlayoffTransition,
+    group_rules: &Rules<T>,
+    third_place_rules: &Rules<U>,
+) -> (TeamId, TeamId) {
+    let home = match &trans.home {
+        GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(group_rules),
+        GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(group_rules),
         GroupOutcome::ThirdPlace(ids) => todo!(),
     };
-    let away = match trans.away {
-        GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(rules),
-        GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(rules),
+    let away = match &trans.away {
+        GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(group_rules),
+        GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(group_rules),
         GroupOutcome::ThirdPlace(ids) => todo!(),
     };
     (home, away)

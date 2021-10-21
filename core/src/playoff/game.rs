@@ -11,6 +11,17 @@ pub struct PlayoffGame {
     score: Option<PlayoffScore>,
 }
 
+impl PlayoffGame {
+    pub fn new(game_id: GameId, home: TeamId, away: TeamId) -> Self {
+        Self {
+            game_id,
+            home: Some(home),
+            away: Some(away),
+            score: None,
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct PlayoffScore {
     home: GoalCount,
