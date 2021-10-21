@@ -21,8 +21,9 @@ use wwc_core::Date;
 pub struct Euro2020Data {
     teams: Vec<ParseTeam>,
     groups: Vec<ParseGroup>,
-    team_map: TeamMap,
+    pub team_map: TeamMap,
     playoff_trans: PlayoffTransitions,
+    pub playoff: ParsePlayoff,
 }
 
 impl LsvData for Euro2020Data {
@@ -50,6 +51,7 @@ impl LsvData for Euro2020Data {
             groups,
             team_map,
             playoff_trans,
+            playoff: data.playoff,
         })
     }
 

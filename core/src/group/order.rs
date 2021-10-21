@@ -28,6 +28,8 @@ use std::collections::{HashMap, HashSet};
 use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
 
+use super::Groups;
+
 /// Ordering rules
 ///
 /// All ordering rules have an ordered list of subrules.
@@ -64,11 +66,15 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> TeamOrder 
     }
 }
 
+/// Order general set of teams based on rules
+///
+/// First orders by a list of non-strict sub-orders.
+/// If the sub-order is not strict, the rules' tiebreaker is used.
 pub(crate) fn order_teams<T: Tiebreaker>(
-    teams: &[(TeamId, &Group)],
+    teams: &HashMap<TeamId, &Group>,
     rules: &Rules<T>,
 ) -> TeamOrder {
-    let possibly_non_strict = non_strict_team_ordering(
+    let possibly_non_strict = non_strict_teams_ordering(
         teams,
         &rules.non_strict,
         NonStrictOrder::init_from_teams(teams.iter().map(|(id, _)| *id)),
@@ -85,8 +91,8 @@ pub(crate) fn order_teams<T: Tiebreaker>(
 ///
 /// Returns the input group order if it is strict or if there are no more rules left to apply.
 /// Otherwise recursively calls itself with the next rule.
-fn non_strict_team_ordering(
-    teams: &[(TeamId, &Group)],
+fn non_strict_teams_ordering(
+    teams: &HashMap<TeamId, &Group>,
     rules: &[Box<dyn SubOrdering>],
     sub_order: NonStrictOrder,
 ) -> NonStrictOrder {
@@ -103,15 +109,14 @@ fn non_strict_team_ordering(
                 // i.e. if x consists of a single TeamId
                 // TODO: benchmark, possible that the allocation in the else branch is more costly.
                 let new_order = if x.len() > 1 {
-                    // current_rule.order_group(group, x)
+                    current_rule.order_teams(teams, x)
                 } else {
                     NonStrictOrder::single(x)
                 };
 
                 acc.extend(new_order)
             });
-        todo!()
-        // non_strict_group_ordering(group, remaining_rules, sub_order)
+        non_strict_teams_ordering(teams, remaining_rules, sub_order)
     }
 }
 
@@ -276,12 +281,13 @@ impl IntoIterator for NonStrictOrder {
 /// [`NonStrictGroupOrder`].
 pub trait SubOrdering {
     fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder;
+    fn order_teams(
+        &self,
+        teams_and_groups: &HashMap<TeamId, &Group>,
+        order: Vec<TeamId>,
+    ) -> NonStrictOrder;
 }
 
-// TODO:
-// - order_group to static
-// - HashMap<TeamId, Stat> -> Vec<(TeamId, Stat)>
-// - Trait method
 fn common_team_order<S: Ord + Copy>(team_stats: Vec<(TeamId, S)>) -> NonStrictOrder {
     let mut team_stats = team_stats;
     team_stats.sort_by_key(|x| x.1);
@@ -327,11 +333,27 @@ impl<T: GameStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
         // here.
         let stats_all_teams = T::team_stats(group);
-        let team_stats: Vec<(TeamId, T)> = order
+        let team_stats = order
             .into_iter()
             .map(|id| (id, *stats_all_teams.get(&id).unwrap()))
-            .collect();
+            .collect::<Vec<(TeamId, T)>>();
         common_team_order(team_stats)
+    }
+    fn order_teams(
+        &self,
+        teams_and_groups: &HashMap<TeamId, &Group>,
+        order: Vec<TeamId>,
+    ) -> NonStrictOrder {
+        let teams_stats = order
+            .iter()
+            .map(|id| {
+                (
+                    *id,
+                    T::single_team_stats(teams_and_groups.get(id).unwrap(), *id),
+                )
+            })
+            .collect::<Vec<(TeamId, T)>>();
+        common_team_order(teams_stats)
     }
 }
 
@@ -362,6 +384,13 @@ impl<T: GameStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
             .map(|id| (id, *internal_stats.get(&id).unwrap()))
             .collect();
         common_team_order(team_stats)
+    }
+    fn order_teams(
+        &self,
+        _teams_and_groups: &HashMap<TeamId, &Group>,
+        _order: Vec<TeamId>,
+    ) -> NonStrictOrder {
+        unimplemented!("Internal group stats are not used for inter-group teams ordering.")
     }
 }
 
@@ -425,15 +454,16 @@ impl Tiebreaker for Random {
 }
 
 /// Rank tiebreaker
+#[derive(Debug, Clone)]
 pub struct UefaRanking(HashMap<TeamId, TeamRank>);
 
 impl UefaRanking {
     pub fn try_new(
-        groups: &[Group],
+        groups: &Groups,
         ranking_map: HashMap<TeamId, TeamRank>,
     ) -> Result<Self, GroupError> {
         // TODO: Why does this need to be mut?
-        let mut all_teams = groups.iter().flat_map(|x| x.team_ids());
+        let mut all_teams = groups.iter().flat_map(|(_, x)| x.team_ids());
         let exists = all_teams.all(|x| ranking_map.get(&x).is_some());
         if exists {
             Ok(UefaRanking(ranking_map))
@@ -547,6 +577,23 @@ pub fn euro_2020(ranking: UefaRanking) -> Rules<UefaRanking> {
             Box::new(int_group_point),
             Box::new(int_goal_diff),
             Box::new(int_goal_count),
+            Box::new(goal_diff),
+            Box::new(num_wins),
+            Box::new(fair_play),
+        ],
+        tiebreaker: ranking,
+    }
+}
+
+/// Uefa Euro 2020 Third place order
+pub fn euro_2020_third_place(ranking: UefaRanking) -> Rules<UefaRanking> {
+    let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
+    let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
+    let num_wins: AllGroupStat<NumWins> = AllGroupStat::new();
+    let fair_play: AllGroupStat<FifaFairPlayValue> = AllGroupStat::new();
+    Rules {
+        non_strict: vec![
+            Box::new(group_point),
             Box::new(goal_diff),
             Box::new(num_wins),
             Box::new(fair_play),

@@ -7,7 +7,7 @@ use crate::game::{Game, GameId, GoalCount, GoalDiff, NumGames};
 use crate::group::game::GroupGameScore;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From, Into};
+use derive_more::{Add, AddAssign, Display, From, Into, Sum};
 use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
 pub use order::{order_group, Rules, TeamOrder, Tiebreaker};
@@ -292,7 +292,7 @@ pub type Groups = BTreeMap<GroupId, Group>;
 /// - Draw: 1 group point
 /// - Loss: 0 group points
 #[derive(
-    Default, Debug, Display, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign,
+    Default, Debug, Display, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign, Sum,
 )]
 pub struct GroupPoint(pub u8);
 

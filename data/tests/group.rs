@@ -39,7 +39,7 @@ fn euro_2020_group_ordering() {
     let groups = data.try_groups().unwrap();
     let teams = data.try_teams().unwrap();
     let ranking = UefaRanking::try_new(
-        &groups.values().cloned().collect::<Vec<Group>>(),
+        &groups,
         teams.iter().map(|(id, team)| (*id, team.rank)).collect(),
     )
     .expect("Failed to compile ranking");

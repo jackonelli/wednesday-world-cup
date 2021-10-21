@@ -7,7 +7,7 @@ use wwc_core::game::GameId;
 use wwc_core::group::{GroupError, GroupId, GroupOutcome};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ParsePlayoff {
+pub struct ParsePlayoff {
     round16: ParseFirstRound,
 }
 
@@ -24,9 +24,13 @@ struct ParseFirstRound {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ParsePlayoffGame {
-    pub(crate) id: GameId,
+pub struct ParsePlayoffGame {
+    pub id: GameId,
     pub(crate) qualification: ParseQualification,
+    // Fifa code
+    pub home_team: Option<String>,
+    // Fifa code
+    pub away_team: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

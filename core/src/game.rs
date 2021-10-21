@@ -4,7 +4,7 @@
 //! expect from data structures describing a game.
 //! More concrete implementations are found in the group and playoff modules respectively.
 use crate::team::TeamId;
-use derive_more::{Add, AddAssign, Display, From, Into, Neg};
+use derive_more::{Add, AddAssign, Display, From, Into, Neg, Sum};
 use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 
@@ -53,6 +53,7 @@ pub struct GameId(u32);
     PartialOrd,
     Add,
     AddAssign,
+    Sum,
 )]
 pub struct GoalCount(u32);
 
@@ -92,6 +93,7 @@ impl num::Zero for GoalCount {
     PartialOrd,
     Add,
     AddAssign,
+    Sum,
 )]
 pub struct GoalDiff(pub i32);
 
@@ -123,6 +125,7 @@ impl num::Zero for GoalDiff {
     PartialOrd,
     Add,
     AddAssign,
+    Sum,
 )]
 pub struct NumGames(pub u32);
 

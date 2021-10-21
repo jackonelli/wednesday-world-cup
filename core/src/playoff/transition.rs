@@ -68,3 +68,33 @@ impl PlayoffTransitions {
         self.0.iter()
     }
 }
+
+#[cfg(test)]
+pub(crate) mod mock_data {
+    use super::*;
+    use crate::group::mock_data::groups_and_teams;
+    use std::convert::TryFrom;
+    pub(crate) fn transitions() -> PlayoffTransitions {
+        let id_a = GroupId::try_from('A').unwrap();
+        let id_b = GroupId::try_from('B').unwrap();
+        let game_1 = PlayoffTransition {
+            home: GroupOutcome::Winner(id_a),
+            away: GroupOutcome::ThirdPlace(HashSet::from_iter([id_a, id_b].iter().cloned())),
+        };
+        let game_2 = PlayoffTransition {
+            home: GroupOutcome::Winner(id_b),
+            away: GroupOutcome::ThirdPlace(HashSet::from_iter([id_a, id_b].iter().cloned())),
+        };
+
+        let (groups, _) = groups_and_teams();
+        PlayoffTransitions::try_new(
+            [1, 2]
+                .iter()
+                .copied()
+                .map(GameId::from)
+                .zip([game_1, game_2].iter().cloned()),
+            &groups.keys().copied().collect(),
+        )
+        .unwrap()
+    }
+}

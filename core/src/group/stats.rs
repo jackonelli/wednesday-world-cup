@@ -14,10 +14,11 @@ use crate::game::{GoalCount, GoalDiff, NumGames};
 use crate::group::game::PlayedGroupGame;
 use crate::group::{Group, GroupPoint};
 use crate::team::TeamId;
-use derive_more::{Add, AddAssign};
+use derive_more::{Add, AddAssign, Sum};
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::iter::Sum as IterSum;
 use std::ops;
 
 /// Unary statistic calculated from a single game.
@@ -25,7 +26,7 @@ use std::ops;
 /// Implentor needs to provide the actual [`GameStat::stat`] function,
 /// which calculates the statistics (for both teams) for a single game.
 /// The trait then provides default methods to calculate the statistic on group level.
-pub trait GameStat: num::Zero + ops::AddAssign {
+pub trait GameStat: num::Zero + ops::AddAssign + IterSum {
     /// Calculate statistic for a game.
     ///
     /// Unary statistics are necessarily paired: The one game is the basis for the statistic for
@@ -65,6 +66,25 @@ pub trait GameStat: num::Zero + ops::AddAssign {
             .iter()
             .filter(|game| team_filter.contains(&game.home) && team_filter.contains(&game.away))
             .fold(team_map, |acc, game| calc_and_assign_stat(acc, game))
+    }
+    /// Calculate statistic for a single team in a group.
+    ///
+    /// Only games where a specific team is either the home or away team
+    /// Statistics for the specific games are summed up.
+    fn single_team_stats(group: &Group, team_id: TeamId) -> Self {
+        group
+            .played_games
+            .iter()
+            .filter(|game| team_id == game.home || team_id == game.away)
+            .map(|game| {
+                let (home, away) = Self::stat(game);
+                if game.home == team_id {
+                    home
+                } else {
+                    away
+                }
+            })
+            .sum()
     }
 }
 
@@ -140,7 +160,7 @@ impl GameStat for GoalCount {
 
 impl<T> GameStat for T
 where
-    T: FairPlayValue + num::Zero + ops::AddAssign,
+    T: FairPlayValue + num::Zero + ops::AddAssign + IterSum,
 {
     fn stat(game: &PlayedGroupGame) -> (T, T) {
         (
@@ -151,7 +171,7 @@ where
 }
 
 /// Number of wins for a team in a group
-#[derive(Add, AddAssign, Eq, PartialEq, Ord, PartialOrd, Debug, Clone, Copy)]
+#[derive(Add, AddAssign, Eq, PartialEq, Ord, PartialOrd, Debug, Clone, Copy, Sum)]
 pub struct NumWins(NumGames);
 
 impl GameStat for NumWins {
@@ -177,7 +197,7 @@ impl num::Zero for NumWins {
 ///
 ///Impl. [`GameStat`] but not [`Ord`].
 ///Defining an order (impl `Ord`) defeats the purpose of composing rules.
-#[derive(Add, AddAssign, Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Add, AddAssign, Debug, Clone, Copy, Eq, PartialEq, Sum)]
 pub struct TableStats {
     pub points: GroupPoint,
     pub goal_diff: GoalDiff,
