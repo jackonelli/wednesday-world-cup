@@ -1,4 +1,4 @@
-//! # Tournament group play
+//! # Tournament group stage
 pub mod game;
 pub mod order;
 pub mod stats;
@@ -236,6 +236,7 @@ impl Group {
 )]
 pub struct GroupId(char);
 
+// TODO: remove?
 impl GroupId {
     pub fn into_uppercase(self) -> Self {
         Self(self.0.to_ascii_uppercase())

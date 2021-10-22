@@ -4,6 +4,36 @@
 //! The ordering is greedy in the sense that the next sub-order is only applied if the ordering is non-strict.
 //! If there are no more sub-orders to apply, a tiebreaker ensures a strict ordering.
 //!
+//! Initially the unordered group looks like this:
+//!
+//! 1. SWE, GER, BRA, ITA
+//! 2.
+//! 3.
+//! 4.
+//!
+//! which is represented as a list of list ([`NonStrictGroupOrder`]):
+//!
+//! `[[SWE, GER, BRA, ITA], [], [], []]`
+//!
+//! A rule is applied, group points for instance. The teams' group points are computed and the
+//! sub-lists are split. Let's say this is the order based on the group points:
+//!
+//! 1. SWE, GER
+//! 2. BRA
+//! 3. ITA
+//! 4.
+//! i.e.
+//!
+//! `[[SWE, GER] [BRA], [ITA]]`
+//!
+//! The order is not strict yet, since SWE and GER are tied, at which point the next rule is
+//! applied (goal diff perhaps).
+//!
+//! The sub-ordering stops when
+//! - We have achieved a strict order or,
+//! - There are no more rules to apply. Then the [`Tiebreaker`] is applied (random chance or
+//! ranking) which guarantees a strict order.
+//!
 //! A system of greedy, atomic sub-orders is flexible since new rules can easily be composed from them.
 //! The [`SubOrdering`] trait is auto-implemented for every struct that
 //! implements [`GameStat`] + [`Ord`] + [`Copy`], making the
@@ -11,12 +41,14 @@
 //!
 //! ### A note on performance
 //!
-//! Smaller sub-orders can also be grouped together. E.g., you could group points, goal diff.
-//! and goals scored into one struct, implement `GameStat` and `Ord` for it and use that as a
-//! sub-order. This might be more efficient since you would avoid iterating over the played games
-//! once for each stat. This would be better in the worst case scenario but if it is likely that teams are
+//! Smaller sub-orders can also be grouped together. E.g., you could collect group points, goal diff.
+//! and goals scored into one struct, implement [`GameStat`], [`Ord`] and [`Copy`] for it and use that as a
+//! sub-order. This seems to be more efficient since you would avoid iterating over the played games
+//! once for each stat, but is in reality not trivially so.
+//! It would be better in the worst case scenario but if it is likely that teams are
 //! separable by points alone, then it would be wasteful not to take advantage of the greedy
 //! approach.
+//! A benchmark would be certainly be interesting.
 use crate::fair_play::{FifaFairPlayValue, UefaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff};
 use crate::group::stats::{GameStat, NumWins};
@@ -218,11 +250,11 @@ pub trait SubOrdering {
 
 /// Ordering stat based on all games in the group
 ///
-/// SubOrdering which orders by a metric based on a [`GameStat`].
+/// [`SubOrdering`] which orders by a metric based on a [`GameStat`].
 /// The metric is calculated from all games in the group, regardless of the subset of teams being
 /// ordered.
 ///
-/// AllGroupStat sub-orderings based on points, goal difference and goals scored are commonly the
+/// [`AllGroupStat`] sub-orderings based on points, goal difference and goals scored are commonly the
 /// first three sub-orderings in a group rule.
 struct AllGroupStat<T: GameStat>(std::marker::PhantomData<T>);
 
