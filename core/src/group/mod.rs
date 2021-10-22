@@ -15,7 +15,7 @@ use rand::{
     distributions::Distribution, distributions::Uniform, rngs::StdRng, seq::IteratorRandom,
     thread_rng, SeedableRng,
 };
-use serde::{Deserialize, Deserializer, Serialize, de};
+use serde::{de, Deserialize, Deserializer, Serialize};
 use stats::GameStat;
 use std::collections::HashSet;
 use std::collections::{BTreeMap, HashMap};
@@ -272,7 +272,6 @@ impl<'de> Deserialize<'de> for GroupId {
         } else {
             Err(de::Error::custom("GroupId must be ASCII"))
         }
-
     }
 }
 /// Type alias for a mapping of `GroupId` to `Group`
