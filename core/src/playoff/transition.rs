@@ -1,10 +1,18 @@
+//! # Group stage to playoff transition
+//!
+//! The best performing teams in the group stage advance to a playoff.
+//! The first round of the playoff is determined by all groups and a set of transition rules.
+//! Transition rules differ across tournaments
+//! Currently supported is to have winners, runner ups and top third placers to advance.
 use crate::game::GameId;
-use crate::group::{GroupId, GroupOutcome, Groups};
+use crate::group::{GroupId, GroupOutcome};
 use crate::playoff::PlayoffError;
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
-use std::iter::{once, FromIterator};
 
+/// Single transition
+///
+/// Describes how one game in the first round should be populated
 #[derive(Debug, Clone)]
 pub struct PlayoffTransition {
     home: GroupOutcome,
@@ -14,13 +22,13 @@ pub struct PlayoffTransition {
 impl PlayoffTransition {
     fn group_ids(&self) -> HashSet<GroupId> {
         let home: HashSet<GroupId> = match &self.home {
-            GroupOutcome::Winner(id) => HashSet::from_iter(once(*id)),
-            GroupOutcome::RunnerUp(id) => HashSet::from_iter(once(*id)),
+            GroupOutcome::Winner(id) => HashSet::from([*id]),
+            GroupOutcome::RunnerUp(id) => HashSet::from([*id]),
             GroupOutcome::ThirdPlace(ids) => ids.clone(),
         };
         let away: HashSet<GroupId> = match &self.away {
-            GroupOutcome::Winner(id) => HashSet::from_iter(once(*id)),
-            GroupOutcome::RunnerUp(id) => HashSet::from_iter(once(*id)),
+            GroupOutcome::Winner(id) => HashSet::from([*id]),
+            GroupOutcome::RunnerUp(id) => HashSet::from([*id]),
             GroupOutcome::ThirdPlace(ids) => ids.clone(),
         };
         home.union(&away).cloned().collect()
@@ -33,6 +41,9 @@ impl PlayoffTransition {
     }
 }
 
+/// Transition collection
+///
+/// Mapping from [`GameId`] to [`PlayoffTransition`]
 #[derive(Debug, Clone)]
 pub struct PlayoffTransitions(BTreeMap<GameId, PlayoffTransition>);
 

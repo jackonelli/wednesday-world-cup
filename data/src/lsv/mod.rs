@@ -4,7 +4,7 @@ use wwc_core::group::GroupError;
 use wwc_core::group::Groups;
 use wwc_core::playoff::transition::PlayoffTransitions;
 use wwc_core::playoff::PlayoffError;
-use wwc_core::team::Teams;
+use wwc_core::team::{TeamId, Teams};
 
 pub mod euro_2020;
 pub mod fifa_2018;
@@ -43,8 +43,12 @@ pub enum LsvParseError {
     TeamParse,
     #[error("Error parsing group: {0}")]
     GroupParse(#[from] GroupError),
+    #[error("Failed splitting '{0}' into 'outcome', 'id'")]
+    OutcomeParse(String),
     #[error("Error parsing third place group id: {0}")]
     ThirdPlaceGroupId(String),
+    #[error("Transition complete, got TeamId {0} instead of e.g. 'winner_b'")]
+    TransitionComplete(TeamId),
     #[error("Error parsing playoff: {0}")]
     Playoff(#[from] PlayoffError),
 }
