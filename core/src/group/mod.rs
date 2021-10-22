@@ -19,7 +19,6 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use stats::GameStat;
 use std::collections::HashSet;
 use std::collections::{BTreeMap, HashMap};
-use std::convert::TryFrom;
 use std::iter;
 use thiserror::Error;
 

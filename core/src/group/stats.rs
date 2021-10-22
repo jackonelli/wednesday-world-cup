@@ -320,7 +320,6 @@ mod tests {
     use crate::Date;
     use num::Zero;
     use std::collections::HashSet;
-    use std::convert::TryFrom;
 
     #[test]
     fn assure_all_teams_in_stats_map() {

@@ -1,7 +1,6 @@
 use crate::schema::{games, group_game_map, players, preds, teams};
 use crate::DbError;
 use serde::Serialize;
-use std::convert::{TryFrom, TryInto};
 use wwc_core::error::WwcError;
 use wwc_core::fair_play::FairPlayScore;
 use wwc_core::game::GameId;

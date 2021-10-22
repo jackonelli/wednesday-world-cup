@@ -73,7 +73,6 @@ impl PlayoffTransitions {
 pub(crate) mod mock_data {
     use super::*;
     use crate::group::mock_data::groups_and_teams;
-    use std::convert::TryFrom;
     pub(crate) fn transitions() -> PlayoffTransitions {
         let id_a = GroupId::try_from('A').unwrap();
         let id_b = GroupId::try_from('B').unwrap();

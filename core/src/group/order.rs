@@ -25,7 +25,6 @@ use crate::team::{TeamId, TeamRank};
 use rand::Rng;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
 
 use super::Groups;

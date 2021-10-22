@@ -111,7 +111,6 @@ mod test {
     use crate::group::GroupId;
     use assert_approx_eq::assert_approx_eq;
     use itertools::Itertools;
-    use std::convert::TryFrom;
 
     #[test]
     fn simple_score_fn() {

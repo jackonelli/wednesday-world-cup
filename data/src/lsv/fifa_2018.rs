@@ -5,7 +5,6 @@ use crate::file_io::read_json_file_to_str;
 use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::GoalCount;
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};

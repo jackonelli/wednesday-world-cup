@@ -2,7 +2,6 @@ use crate::lsv::LsvParseError;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::convert::TryFrom;
 use wwc_core::game::GameId;
 use wwc_core::group::{GroupError, GroupId, GroupOutcome};
 

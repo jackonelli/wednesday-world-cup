@@ -16,7 +16,6 @@ use diesel::result::ConnectionError;
 use diesel::result::Error as QueryError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
-use std::convert::TryFrom;
 use std::env;
 use thiserror::Error;
 use wwc_core::error::WwcError;
