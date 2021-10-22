@@ -27,7 +27,7 @@ pub trait PredScoreFn {
     //
     // Don't worry about the content in the angle brackets for now.
     // They have to do with lifetimes and generics.
-    fn group_score<'a, T: Iterator<Item = (GroupGameScore, GroupGameScore)>>(
+    fn group_score<T: Iterator<Item = (GroupGameScore, GroupGameScore)>>(
         &self,
         games: T,
     ) -> PredScore {
@@ -111,7 +111,6 @@ mod test {
     use crate::group::GroupId;
     use assert_approx_eq::assert_approx_eq;
     use itertools::Itertools;
-    use std::convert::TryFrom;
 
     #[test]
     fn simple_score_fn() {

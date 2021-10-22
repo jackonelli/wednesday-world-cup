@@ -7,10 +7,10 @@ use crate::game::{Game, GameId, GoalCount, GoalDiff, NumGames};
 use crate::group::game::GroupGameScore;
 use crate::team::TeamId;
 use crate::Date;
-use derive_more::{Add, AddAssign, Display, From, Into};
+use derive_more::{Add, AddAssign, Display, From, Into, Sum};
 use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
-pub use order::{order_group, GroupOrder, Rules, Tiebreaker};
+pub use order::{order_group, Rules, TeamOrder, Tiebreaker};
 use rand::{
     distributions::Distribution, distributions::Uniform, rngs::StdRng, seq::IteratorRandom,
     thread_rng, SeedableRng,
@@ -19,7 +19,6 @@ use serde::{de, Deserialize, Deserializer, Serialize};
 use stats::GameStat;
 use std::collections::HashSet;
 use std::collections::{BTreeMap, HashMap};
-use std::convert::TryFrom;
 use std::iter;
 use thiserror::Error;
 
@@ -112,7 +111,7 @@ impl Group {
     /// Calculate group winner
     ///
     /// Order group according to `rules`
-    pub fn rank_teams<T: Tiebreaker>(&self, rules: &Rules<T>) -> GroupOrder {
+    pub fn rank_teams<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamOrder {
         order_group(self, rules)
     }
 
@@ -128,6 +127,13 @@ impl Group {
     /// Order group according to `rules` and return second in order.
     pub fn runner_up<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
         order_group(self, rules).runner_up()
+    }
+
+    /// Calculate group third place
+    ///
+    /// Order group according to `rules` and return third in order.
+    pub fn third_place<T: Tiebreaker>(&self, rules: &Rules<T>) -> TeamId {
+        order_group(self, rules).third_place()
     }
 
     /// Calculate points for group teams
@@ -286,7 +292,7 @@ pub type Groups = BTreeMap<GroupId, Group>;
 /// - Draw: 1 group point
 /// - Loss: 0 group points
 #[derive(
-    Default, Debug, Display, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign,
+    Default, Debug, Display, Clone, Copy, From, Eq, PartialEq, Ord, PartialOrd, Add, AddAssign, Sum,
 )]
 pub struct GroupPoint(pub u8);
 

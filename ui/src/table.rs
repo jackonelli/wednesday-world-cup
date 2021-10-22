@@ -5,13 +5,13 @@ use seed::{prelude::*, *};
 use std::convert::From;
 use wwc_core::game::{GoalDiff, NumGames};
 use wwc_core::group::{stats::GameStat, stats::TableStats, Group};
-use wwc_core::group::{GroupOrder, GroupPoint};
+use wwc_core::group::{GroupPoint, TeamOrder};
 use wwc_core::team::{Team, TeamId, Teams};
 
 pub(crate) struct DisplayTable(Vec<(TeamId, DisplayTableRow)>);
 
 impl DisplayTable {
-    pub(crate) fn new(group: &Group, group_order: &GroupOrder) -> Self {
+    pub(crate) fn new(group: &Group, group_order: &TeamOrder) -> Self {
         let full_table = TableStats::team_stats(group);
         let tmp = group_order
             .iter()

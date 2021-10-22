@@ -2,7 +2,6 @@
 use derive_more::{AsRef, Display, From, Into};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::fmt;
 use thiserror::Error;
 

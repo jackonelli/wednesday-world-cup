@@ -5,10 +5,21 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Copy)]
 pub struct PlayoffGame {
-    game_id: GameId,
-    home: Option<TeamId>,
-    away: Option<TeamId>,
+    pub id: GameId,
+    pub home: Option<TeamId>,
+    pub away: Option<TeamId>,
     score: Option<PlayoffScore>,
+}
+
+impl PlayoffGame {
+    pub fn new(game_id: GameId, home: TeamId, away: TeamId) -> Self {
+        Self {
+            id: game_id,
+            home: Some(home),
+            away: Some(away),
+            score: None,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]

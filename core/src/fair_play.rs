@@ -2,7 +2,7 @@
 //!
 //! Miscreants who receive cards in any form obtain a negative score which is used in the group
 //! ordering.
-use derive_more::{Add, AddAssign, Display, From};
+use derive_more::{Add, AddAssign, Display, From, Sum};
 use serde::{Deserialize, Serialize};
 use std::ops::Mul;
 
@@ -77,6 +77,7 @@ pub trait FairPlayValue {
     PartialOrd,
     Add,
     AddAssign,
+    Sum,
 )]
 pub struct FifaFairPlayValue(i32);
 
@@ -125,6 +126,7 @@ impl num::Zero for FifaFairPlayValue {
     PartialOrd,
     Add,
     AddAssign,
+    Sum,
 )]
 pub struct UefaFairPlayValue(i32);
 

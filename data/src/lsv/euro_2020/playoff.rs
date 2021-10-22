@@ -1,19 +1,17 @@
 use crate::lsv::LsvParseError;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashSet};
-use std::convert::TryFrom;
+use std::collections::HashSet;
 use wwc_core::game::GameId;
 use wwc_core::group::{GroupError, GroupId, GroupOutcome};
-use wwc_core::playoff::transition::{PlayoffTransition, PlayoffTransitions};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ParsePlayoff {
+pub struct ParsePlayoff {
     round16: ParseFirstRound,
 }
 
 impl ParsePlayoff {
-    pub fn games<'a>(&'a self) -> impl Iterator<Item = &'a ParsePlayoffGame> {
+    pub fn games(&self) -> impl Iterator<Item = &ParsePlayoffGame> {
         self.round16.games.iter()
     }
 }
@@ -25,9 +23,13 @@ struct ParseFirstRound {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ParsePlayoffGame {
-    pub(crate) id: GameId,
+pub struct ParsePlayoffGame {
+    pub id: GameId,
     pub(crate) qualification: ParseQualification,
+    // Fifa code
+    pub home_team: Option<String>,
+    // Fifa code
+    pub away_team: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -90,7 +92,7 @@ fn parse_group_id_set(ids: &str) -> Result<HashSet<GroupId>, LsvParseError> {
             .map(|id| id.chars().next().unwrap())
             .map(|c| GroupId::try_from(c.to_ascii_uppercase()))
             .collect::<Result<HashSet<GroupId>, GroupError>>()
-            .map_err(|err| LsvParseError::GroupParse(err))?;
+            .map_err(LsvParseError::GroupParse)?;
         match id_set.len() {
             3..=4 => Ok(id_set),
             _ => Err(LsvParseError::ThirdPlaceGroupId(String::from(ids))),

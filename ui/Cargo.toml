@@ -5,7 +5,7 @@ description = "WASM/Seed crate, defining a UI for WWC"
 license = "MIT OR Apache-2.0"
 version = "0.1.0"
 authors = ["Jacko Jackonelli"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib"]

@@ -9,8 +9,8 @@ use wwc_core::team::{TeamId, Teams};
 pub mod euro_2020;
 pub mod fifa_2018;
 
-pub use euro_2020::Euro2020Data;
-pub use fifa_2018::Fifa2018Data;
+pub use crate::lsv::euro_2020::Euro2020Data;
+pub use crate::lsv::fifa_2018::Fifa2018Data;
 
 pub fn get_data<T: LsvData>(data_path: &str) -> Result<T, LsvParseError> {
     let data = T::try_data_from_file(data_path)?;
