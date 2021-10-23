@@ -24,9 +24,12 @@ The database library exposes a rust interface to read and write data to a `sqlit
 
 The executable `wwc_server` is a very simple http server. The WASM `ui` cannot, for sand-boxing reasons, interact directly with the database.
 Instead, the `wwc_server` acts as a bridge to enable the `ui` to make database calls through a http api.
-The intention is to have an as ~stupid~ simple as possible combination of `db` and `server` and leave the complexity for the UI.
-This means storing a raw, basic representation of the data in the database and having the server provide access to it as is.
-The data will then be deserialized into more complex structures, directly in the UI.
+The intention is to have an as ~stupid~ simple as possible `db` representation.
+This means storing a raw, basic representation of the data in the database.
+The data are deserialized in the server and sent to the UI.
+
+Rust is excellent at serialisation/deserialisation (through the crate [`serde`](https://serde.rs/)) and since the server and UI both use the same types defined in `core`,
+the actual http communication is very easily abstracted.
 
 ### `cli`
 
