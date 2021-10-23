@@ -44,6 +44,7 @@ fn get_preds(player_id: i32) -> Result<Json<Vec<Prediction>>, BadRequest<String>
     let preds = wwc_db::get_preds(PlayerId::from(player_id))
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
+    println!("{:?}", preds);
     Ok(Json(preds))
 }
 

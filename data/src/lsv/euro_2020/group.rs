@@ -75,7 +75,6 @@ impl ParseGroupGame {
         parse_game: ParseGroupGame,
         team_map: &TeamMap,
     ) -> Result<PlayedGroupGame, GroupError> {
-        println!("{:?}", parse_game.home_team);
         let game = UnplayedGroupGame::try_new(
             GameId::from(parse_game.id),
             *team_map.get(&parse_game.home_team).unwrap(),
