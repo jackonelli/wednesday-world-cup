@@ -122,7 +122,7 @@ const FIFA_CODE_ISO2_MAP: &[(&str, &str)] = &[
     ("KSA", "sa"),
     ("URU", "uy"),
     ("KOR", "kr"),
-    ("TUN", "tu"),
+    ("TUN", "tn"),
 ];
 
 /// Heuristic mapping for 'Fifa code -> ISO2' codes.
