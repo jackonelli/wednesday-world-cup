@@ -17,8 +17,8 @@ use wwc_core::team::Teams;
 #[put("/save_preds", format = "application/json", data = "<player_preds>")]
 fn save_preds(player_preds: Json<PlayerPredictions>) -> Result<(), BadRequest<String>> {
     let player_preds = player_preds.into_inner();
-    println!("Saving predictions for player {}", player_preds.id);
-    player_preds.preds().for_each(|pred| println!("{}", pred));
+    debug!("Saving predictions for player {}", player_preds.id);
+    player_preds.preds().for_each(|pred| debug!("{}", pred));
     let tmp = wwc_db::insert_preds(&player_preds)
         .map_err(ServerError::from)
         .map_err(BadRequest::from);
@@ -34,7 +34,7 @@ fn get_teams() -> Result<Json<Teams>, BadRequest<String>> {
         .map_err(BadRequest::from)?
         .map(|x| (x.id, x))
         .collect();
-    println!("TEAMS:\n{:?}", teams);
+    debug!("TEAMS:\n{:?}", teams);
     Ok(Json(teams))
 }
 
@@ -44,7 +44,7 @@ fn get_preds(player_id: i32) -> Result<Json<Vec<Prediction>>, BadRequest<String>
     let preds = wwc_db::get_preds(PlayerId::from(player_id))
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
-    println!("{:?}", preds);
+    debug!("{:?}", preds);
     Ok(Json(preds))
 }
 
@@ -54,7 +54,7 @@ fn clear_preds() -> Result<(), BadRequest<String>> {
     wwc_db::clear_preds()
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
-    println!("Predictions cleared.");
+    debug!("Predictions cleared.");
     Ok(())
 }
 
