@@ -2,12 +2,18 @@
 use crate::lsv::LsvParseError;
 use serde::{Deserialize, Serialize};
 use wwc_core::game::GameId;
-use wwc_core::team::TeamId;
 use wwc_core::group::{GroupId, GroupOutcome};
+use wwc_core::team::TeamId;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct ParsePlayoff {
     pub round_16: ParseFirstRound,
+}
+
+impl ParsePlayoff {
+    pub fn games<'a>(&'a self) -> impl Iterator<Item = &'a ParsePlayoffGame> {
+        self.round_16.games.iter()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
@@ -43,6 +49,12 @@ impl TryFrom<ParsePlayoffTransition> for GroupOutcome {
 }
 
 impl ParsePlayoffTransition {
+    pub fn team_from_finished(&self) -> Result<TeamId, LsvParseError> {
+        match &self {
+            Self::UnFinished(s) => Err(LsvParseError::TransitionIncomplete(String::from(s))),
+            Self::Finished(id) => Ok(*id),
+        }
+    }
     fn parse_trans(trans: &str) -> Result<GroupOutcome, LsvParseError> {
         let mut s = trans.split('_');
         let outcome = s

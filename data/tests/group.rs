@@ -1,13 +1,13 @@
 use wwc_core::group::{
-    order::{euro_2020, fifa_2018, UefaRanking},
+    order::{euro_2020_rules, fifa_2018_rules, UefaRanking},
     Group,
 };
 use wwc_data::lsv::{get_data, Euro2020Data, Fifa2018Data, LsvData};
 
 #[test]
 fn fifa_2018_group_ordering() {
-    let rules = fifa_2018();
-    let data: Fifa2018Data = get_data("tests/data/complete-wc-2018.json").unwrap();
+    let rules = fifa_2018_rules();
+    let data: Fifa2018Data = get_data("tests/data/complete-fifa-2018.json").unwrap();
 
     let groups = data.try_groups().unwrap();
 
@@ -44,7 +44,7 @@ fn euro_2020_group_ordering() {
     )
     .expect("Failed to compile ranking");
 
-    let rules = euro_2020(ranking);
+    let rules = euro_2020_rules(ranking);
     for (id, true_winner) in data.group_winners() {
         let group = groups
             .get(&id)

@@ -1,9 +1,11 @@
-//! LSV JSON data interface
+//! LSV Euro 2020 JSON data interface
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
 
+pub mod group;
 pub mod playoff;
 use crate::file_io::read_json_file_to_str;
+use crate::lsv::euro_2020::group::ParseGroup;
 use crate::lsv::euro_2020::playoff::ParsePlayoff;
 use crate::lsv::{GameType, LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
@@ -141,87 +143,5 @@ impl ParseTeam {
             Team::try_new(*id, &self.name, &self.fifa_code, TeamRank(0))
         };
         team.map_err(|_| LsvParseError::TeamParse)
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct ParseGroup {
-    id: GroupId,
-    winner: Option<FifaCode>,
-    #[serde(rename = "runnerup")]
-    runner_up: Option<FifaCode>,
-    #[serde(rename = "matches")]
-    games: Vec<ParseGame>,
-}
-
-impl ParseGroup {
-    fn try_parse_group(self, team_map: &TeamMap) -> Result<Group, GroupError> {
-        let upcoming_games = self
-            .games
-            .iter()
-            .filter(|game| !game.finished)
-            .map(|game| ParseGame::try_parse_unplayed(game.clone(), team_map))
-            .collect::<Result<Vec<UnplayedGroupGame>, GroupError>>()?;
-
-        let played_games = self
-            .games
-            .iter()
-            .filter(|game| game.finished)
-            .map(|game| ParseGame::try_parse_played(game.clone(), team_map))
-            .collect::<Result<Vec<PlayedGroupGame>, GroupError>>()?;
-        Group::try_new(upcoming_games, played_games)
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-struct ParseGame {
-    id: u32,
-    #[serde(rename = "matchtype")]
-    type_: GameType,
-    home_team: String,
-    away_team: String,
-    home_result: Option<GoalCount>,
-    away_result: Option<GoalCount>,
-    home_penalty: Option<GoalCount>,
-    away_penalty: Option<GoalCount>,
-    home_fair_play: Option<FairPlay>,
-    away_fair_play: Option<FairPlay>,
-    finished: bool,
-    date: Date,
-}
-
-impl ParseGame {
-    fn try_parse_unplayed(
-        parse_game: ParseGame,
-        team_map: &TeamMap,
-    ) -> Result<UnplayedGroupGame, GroupError> {
-        UnplayedGroupGame::try_new(
-            GameId::from(parse_game.id),
-            *team_map.get(&parse_game.home_team).unwrap(),
-            *team_map.get(&parse_game.away_team).unwrap(),
-            parse_game.date,
-        )
-    }
-
-    fn try_parse_played(
-        parse_game: ParseGame,
-        team_map: &TeamMap,
-    ) -> Result<PlayedGroupGame, GroupError> {
-        println!("{:?}", parse_game.home_team);
-        let game = UnplayedGroupGame::try_new(
-            GameId::from(parse_game.id),
-            *team_map.get(&parse_game.home_team).unwrap(),
-            *team_map.get(&parse_game.away_team).unwrap(),
-            parse_game.date,
-        )?;
-        let score = match (parse_game.home_result, parse_game.away_result) {
-            (Some(home), Some(away)) => GroupGameScore::from((home, away)),
-            _ => return Err(GroupError::GenericError),
-        };
-        let fair_play_score = match (parse_game.home_fair_play, parse_game.away_fair_play) {
-            (Some(home), Some(away)) => FairPlayScore::new(home, away),
-            _ => FairPlayScore::default(),
-        };
-        Ok(game.play(score, fair_play_score))
     }
 }

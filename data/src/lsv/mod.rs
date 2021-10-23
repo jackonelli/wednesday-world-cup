@@ -47,8 +47,10 @@ pub enum LsvParseError {
     OutcomeParse(String),
     #[error("Error parsing third place group id: {0}")]
     ThirdPlaceGroupId(String),
-    #[error("Transition complete, got TeamId {0} instead of e.g. 'winner_b'")]
+    #[error("Unexpected complete transition, got TeamId '{0}' instead of e.g. 'winner_b'")]
     TransitionComplete(TeamId),
+    #[error("Unexpected incomplete transition, got trans '{0}' TeamId")]
+    TransitionIncomplete(String),
     #[error("Error parsing playoff: {0}")]
     Playoff(#[from] PlayoffError),
 }

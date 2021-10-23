@@ -1,8 +1,8 @@
 //! LSV JSON data interface
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
-mod group;
-mod playoff;
+pub mod group;
+pub mod playoff;
 use crate::file_io::read_json_file_to_str;
 use crate::lsv::fifa_2018::group::ParseGroup;
 use crate::lsv::fifa_2018::playoff::ParsePlayoff;
@@ -20,7 +20,7 @@ pub struct Fifa2018Data {
     teams: Vec<ParseTeam>,
     groups: HashMap<GroupId, ParseGroup>,
     #[serde(rename = "knockout")]
-    playoff: ParsePlayoff,
+    pub playoff: ParsePlayoff,
 }
 
 impl LsvData for Fifa2018Data {
