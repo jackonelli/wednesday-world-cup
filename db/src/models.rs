@@ -221,7 +221,7 @@ impl From<Pred> for Prediction {
             u32::try_from(pred.home_result).unwrap(),
             u32::try_from(pred.away_result).unwrap(),
         ));
-        Prediction(GameId::from(u32::try_from(pred.id).unwrap()), score)
+        Prediction(GameId::from(u32::try_from(pred.game_id).unwrap()), score)
     }
 }
 
