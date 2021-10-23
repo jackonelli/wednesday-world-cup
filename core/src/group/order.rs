@@ -541,7 +541,7 @@ impl Tiebreaker for UefaRanking {
 ///     - Direct red card: -4 points
 ///     - Yellow card and direct red card: -5 points
 /// 8. Drawing of lots by the FIFA.
-pub fn fifa_2018() -> Rules<Random> {
+pub fn fifa_2018_rules() -> Rules<Random> {
     let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
     let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
     let goal_count: AllGroupStat<GoalCount> = AllGroupStat::new();
@@ -559,6 +559,22 @@ pub fn fifa_2018() -> Rules<Random> {
             Box::new(int_goal_count),
             Box::new(fair_play),
         ],
+        tiebreaker: Random {},
+    }
+}
+
+/// Dummy rules third-place ordering
+///
+/// In the Fifa world cup (at least in 2018) group third-place finishers
+/// do not qualify for the playoff stage.
+/// Regardless, the unified API for populating the first playoff round requires such a rule.
+/// You can supply any version of rules since it will not be called anyway.
+/// To avoid confusion it is nice to see that you supply rules that are not called.
+///
+/// It would be nice if this could be checked at compile time but I do not know how.
+pub fn noop_fifa_2018_third_place_rules() -> Rules<Random> {
+    Rules {
+        non_strict: vec![],
         tiebreaker: Random {},
     }
 }
@@ -594,7 +610,7 @@ pub fn fifa_2018() -> Rules<Random> {
 /// as its own rule.
 /// - The penalty shootout in 9 is pretty straightforward but needs manual data.
 /// - The FairPlayValue is incorrectly calculated (of course Fifa and Uefa have different weights.)
-pub fn euro_2020(ranking: UefaRanking) -> Rules<UefaRanking> {
+pub fn euro_2020_rules(ranking: UefaRanking) -> Rules<UefaRanking> {
     let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
     let int_group_point: InternalGroupStat<GroupPoint> = InternalGroupStat::new();
     let int_goal_diff: InternalGroupStat<GoalDiff> = InternalGroupStat::new();
@@ -617,7 +633,7 @@ pub fn euro_2020(ranking: UefaRanking) -> Rules<UefaRanking> {
 }
 
 /// Uefa Euro 2020 Third place order
-pub fn euro_2020_third_place(ranking: UefaRanking) -> Rules<UefaRanking> {
+pub fn euro_2020_third_place_rules(ranking: UefaRanking) -> Rules<UefaRanking> {
     let group_point: AllGroupStat<GroupPoint> = AllGroupStat::new();
     let goal_diff: AllGroupStat<GoalDiff> = AllGroupStat::new();
     let num_wins: AllGroupStat<NumWins> = AllGroupStat::new();
@@ -654,7 +670,7 @@ mod fifa_2018_ordering_tests {
             PlayedGroupGame::try_new(2, 0, 3, (0, 1), FairPlayScore::default(), Date::mock())
                 .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3]).unwrap();
-        let rules = fifa_2018();
+        let rules = fifa_2018_rules();
         let group_order = order_group(&group, &rules);
         let true_order = TeamOrder(vec![3, 1, 2, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
@@ -676,7 +692,7 @@ mod fifa_2018_ordering_tests {
             PlayedGroupGame::try_new(3, 1, 3, (5, 5), FairPlayScore::default(), Date::mock())
                 .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4]).unwrap();
-        let rules = fifa_2018();
+        let rules = fifa_2018_rules();
         let group_order = order_group(&group, &rules);
         let true_order = TeamOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
@@ -693,7 +709,7 @@ mod fifa_2018_ordering_tests {
             PlayedGroupGame::try_new(1, 2, 3, (1, 0), FairPlayScore::default(), Date::mock())
                 .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2]).unwrap();
-        let rules = fifa_2018();
+        let rules = fifa_2018_rules();
         let group_order = order_group(&group, &rules);
         let true_order = TeamOrder(vec![1, 2, 3, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
@@ -716,7 +732,7 @@ mod fifa_2018_ordering_tests {
         )
         .unwrap();
         let group = Group::try_new(vec![], vec![game_1]).unwrap();
-        let rules = fifa_2018();
+        let rules = fifa_2018_rules();
         let group_order = order_group(&group, &rules);
         let true_order = TeamOrder(vec![1, 0].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);
@@ -742,7 +758,7 @@ mod fifa_2018_ordering_tests {
             PlayedGroupGame::try_new(4, 0, 3, (0, 1), FairPlayScore::default(), Date::mock())
                 .unwrap();
         let group = Group::try_new(vec![], vec![game_1, game_2, game_3, game_4, game_5]).unwrap();
-        let rules = fifa_2018();
+        let rules = fifa_2018_rules();
         let group_order = order_group(&group, &rules);
         let true_order = TeamOrder(vec![0, 1, 3, 2].iter().map(|x| TeamId(*x)).collect());
         assert_eq!(true_order, group_order);

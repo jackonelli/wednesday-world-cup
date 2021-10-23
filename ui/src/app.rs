@@ -6,7 +6,7 @@ use seed::{prelude::*, *};
 use wwc_core::{
     game::GameId,
     group::{
-        order::{fifa_2018, Random, Rules},
+        order::{fifa_2018_rules, Random, Rules},
         GroupId, Groups,
     },
     player::{Player, PlayerPredictions, Prediction},
@@ -31,7 +31,7 @@ fn init(_: Url, orders: &mut impl Orders<Msg>) -> Model {
         player: Player::dummy(),
         teams: Teams::new(),
         base_url: Url::new(),
-        group_rules: fifa_2018(),
+        group_rules: fifa_2018_rules(),
     }
 }
 

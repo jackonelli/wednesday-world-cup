@@ -13,11 +13,16 @@ pub struct Playoff {
     rounds: HashMap<RoundIdx, Round>,
 }
 
+#[derive(Debug)]
 pub struct Round {
     pub games: Vec<PlayoffGame>,
 }
 
 impl Round {
+    pub fn iter(&self) -> impl Iterator<Item = &PlayoffGame> {
+        self.games.iter()
+    }
+
     pub fn first_round_from_group_stage<T: Tiebreaker, U: Tiebreaker>(
         groups: &Groups,
         transitions: &PlayoffTransitions,
@@ -88,7 +93,7 @@ pub enum PlayoffError {
 mod tests {
     use super::*;
     use crate::group::mock_data::groups_and_teams;
-    use crate::group::order::{euro_2020, euro_2020_third_place, UefaRanking};
+    use crate::group::order::{euro_2020_rules, euro_2020_third_place_rules, UefaRanking};
     use crate::playoff::transition::mock_data::transitions;
     #[test]
     fn mock_data_access() {
@@ -105,8 +110,8 @@ mod tests {
         let round = Round::first_round_from_group_stage(
             &mock_groups,
             &mock_trans,
-            &euro_2020(ranking.clone()),
-            &euro_2020_third_place(ranking),
+            &euro_2020_rules(ranking.clone()),
+            &euro_2020_third_place_rules(ranking),
         );
         assert_eq!(round.games[0].home.unwrap(), TeamId::from(1));
         assert_eq!(round.games[0].away.unwrap(), TeamId::from(4));
