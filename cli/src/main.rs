@@ -10,8 +10,8 @@ use wwc_data::lsv::get_data;
 use wwc_data::lsv::LsvParseError;
 use wwc_data::lsv::{Euro2020Data, Fifa2018Data, LsvData};
 
-type Tournament = Euro2020Data;
-const DATA_PATH: &str = "data/lsv_data/complete-euro-2020.json";
+type Tournament = Fifa2018Data;
+const DATA_PATH: &str = "data/lsv_data/complete-fifa-2018.json";
 
 fn main() -> Result<(), CliError> {
     let opt = Opt::from_args();
