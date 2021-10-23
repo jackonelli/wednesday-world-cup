@@ -104,28 +104,6 @@ impl TryFrom<String> for FifaCode {
     }
 }
 
-/// Type alias for a collection of teams.
-///
-/// Indexable by [`TeamId`]
-pub type Teams = HashMap<TeamId, Team>;
-
-/// External rank (e.g. Fifa or Uefa rank)
-#[derive(
-    Deserialize,
-    Serialize,
-    Debug,
-    Clone,
-    Copy,
-    std::cmp::Eq,
-    std::cmp::PartialEq,
-    std::hash::Hash,
-    std::cmp::PartialOrd,
-    std::cmp::Ord,
-    From,
-    Into,
-)]
-pub struct TeamRank(pub u32);
-
 /// Look-up table for Fifa code to iso2 value.
 ///
 /// Taking the lower case first two letters of the Fifa code is a good heuristic for this
@@ -141,6 +119,10 @@ const FIFA_CODE_ISO2_MAP: &[(&str, &str)] = &[
     ("TUR", "tr"),
     ("UKR", "ua"),
     ("WAL", "gb-wls"),
+    ("KSA", "sa"),
+    ("URU", "uy"),
+    ("KOR", "kr"),
+    ("TUN", "tu"),
 ];
 
 /// Heuristic mapping for 'Fifa code -> ISO2' codes.
@@ -168,6 +150,28 @@ impl From<&FifaCode> for Iso2 {
         }
     }
 }
+
+/// Type alias for a collection of teams.
+///
+/// Indexable by [`TeamId`]
+pub type Teams = HashMap<TeamId, Team>;
+
+/// External rank (e.g. Fifa or Uefa rank)
+#[derive(
+    Deserialize,
+    Serialize,
+    Debug,
+    Clone,
+    Copy,
+    std::cmp::Eq,
+    std::cmp::PartialEq,
+    std::hash::Hash,
+    std::cmp::PartialOrd,
+    std::cmp::Ord,
+    From,
+    Into,
+)]
+pub struct TeamRank(pub u32);
 
 /// Team error type
 #[derive(Error, Debug, Clone)]
