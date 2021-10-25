@@ -128,6 +128,9 @@ const FIFA_CODE_ISO2_MAP: &[(&str, &str)] = &[
     ("MEX", "mx"),
     ("GER", "de"),
     ("SEN", "sn"),
+    ("DEN", "dk"),
+    ("NED", "nd"),
+    ("MAC", "mk"),
 ];
 
 /// Heuristic mapping for 'Fifa code -> ISO2' codes.
