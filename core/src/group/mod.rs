@@ -136,21 +136,6 @@ impl Group {
         order_group(self, rules).third_place()
     }
 
-    /// Calculate points for group teams
-    pub fn points(&self) -> HashMap<TeamId, GroupPoint> {
-        GroupPoint::team_stats(self)
-    }
-
-    /// Calculate goal difference for group teams
-    pub fn goal_diff(&self) -> HashMap<TeamId, GoalDiff> {
-        GoalDiff::team_stats(self)
-    }
-
-    /// Calculate goals scored for group teams
-    pub fn goals_scored(&self) -> HashMap<TeamId, GoalCount> {
-        GoalCount::team_stats(self)
-    }
-
     pub fn random<NG>(
         num_games: NG,
         num_teams: u32,
@@ -225,7 +210,7 @@ impl Group {
 /// Uses a `char` as an identifier.
 /// At least in football, groups are often labelled with an upper case character.
 /// The char is currently limited to ascii alphabetic char's, i.e. A-Z, a-z.
-/// This restriction is totally arbitrary and could be lifted, but for now I think it's nice to
+/// This restriction is arbitrary and could be lifted, but for now I think it's nice to
 /// have it.
 #[derive(
     Serialize,
@@ -242,7 +227,7 @@ impl Group {
 )]
 pub struct GroupId(char);
 
-// TODO: remove?
+// TODO: remove
 impl GroupId {
     pub fn into_uppercase(self) -> Self {
         Self(self.0.to_ascii_uppercase())
