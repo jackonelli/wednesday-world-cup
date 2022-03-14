@@ -17,6 +17,5 @@ rand = ">=0.7"
 assert_approx_eq = ">=1"
 serde_json = ">=1"
 more-asserts = "0.2.1"
-rand = ">=0.7"
 wasm-bindgen-test = "0.2"
 pprof = { version = ">=0.3", features = ["flamegraph"] }
