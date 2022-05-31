@@ -72,8 +72,7 @@ pub(crate) async fn get_groups_played_with_preds(player_id: PlayerId) -> Result<
     });
     let game_group_map: HashMap<GameId, GroupId> = groups
         .iter()
-        .map(|(group_id, group)| group.unplayed_games().map(move |game| (game.id, *group_id)))
-        .flatten()
+        .flat_map(|(group_id, group)| group.unplayed_games().map(move |game| (game.id, *group_id)))
         .collect();
 
     preds.iter().for_each(|pred| {

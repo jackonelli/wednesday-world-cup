@@ -11,7 +11,7 @@ pub struct ParsePlayoff {
 }
 
 impl ParsePlayoff {
-    pub fn games<'a>(&'a self) -> impl Iterator<Item = &'a ParsePlayoffGame> {
+    pub fn games(&self) -> impl Iterator<Item = &ParsePlayoffGame> {
         self.round_16.games.iter()
     }
 }
@@ -59,14 +59,14 @@ impl ParsePlayoffTransition {
         let mut s = trans.split('_');
         let outcome = s
             .next()
-            .ok_or(LsvParseError::OutcomeParse(String::from(trans)))?;
+            .ok_or_else(|| LsvParseError::OutcomeParse(String::from(trans)))?;
         let id = s
             .next()
-            .ok_or(LsvParseError::OutcomeParse(String::from(trans)))?;
+            .ok_or_else(|| LsvParseError::OutcomeParse(String::from(trans)))?;
         let id = id
             .chars()
             .next()
-            .ok_or(LsvParseError::OutcomeParse(String::from(trans)))?;
+            .ok_or_else(|| LsvParseError::OutcomeParse(String::from(trans)))?;
         let id = GroupId::try_from(id.to_ascii_uppercase())?;
         match outcome {
             "winner" => Ok(GroupOutcome::Winner(id)),

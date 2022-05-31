@@ -280,7 +280,7 @@ impl NonStrictOrder {
     }
 
     fn extend_sub_order(mut self, team: TeamId) -> Self {
-        let mut new_inner = self.0.pop().unwrap_or_else(Vec::new);
+        let mut new_inner = self.0.pop().unwrap_or_default();
         new_inner.push(team);
         self.0.push(new_inner);
         self

@@ -3,7 +3,7 @@ pub mod game;
 pub mod order;
 pub mod stats;
 use crate::fair_play::FairPlayScore;
-use crate::game::{Game, GameId, GoalCount, GoalDiff, NumGames};
+use crate::game::{Game, GameId, NumGames};
 use crate::group::game::GroupGameScore;
 use crate::team::TeamId;
 use crate::Date;
@@ -16,9 +16,8 @@ use rand::{
     thread_rng, SeedableRng,
 };
 use serde::{de, Deserialize, Deserializer, Serialize};
-use stats::GameStat;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
-use std::collections::{BTreeMap, HashMap};
 use std::iter;
 use thiserror::Error;
 
@@ -318,6 +317,7 @@ pub(crate) mod mock_data {
     use super::*;
     use crate::team::{Team, TeamError, TeamRank, Teams};
     use crate::Date;
+    use std::collections::HashMap;
     pub fn groups_and_teams() -> (Groups, Teams) {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())

@@ -131,8 +131,7 @@ fn model_preds(model: &Model) -> PlayerPredictions {
         model
             .groups
             .iter()
-            .map(|(_, group)| group.played_games())
-            .flatten()
+            .flat_map(|(_, group)| group.played_games())
             .map(|game| (Prediction::from(*game)))
             .collect(),
     )

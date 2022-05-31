@@ -49,15 +49,15 @@ fn teams_from_groups<T: Tiebreaker, U: Tiebreaker>(
     third_place_rules: &Rules<U>,
 ) -> (TeamId, TeamId) {
     let home = match &trans.home {
-        GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(group_rules),
-        GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(group_rules),
+        GroupOutcome::Winner(id) => groups.get(id).unwrap().winner(group_rules),
+        GroupOutcome::RunnerUp(id) => groups.get(id).unwrap().runner_up(group_rules),
         GroupOutcome::ThirdPlace(ids) => {
             best_third_place(groups, ids, group_rules, third_place_rules)
         }
     };
     let away = match &trans.away {
-        GroupOutcome::Winner(id) => groups.get(&id).unwrap().winner(group_rules),
-        GroupOutcome::RunnerUp(id) => groups.get(&id).unwrap().runner_up(group_rules),
+        GroupOutcome::Winner(id) => groups.get(id).unwrap().winner(group_rules),
+        GroupOutcome::RunnerUp(id) => groups.get(id).unwrap().runner_up(group_rules),
         GroupOutcome::ThirdPlace(ids) => {
             best_third_place(groups, ids, group_rules, third_place_rules)
         }
