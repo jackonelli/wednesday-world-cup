@@ -1,6 +1,9 @@
 use wwc_core::{
-    group::order::{euro_2020_rules, euro_2020_third_place_rules, fifa_2018_rules, noop_fifa_2018_third_place_rules, UefaRanking},
-    playoff::{game::PlayoffGame, Round},
+    group::order::{
+        UefaRanking, euro_2020_rules, euro_2020_third_place_rules, fifa_2018_rules,
+        noop_fifa_2018_third_place_rules,
+    },
+    playoff::{Round, game::PlayoffGame},
 };
 use wwc_data::lsv::euro_2020::playoff::{
     ParsePlayoff as Euro2020ParsePlayoff, ParsePlayoffGame as Euro2020ParsePlayoffGame,
@@ -8,7 +11,7 @@ use wwc_data::lsv::euro_2020::playoff::{
 use wwc_data::lsv::fifa_2018::playoff::{
     ParsePlayoff as Fifa2018arsePlayoff, ParsePlayoffGame as Fifa2018arsePlayoffGame,
 };
-use wwc_data::lsv::{get_data, Euro2020Data, Fifa2018Data, LsvData};
+use wwc_data::lsv::{Euro2020Data, Fifa2018Data, LsvData, get_data};
 
 #[test]
 fn fifa2018_id_check() {
@@ -57,7 +60,12 @@ fn fifa2018_team_to_game_assignment() {
         .for_each(|(parsed, comp)| {
             println!(
                 "Id: {}=?{}\n\thome:{}=?{}\n\taway:{}=?{}\n\n\n",
-                parsed.id, comp.id, parsed.home.unwrap(), comp.home.unwrap(), parsed.away.unwrap(), comp.away.unwrap()
+                parsed.id,
+                comp.id,
+                parsed.home.unwrap(),
+                comp.home.unwrap(),
+                parsed.away.unwrap(),
+                comp.away.unwrap()
             )
         });
     round
@@ -118,8 +126,8 @@ fn euro2020_team_to_game_assignment() {
 }
 
 fn fifa_2018_setup() -> (Fifa2018Data, Fifa2018Data, Round, Fifa2018arsePlayoff) {
-    let blank_data: Fifa2018Data = get_data("tests/data/blank-fifa-2018.json").unwrap();
-    let complete_data: Fifa2018Data = get_data("tests/data/complete-fifa-2018.json").unwrap();
+    let blank_data: Fifa2018Data = get_data("lsv_data/blank-fifa-2018.json").unwrap();
+    let complete_data: Fifa2018Data = get_data("lsv_data/complete-fifa-2018.json").unwrap();
 
     let groups = complete_data.try_groups().unwrap();
     let trans = blank_data.try_playoff_transitions().unwrap();
@@ -139,7 +147,7 @@ fn fifa_2018_setup() -> (Fifa2018Data, Fifa2018Data, Round, Fifa2018arsePlayoff)
 }
 
 fn euro_2020_setup() -> (Euro2020Data, Round, Euro2020ParsePlayoff) {
-    let data: Euro2020Data = get_data("tests/data/complete-euro-2020.json").unwrap();
+    let data: Euro2020Data = get_data("lsv_data/complete-euro-2020.json").unwrap();
 
     let groups = data.try_groups().unwrap();
     let teams = data.try_teams().unwrap();

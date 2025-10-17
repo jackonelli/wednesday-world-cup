@@ -89,11 +89,11 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> TeamOrder 
         &rules.non_strict,
         NonStrictOrder::init_from_group(group),
     );
-    if !possibly_non_strict.is_strict() {
-        rules.tiebreaker.order_teams(possibly_non_strict)
-    } else {
+    if possibly_non_strict.is_strict() {
         // Does not panic since the unwrapping match arm is checked to be strict.
         possibly_non_strict.try_into().unwrap()
+    } else {
+        rules.tiebreaker.order_teams(possibly_non_strict)
     }
 }
 
