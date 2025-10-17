@@ -1,5 +1,5 @@
-use crate::schema::{games, group_game_map, players, preds, teams};
 use crate::DbError;
+use crate::schema::{games, group_game_map, players, preds, teams};
 use serde::Serialize;
 use wwc_core::error::WwcError;
 use wwc_core::fair_play::FairPlayScore;
@@ -17,7 +17,7 @@ pub struct Team {
 }
 
 #[derive(Insertable)]
-#[table_name = "teams"]
+#[diesel(table_name = teams)]
 pub struct NewTeam<'a> {
     pub id: i32,
     pub name: &'a str,
@@ -53,7 +53,7 @@ impl<'a> From<&'a wwc_core::Team> for NewTeam<'a> {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
-#[belongs_to(parent = "Team", foreign_key = "id")]
+#[diesel(belongs_to(Team, foreign_key = id))]
 pub struct Game {
     pub id: i32,
     pub type_: String,
@@ -69,7 +69,7 @@ pub struct Game {
 }
 
 #[derive(Insertable)]
-#[table_name = "games"]
+#[diesel(table_name = games)]
 pub struct NewGame<'a> {
     pub id: i32,
     pub type_: &'a str,
@@ -177,16 +177,16 @@ impl TryFrom<Game> for UnplayedGroupGame {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
-#[primary_key(id)]
-#[table_name = "group_game_map"]
-#[belongs_to(parent = "Game", foreign_key = "id")]
+#[diesel(primary_key(id))]
+#[diesel(table_name = group_game_map)]
+#[diesel(belongs_to(Game, foreign_key = id))]
 pub struct GroupGameMap {
     pub id: i32,
     pub group_id_: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "group_game_map"]
+#[diesel(table_name = group_game_map)]
 pub struct NewGroupGameMap<'a> {
     pub id: i32,
     pub group_id_: &'a str,
@@ -204,9 +204,9 @@ impl<'a> From<&'a (String, GameId)> for NewGroupGameMap<'a> {
 }
 
 #[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
-#[belongs_to(parent = "Game")]
-#[belongs_to(parent = "Player")]
-#[table_name = "preds"]
+#[diesel(belongs_to(Game))]
+#[diesel(belongs_to(Player))]
+#[diesel(table_name = preds)]
 pub struct Pred {
     pub id: i32,
     pub player_id: i32,
@@ -226,7 +226,7 @@ impl From<Pred> for Prediction {
 }
 
 #[derive(Insertable)]
-#[table_name = "preds"]
+#[diesel(table_name = preds)]
 pub struct NewPred {
     pub player_id: i32,
     pub game_id: i32,
@@ -246,14 +246,14 @@ impl From<&(PlayerId, Prediction)> for NewPred {
     }
 }
 
-#[derive(Debug, Serialize, Queryable, Associations, Identifiable)]
+#[derive(Debug, Serialize, Queryable, Identifiable)]
 pub struct Player {
     pub id: i32,
     pub name: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "players"]
+#[diesel(table_name = players)]
 pub struct NewPlayer<'a> {
     pub name: &'a str,
 }

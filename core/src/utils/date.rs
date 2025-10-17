@@ -7,7 +7,10 @@ pub struct Date(#[serde(with = "serde_date")] DateTime<FixedOffset>);
 
 impl Date {
     pub fn mock() -> Self {
-        let dt = FixedOffset::east(3600).ymd(1632, 11, 6).and_hms(10, 18, 36);
+        let dt = FixedOffset::east_opt(3600)
+            .unwrap()
+            .with_ymd_and_hms(1632, 11, 6, 10, 18, 36)
+            .unwrap();
         Self(dt)
     }
 }

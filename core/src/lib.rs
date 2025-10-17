@@ -11,9 +11,6 @@
 //! are repeated unecessarily, but then again, the size of the average tournament is very small and
 //! the overhead will be miniscule.
 #![forbid(unsafe_code)]
-// Enable clippy if our Cargo.toml file asked us to do so.
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 // Enable as many useful Rust and Clippy warnings as we can stand.  We'd
 // also enable `trivial_casts`, but we're waiting for
 // https://github.com/rust-lang/rust/issues/23416.
@@ -27,21 +24,21 @@
     unused_import_braces,
     unused_qualifications
 )]
-#![cfg_attr(feature = "clippy", warn(cast_possible_truncation))]
-#![cfg_attr(feature = "clippy", warn(cast_possible_wrap))]
-#![cfg_attr(feature = "clippy", warn(cast_precision_loss))]
-#![cfg_attr(feature = "clippy", warn(cast_sign_loss))]
-#![cfg_attr(feature = "clippy", warn(missing_docs_in_private_items))]
-#![cfg_attr(feature = "clippy", warn(mut_mut))]
+#![warn(clippy::cast_possible_truncation)]
+#![warn(clippy::cast_possible_wrap)]
+#![warn(clippy::cast_precision_loss)]
+#![warn(clippy::cast_sign_loss)]
+#![warn(clippy::missing_docs_in_private_items)]
+#![warn(clippy::mut_mut)]
 // Disallow `println!`. Use `debug!` for debug output
 // (which is provided by the `log` crate).
-#![cfg_attr(feature = "clippy", warn(print_stdout))]
+#![warn(clippy::print_stdout)]
 // This allows us to use `unwrap` on `Option` values (because doing makes
 // working with Regex matches much nicer) and when compiling in test mode
 // (because using it in tests is idiomatic).
-#![cfg_attr(all(not(test), feature = "clippy"), warn(result_unwrap_used))]
-#![cfg_attr(feature = "clippy", warn(unseparated_literal_suffix))]
-#![cfg_attr(feature = "clippy", warn(wrong_pub_self_convention))]
+#![cfg_attr(not(test), warn(clippy::result_unwrap_used))]
+#![warn(clippy::unseparated_literal_suffix)]
+#![warn(clippy::wrong_pub_self_convention)]
 
 pub mod error;
 pub mod fair_play;
@@ -60,6 +57,7 @@ pub use utils::date::Date;
 // allocator.
 // TODO: Is this necessary in the core crate? I'd rather move this to wasm crates which includes
 // this. I think it should work that way but I'm not sure.
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+// Note: wee_alloc feature is not currently defined in Cargo.toml
+// #[cfg(feature = "wee_alloc")]
+// #[global_allocator]
+// static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;

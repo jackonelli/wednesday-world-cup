@@ -475,8 +475,8 @@ pub struct Random;
 
 impl Tiebreaker for Random {
     fn cmp(&self, _id_1: TeamId, _id_2: TeamId) -> Ordering {
-        let mut rng = rand::thread_rng();
-        if rng.gen::<f32>() > 0.5 {
+        let mut rng = rand::rng();
+        if rng.random::<f32>() > 0.5 {
             Ordering::Less
         } else {
             Ordering::Greater
@@ -652,10 +652,10 @@ pub fn euro_2020_third_place_rules(ranking: UefaRanking) -> Rules<UefaRanking> {
 #[cfg(test)]
 mod fifa_2018_ordering_tests {
     use super::*;
-    use crate::fair_play::{FairPlay, FairPlayScore};
-    use crate::group::game::PlayedGroupGame;
-    use crate::group::Group;
     use crate::Date;
+    use crate::fair_play::{FairPlay, FairPlayScore};
+    use crate::group::Group;
+    use crate::group::game::PlayedGroupGame;
     /// One round of the group stage of 4 teams.
     /// Strict order only on PrimaryStats
     #[test]

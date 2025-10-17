@@ -9,7 +9,7 @@ use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
-use wwc_core::group::{game::PlayedGroupGame, game::UnplayedGroupGame, Group, GroupId, Groups};
+use wwc_core::group::{Group, GroupId, Groups, game::PlayedGroupGame, game::UnplayedGroupGame};
 use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
 use wwc_core::team::Teams;
 
@@ -179,6 +179,6 @@ enum ServerError {
 
 impl From<ServerError> for BadRequest<String> {
     fn from(server_err: ServerError) -> Self {
-        BadRequest(Some(server_err.to_string()))
+        BadRequest(server_err.to_string())
     }
 }

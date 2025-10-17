@@ -2,20 +2,23 @@
 pub mod game;
 pub mod order;
 pub mod stats;
+use crate::Date;
 use crate::fair_play::FairPlayScore;
 use crate::game::{Game, GameId, NumGames};
 use crate::group::game::GroupGameScore;
 use crate::team::TeamId;
-use crate::Date;
 use derive_more::{Add, AddAssign, Display, From, Into, Sum};
 use game::{PlayedGroupGame, UnplayedGroupGame};
 use itertools::Itertools;
-pub use order::{order_group, Rules, TeamOrder, Tiebreaker};
+pub use order::{Rules, TeamOrder, Tiebreaker, order_group};
 use rand::{
-    distributions::Distribution, distributions::Uniform, rngs::StdRng, seq::IteratorRandom,
-    thread_rng, SeedableRng,
+    SeedableRng,
+    distr::{Distribution, Uniform},
+    rng,
+    rngs::StdRng,
+    seq::IteratorRandom,
 };
-use serde::{de, Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::iter;
@@ -148,7 +151,7 @@ impl Group {
         let min_games_played = min_games_played.into();
         let mut rng = match seed {
             Some(seed) => StdRng::seed_from_u64(seed),
-            None => StdRng::from_rng(thread_rng()).unwrap(),
+            None => StdRng::from_rng(&mut rng()),
         };
 
         let teams = (0..num_teams).map(TeamId::from);
@@ -164,6 +167,7 @@ impl Group {
                     u32::from(min_games_played) as usize,
                     u32::from(num_games) as usize,
                 )
+                .unwrap()
                 .sample(&mut rng),
             );
             (unpl.to_vec(), pl.to_vec())
@@ -173,7 +177,7 @@ impl Group {
         let pl = pl
             .iter()
             .map(|unpl| {
-                let goal_count = Uniform::new(0, 5);
+                let goal_count = Uniform::new(0, 5).unwrap();
                 let score =
                     GroupGameScore::new(goal_count.sample(&mut rng), goal_count.sample(&mut rng));
                 unpl.play(score, FairPlayScore::default())
@@ -315,8 +319,8 @@ pub enum GroupOutcome {
 #[cfg(test)]
 pub(crate) mod mock_data {
     use super::*;
-    use crate::team::{Team, TeamError, TeamRank, Teams};
     use crate::Date;
+    use crate::team::{Team, TeamError, TeamRank, Teams};
     use std::collections::HashMap;
     pub fn groups_and_teams() -> (Groups, Teams) {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
@@ -352,10 +356,10 @@ pub(crate) mod mock_data {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Date;
     use crate::fair_play::FairPlayScore;
     use crate::group::game::{GroupGameScore, UnplayedGroupGame};
     use crate::team::{TeamId, TeamName};
-    use crate::Date;
     use std::collections::HashSet;
     #[test]
     fn mock_data_access() {

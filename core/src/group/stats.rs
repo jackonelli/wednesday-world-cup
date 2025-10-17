@@ -78,11 +78,7 @@ pub trait GameStat: num::Zero + ops::AddAssign + IterSum {
             .filter(|game| team_id == game.home || team_id == game.away)
             .map(|game| {
                 let (home, away) = Self::stat(game);
-                if game.home == team_id {
-                    home
-                } else {
-                    away
-                }
+                if game.home == team_id { home } else { away }
             })
             .sum()
     }
@@ -300,7 +296,7 @@ impl num::Zero for TableStats {
     }
 }
 
-impl std::fmt::Display for TableStats {
+impl fmt::Display for TableStats {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -313,11 +309,11 @@ impl std::fmt::Display for TableStats {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Date;
     use crate::fair_play::FairPlayScore;
+    use crate::group::GroupId;
     use crate::group::game::{GroupGameScore, UnplayedGroupGame};
     use crate::group::mock_data;
-    use crate::group::GroupId;
-    use crate::Date;
     use num::Zero;
     use std::collections::HashSet;
 

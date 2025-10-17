@@ -21,21 +21,21 @@ use thiserror::Error;
 use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{
-    game::{PlayedGroupGame, UnplayedGroupGame},
     GroupId,
+    game::{PlayedGroupGame, UnplayedGroupGame},
 };
 use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
 
 pub fn register_player(name_: &str) -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     let db_players = players
         .filter(player_name.eq(name_))
-        .load::<Player>(&connection)?;
+        .load::<Player>(&mut connection)?;
     if db_players.is_empty() {
         let player = NewPlayer { name: name_ };
         diesel::insert_into(players)
             .values(&player)
-            .execute(&connection)?;
+            .execute(&mut connection)?;
         Ok(())
     } else {
         Err(DbError::Generic(format!(
@@ -46,27 +46,29 @@ pub fn register_player(name_: &str) -> Result<(), DbError> {
 }
 
 pub fn get_preds(player_id_: PlayerId) -> Result<Vec<Prediction>, DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     let player_id_ = i32::from(player_id_);
     let db_preds = preds
         .filter(player_id.eq(player_id_))
-        .load::<Pred>(&connection)?;
+        .load::<Pred>(&mut connection)?;
     Ok(db_preds.into_iter().map(Prediction::from).collect())
 }
 
 pub fn get_players() -> Result<Vec<Player>, DbError> {
-    let connection = establish_connection()?;
-    Ok(players.load::<Player>(&connection)?)
+    let mut connection = establish_connection()?;
+    Ok(players.load::<Player>(&mut connection)?)
 }
 
 pub fn get_games() -> Result<Vec<Game>, DbError> {
-    let connection = establish_connection()?;
-    Ok(games.load::<Game>(&connection)?)
+    let mut connection = establish_connection()?;
+    Ok(games.load::<Game>(&mut connection)?)
 }
 
 pub fn get_group_games() -> Result<(Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>), DbError> {
-    let connection = establish_connection()?;
-    let group_games = games.filter(type_.eq("group")).load::<Game>(&connection)?;
+    let mut connection = establish_connection()?;
+    let group_games = games
+        .filter(type_.eq("group"))
+        .load::<Game>(&mut connection)?;
 
     // Games in the db make no distinction b/w played and unplayed but has a boolean field `played`
     // we use this to return two sep. vec's of played/unplayed games respectively.
@@ -93,14 +95,14 @@ pub fn get_group_games() -> Result<(Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>
 }
 
 pub fn get_teams() -> Result<impl Iterator<Item = wwc_core::Team>, DbError> {
-    let connection = establish_connection()?;
-    let db_teams = teams.load::<Team>(&connection)?;
+    let mut connection = establish_connection()?;
+    let db_teams = teams.load::<Team>(&mut connection)?;
     Ok(db_teams.into_iter().map(|team| team.into()))
 }
 
 pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, DbError> {
-    let connection = establish_connection()?;
-    let db_teams = group_game_map.load::<GroupGameMap>(&connection)?;
+    let mut connection = establish_connection()?;
+    let db_teams = group_game_map.load::<GroupGameMap>(&mut connection)?;
     Ok(db_teams.into_iter().map(|map_| {
         (
             GameId::from(u32::try_from(map_.id).unwrap()),
@@ -110,27 +112,27 @@ pub fn get_group_game_maps() -> Result<impl Iterator<Item = (GameId, GroupId)>, 
 }
 
 pub fn insert_preds(preds_: &PlayerPredictions) -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     let player_id_ = i32::from(preds_.id);
-    diesel::delete(preds.filter(player_id.eq(player_id_))).execute(&connection)?;
+    diesel::delete(preds.filter(player_id.eq(player_id_))).execute(&mut connection)?;
     let preds_: Vec<NewPred> = preds_
         .preds()
         .map(move |pred| NewPred::from(&(preds_.id, *pred)))
         .collect();
     diesel::insert_into(preds)
         .values(&preds_)
-        .execute(&connection)?;
+        .execute(&mut connection)?;
     Ok(())
 }
 
 pub fn insert_teams(teams_: &[wwc_core::Team]) -> Result<(), DbError> {
     let teams_: Vec<NewTeam> = teams_.iter().map(NewTeam::from).collect();
 
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
 
     diesel::insert_into(teams)
         .values(&teams_)
-        .execute(&connection)?;
+        .execute(&mut connection)?;
     Ok(())
 }
 
@@ -139,10 +141,10 @@ where
     &'a T: Into<NewGame<'a>>,
 {
     let games_: Vec<NewGame> = games_.iter().map(|game| game.into()).collect();
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::insert_into(games)
         .values(&games_)
-        .execute(&connection)?;
+        .execute(&mut connection)?;
     Ok(())
 }
 
@@ -152,49 +154,49 @@ pub fn insert_group_game_mappings(group_mappings: &[(GroupId, GameId)]) -> Resul
         .map(|(group_id, game_id_)| (String::from(char::from(*group_id)), *game_id_))
         .collect();
     let mappings: Vec<_> = mappings.iter().map(NewGroupGameMap::from).collect();
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::insert_into(group_game_map)
         .values(&mappings)
-        .execute(&connection)?;
+        .execute(&mut connection)?;
     Ok(())
 }
 
 pub fn clear_players() -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::delete(players)
-        .execute(&connection)
+        .execute(&mut connection)
         .expect("Could not clear table");
     Ok(())
 }
 
 pub fn clear_preds() -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::delete(preds)
-        .execute(&connection)
+        .execute(&mut connection)
         .expect("Could not clear table");
     Ok(())
 }
 
 pub fn clear_teams() -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::delete(teams)
-        .execute(&connection)
+        .execute(&mut connection)
         .expect("Could not clear table");
     Ok(())
 }
 
 pub fn clear_games() -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::delete(games)
-        .execute(&connection)
+        .execute(&mut connection)
         .expect("Could not clear table");
     Ok(())
 }
 
 pub fn clear_group_game_maps() -> Result<(), DbError> {
-    let connection = establish_connection()?;
+    let mut connection = establish_connection()?;
     diesel::delete(group_game_map)
-        .execute(&connection)
+        .execute(&mut connection)
         .expect("Could not clear table");
     Ok(())
 }

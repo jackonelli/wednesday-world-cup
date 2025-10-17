@@ -60,7 +60,7 @@ impl Team {
     }
 }
 
-impl std::fmt::Display for Team {
+impl fmt::Display for Team {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
     }
