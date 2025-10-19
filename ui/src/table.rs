@@ -1,10 +1,8 @@
-use crate::app::Msg;
-use crate::format::Format;
 use crate::team::format_team_flag;
-use seed::{prelude::*, *};
+use leptos::prelude::*;
 use std::convert::From;
 use wwc_core::game::{GoalDiff, NumGames};
-use wwc_core::group::{stats::GameStat, stats::TableStats, Group};
+use wwc_core::group::{Group, stats::GameStat, stats::TableStats};
 use wwc_core::group::{GroupPoint, TeamOrder};
 use wwc_core::team::{Team, TeamId, Teams};
 
@@ -25,40 +23,60 @@ impl DisplayTable {
     }
 }
 
-impl Format<'_> for DisplayTable {
-    type Context = Teams;
-    fn format(&self, ctx: &Teams) -> Node<Msg> {
-        div![
-            C!["group-table"],
-            table![
-                tr![th![""], th![""], th!["pl"], th!["+/-"], th!["p"]],
-                self.iter().map(|(team_id, stat)| {
-                    let team = ctx
-                        .get(team_id)
-                        .unwrap_or_else(|| panic!("No team id: {}", team_id));
-                    stat.format(team)
-                })
-            ]
-        ]
+#[component]
+pub fn DisplayTableView(group: Group, teams: Teams, group_order: TeamOrder) -> impl IntoView {
+    let display_table = DisplayTable::new(&group, &group_order);
+    let rows: Vec<_> = display_table
+        .iter()
+        .map(|(team_id, stat)| {
+            let team = teams
+                .get(team_id)
+                .unwrap_or_else(|| panic!("No team id: {}", team_id))
+                .clone();
+            (*team_id, stat.clone(), team)
+        })
+        .collect();
+
+    view! {
+        <div class="group-table">
+            <table>
+                <tr>
+                    <th>""</th>
+                    <th>""</th>
+                    <th>"pl"</th>
+                    <th>"+/-"</th>
+                    <th>"p"</th>
+                </tr>
+                {rows
+                    .into_iter()
+                    .map(|(_, stat, team)| {
+                        view! { <DisplayTableRowView stat=stat team=team/> }
+                    })
+                    .collect_view()}
+            </table>
+        </div>
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct DisplayTableRow {
     games_played: NumGames,
     points: GroupPoint,
     goal_diff: GoalDiff,
 }
 
-impl Format<'_> for DisplayTableRow {
-    type Context = Team;
-    fn format(&self, ctx: &Team) -> Node<Msg> {
-        tr![
-            td![ctx.fifa_code.to_string()],
-            td![format_team_flag(ctx)],
-            td![self.games_played.to_string()],
-            td![self.goal_diff.to_string()],
-            td![self.points.to_string()]
-        ]
+#[component]
+fn DisplayTableRowView(stat: DisplayTableRow, team: Team) -> impl IntoView {
+    let flag_class = format_team_flag(&team);
+
+    view! {
+        <tr>
+            <td>{team.fifa_code.to_string()}</td>
+            <td><span class={flag_class}></span></td>
+            <td>{stat.games_played.to_string()}</td>
+            <td>{stat.goal_diff.to_string()}</td>
+            <td>{stat.points.to_string()}</td>
+        </tr>
     }
 }
 

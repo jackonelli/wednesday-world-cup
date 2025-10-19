@@ -1,59 +1,118 @@
-use crate::app::Msg;
-use crate::format::Format;
-use crate::table::DisplayTable;
-use seed::{prelude::*, *};
+use crate::game::{PlayedGameView, ScoreInput, UnplayedGameView};
+use crate::table::DisplayTableView;
+use leptos::prelude::*;
 use wwc_core::{
+    game::GameId,
     group::{
-        order::{order_group, Rules, Tiebreaker},
         Group, GroupId, Groups,
+        order::{fifa_2018_rules, order_group},
     },
     team::Teams,
 };
-pub(crate) fn view_group_play<T: Tiebreaker>(
-    groups: &Groups,
-    teams: &Teams,
-    rules: &Rules<T>,
-) -> Node<Msg> {
-    section![
-        C!["group_play"],
-        h2!["Groups"],
-        groups
-            .iter()
-            .map(|(group_id, group)| { view_group(group_id, group, teams, rules) })
-    ]
+
+pub(crate) fn view_group_play<U, V>(
+    groups: Groups,
+    teams: Teams,
+    on_play: U,
+    on_unplay: V,
+) -> impl IntoView + use<U, V>
+where
+    U: Fn(ScoreInput) + Clone + 'static,
+    V: Fn(GroupId, GameId) + Clone + 'static,
+{
+    let groups_vec: Vec<_> = groups.iter().map(|(id, g)| (*id, g.clone())).collect();
+
+    view! {
+        <section class="group_play">
+            <h2>"Groups"</h2>
+            {groups_vec
+                .into_iter()
+                .map(move |(group_id, group)| {
+                    view_group(
+                        group_id,
+                        group,
+                        teams.clone(),
+                        on_play.clone(),
+                        on_unplay.clone(),
+                    )
+                })
+                .collect_view()}
+        </section>
+    }
 }
 
-fn view_group<T: Tiebreaker>(
-    id: &GroupId,
-    group: &Group,
-    teams: &Teams,
-    rules: &Rules<T>,
-) -> Node<Msg> {
-    div![
-        C!["group"],
-        h3!(id.to_string()),
-        format_group_table(group, teams, rules),
-        format_group_games(id, group, teams),
-    ]
+fn view_group<U, V>(
+    id: GroupId,
+    group: Group,
+    teams: Teams,
+    on_play: U,
+    on_unplay: V,
+) -> impl IntoView
+where
+    U: Fn(ScoreInput) + Clone + 'static,
+    V: Fn(GroupId, GameId) + Clone + 'static,
+{
+    let rules = fifa_2018_rules();
+    let group_order = order_group(&group, &rules);
+
+    view! {
+        <div class="group">
+            <h3>{id.to_string()}</h3>
+            <DisplayTableView
+                group=group.clone()
+                teams=teams.clone()
+                group_order=group_order
+            />
+            {format_group_games(id, group, teams, on_play, on_unplay)}
+        </div>
+    }
 }
 
-fn format_group_table<T: Tiebreaker>(group: &Group, teams: &Teams, rules: &Rules<T>) -> Node<Msg> {
-    let group_order = order_group(group, rules);
-    let stats = DisplayTable::new(group, &group_order);
-    stats.format(teams)
-}
+fn format_group_games<U, V>(
+    group_id: GroupId,
+    group: Group,
+    teams: Teams,
+    on_play: U,
+    on_unplay: V,
+) -> impl IntoView
+where
+    U: Fn(ScoreInput) + Clone + 'static,
+    V: Fn(GroupId, GameId) + Clone + 'static,
+{
+    let played_games: Vec<_> = group.played_games().collect();
+    let unplayed_games: Vec<_> = group.unplayed_games().collect();
 
-fn format_group_games(group_id: &GroupId, group: &Group, teams: &Teams) -> Node<Msg> {
-    div![
-        C!["games"],
-        h4!("Games"),
-        table![
-            group
-                .played_games()
-                .map(|game| { game.format(&(teams, *group_id)) }),
-            group
-                .unplayed_games()
-                .map(|game| { game.format(&(teams, *group_id)) })
-        ]
-    ]
+    view! {
+        <div class="games">
+            <h4>"Games"</h4>
+            <table>
+                {played_games
+                    .into_iter()
+                    .map(|game| {
+                        view! {
+                            <PlayedGameView
+                                game=*game
+                                teams=teams.clone()
+                                group_id=group_id
+                                on_unplay=on_unplay.clone()
+                            />
+                        }
+                    })
+                    .collect_view()}
+                {unplayed_games
+                    .into_iter()
+                    .map(|game| {
+                        view! {
+                            <UnplayedGameView
+                                game=*game
+                                teams=teams.clone()
+                                group_id=group_id
+                                on_play=on_play.clone()
+                            />
+                        }
+                    })
+                    .collect_view()}
+            </table>
+        </div>
+    }
 }
