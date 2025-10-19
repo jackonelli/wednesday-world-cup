@@ -1,9 +1,26 @@
-# Seed
+# UI - Seed + Trunk
 
-```
-cargo make create_wasm
+## Prerequisites
+
+Install Trunk:
+```bash
+cargo install trunk
 ```
 
+## Development
+
+Build and serve with hot-reloading:
+```bash
+trunk serve
 ```
-microserver
+
+The application will be available at http://127.0.0.1:8080
+
+## Production Build
+
+Build optimized release version:
+```bash
+trunk build --release
 ```
+
+Output will be in the `dist/` directory.

@@ -1,5 +1,5 @@
 use crate::UiError;
-use seed::prelude::*;
+use gloo_net::http::Request;
 use std::collections::HashMap;
 use wwc_core::player::{PlayerId, Prediction};
 use wwc_core::{
@@ -12,52 +12,42 @@ use wwc_core::{
 const SERVER_IP: &str = "http://localhost:8000";
 
 pub(crate) async fn get_preds(player_id: PlayerId) -> Result<Vec<Prediction>, UiError> {
-    Ok(
-        Request::new(&format!("{}/{}/{}", SERVER_IP, "get_preds", player_id))
-            .fetch()
-            .await?
-            .check_status()?
-            .json()
-            .await?,
-    )
+    let response = Request::get(&format!("{}/{}/{}", SERVER_IP, "get_preds", player_id))
+        .send()
+        .await?;
+    Ok(response.json().await?)
 }
 
 pub(crate) async fn save_preds(preds: PlayerPredictions) -> Result<(), UiError> {
     let url = format!("{}/{}", SERVER_IP, "save_preds");
-    Request::new(&url)
-        .method(Method::Put)
-        .json(&preds)
-        .expect("Could not serialise PlayerPredictions")
-        .fetch()
-        .await?
-        .check_status()?;
+    let json_body = serde_json::to_string(&preds)?;
+    Request::put(&url)
+        .header("Content-Type", "application/json")
+        .body(json_body)?
+        .send()
+        .await?;
     Ok(())
 }
 
 pub(crate) async fn clear_preds() -> Result<(), UiError> {
-    Request::new(&format!("{}/{}", SERVER_IP, "clear_preds"))
-        .fetch()
-        .await?
-        .check_status()?;
+    Request::get(&format!("{}/{}", SERVER_IP, "clear_preds"))
+        .send()
+        .await?;
     Ok(())
 }
 
 pub(crate) async fn get_teams() -> Result<Teams, UiError> {
-    Ok(Request::new(&format!("{}/{}", SERVER_IP, "get_teams"))
-        .fetch()
-        .await?
-        .check_status()?
-        .json()
-        .await?)
+    let response = Request::get(&format!("{}/{}", SERVER_IP, "get_teams"))
+        .send()
+        .await?;
+    Ok(response.json().await?)
 }
 
-pub(crate) async fn get_groups() -> fetch::Result<Groups> {
-    Request::new(&format!("{}/{}", SERVER_IP, "get_groups"))
-        .fetch()
-        .await?
-        .check_status()?
-        .json()
-        .await
+pub(crate) async fn get_groups() -> Result<Groups, UiError> {
+    let response = Request::get(&format!("{}/{}", SERVER_IP, "get_groups"))
+        .send()
+        .await?;
+    response.json().await.map_err(Into::into)
 }
 
 /// Fetches all group games and unplays them to simulate settings at betting time.

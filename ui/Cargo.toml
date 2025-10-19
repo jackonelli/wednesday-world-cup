@@ -21,3 +21,7 @@ web-sys = "^0.3.27"
 strum = "0.18.0"
 strum_macros = "0.18.0"
 wwc_core = {path = "../core"}
+getrandom = { version = "0.3", features = ["wasm_js"] }
+uuid = { version = "1", features = ["js"] }
+gloo-net = "0.6"
+wasm-bindgen-futures = "0.4"

@@ -8,17 +8,20 @@ mod group;
 mod table;
 mod team;
 
-use seed::prelude::FetchError;
 use thiserror::Error;
+
 #[derive(Error, Debug)]
 pub enum UiError {
     #[error("Server error: {0}")]
     Server(String),
+    #[error("Gloo error: {0}")]
+    Gloo(String),
+    #[error("Serde error: {0}")]
+    Serde(#[from] serde_json::Error),
 }
 
-/// Tmp fix until <https://github.com/seed-rs/seed/issues/544> is fixed.
-impl From<FetchError> for UiError {
-    fn from(err: FetchError) -> Self {
-        UiError::Server(format!("{:?}", err))
+impl From<gloo_net::Error> for UiError {
+    fn from(err: gloo_net::Error) -> Self {
+        UiError::Gloo(format!("{:?}", err))
     }
 }
