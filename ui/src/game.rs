@@ -1,7 +1,6 @@
 use crate::team::format_team_flag;
 use leptos::ev;
 use leptos::prelude::*;
-use wasm_bindgen::JsCast;
 use wwc_core::game::GameId;
 use wwc_core::group::GroupId;
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
@@ -66,15 +65,37 @@ pub fn UnplayedGameView(
     let away_team = teams.get(&game.away).unwrap().clone();
     let game_id = game.id;
 
-    let on_keydown = move |ev: ev::KeyboardEvent| {
-        if ev.key() == "Enter" {
-            let target = ev.target().unwrap();
-            let input: web_sys::HtmlInputElement = target.dyn_into().unwrap();
-            let value = input.value();
-            if let Ok(score) = value.parse::<GroupGameScore>() {
-                on_play(ScoreInput::new(score, group_id, game_id));
-                input.set_value(""); // Clear the input after successful play
+    let home_input_ref = NodeRef::<leptos::html::Input>::new();
+    let away_input_ref = NodeRef::<leptos::html::Input>::new();
+
+    let try_submit = move || {
+        if let (Some(home_input), Some(away_input)) = (home_input_ref.get(), away_input_ref.get()) {
+            let home_val = home_input.value();
+            let away_val = away_input.value();
+
+            if let (Ok(home), Ok(away)) = (home_val.parse::<u8>(), away_val.parse::<u8>()) {
+                let score_str = format!("{}-{}", home, away);
+                if let Ok(score) = score_str.parse::<GroupGameScore>() {
+                    on_play(ScoreInput::new(score, group_id, game_id));
+                    home_input.set_value("");
+                    away_input.set_value("");
+                }
             }
+        }
+    };
+
+    let on_home_keydown = move |ev: ev::KeyboardEvent| {
+        if ev.key() == "Tab" || ev.key() == "Enter" {
+            if let Some(away_input) = away_input_ref.get() {
+                let _ = away_input.focus();
+                ev.prevent_default();
+            }
+        }
+    };
+
+    let on_away_keydown = move |ev: ev::KeyboardEvent| {
+        if ev.key() == "Enter" {
+            try_submit();
         }
     };
 
@@ -85,14 +106,25 @@ pub fn UnplayedGameView(
         <tr class="played_game">
             <td>{home_team.fifa_code.to_string()}</td>
             <td><span class={home_flag}></span></td>
-            <td>
+            <td class="score-input-container">
                 <input
+                    node_ref=home_input_ref
                     class="game-score-input"
-                    size=2
-                    on:keydown=on_keydown
+                    type="number"
+                    min="0"
+                    size=1
+                    on:keydown=on_home_keydown
+                />
+                <span class="score-separator">"-"</span>
+                <input
+                    node_ref=away_input_ref
+                    class="game-score-input"
+                    type="number"
+                    min="0"
+                    size=1
+                    on:keydown=on_away_keydown
                 />
             </td>
-            <td>""</td>
             <td>{away_team.fifa_code.to_string()}</td>
             <td><span class={away_flag}></span></td>
         </tr>
