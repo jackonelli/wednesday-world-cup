@@ -6,70 +6,72 @@ use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{Group, GroupId};
 use wwc_core::team::Team;
-use wwc_data::lsv::get_data;
 use wwc_data::lsv::LsvParseError;
+use wwc_data::lsv::get_data;
 use wwc_data::lsv::{Euro2020Data, Fifa2018Data, LsvData};
 
 type Tournament = Fifa2018Data;
 const DATA_PATH: &str = "data/lsv_data/complete-fifa-2018.json";
 
-fn main() -> Result<(), CliError> {
+#[tokio::main]
+async fn main() -> Result<(), CliError> {
+    let pool = wwc_db::create_pool().await?;
     let opt = Opt::from_args();
     match opt {
         Opt::Register(new_instance) => match new_instance {
-            Instance::Player { name } => register_player(name),
+            Instance::Player { name } => register_player(&pool, name).await,
         },
         Opt::Add(table) => match table {
             Table::Players => Ok(()),
-            Table::Teams => add_teams(),
-            Table::Games => add_games(),
-            Table::GroupGameMaps => add_groups(),
+            Table::Teams => add_teams(&pool).await,
+            Table::Games => add_games(&pool).await,
+            Table::GroupGameMaps => add_groups(&pool).await,
             Table::All => {
-                add_teams()?;
-                add_games()?;
-                add_groups()
+                add_teams(&pool).await?;
+                add_games(&pool).await?;
+                add_groups(&pool).await
             }
         },
         Opt::List(table) => match table {
-            Table::Players => list_players(),
-            Table::Teams => list_teams(),
-            Table::Games => list_games(),
-            Table::GroupGameMaps => list_group_maps(),
+            Table::Players => list_players(&pool).await,
+            Table::Teams => list_teams(&pool).await,
+            Table::Games => list_games(&pool).await,
+            Table::GroupGameMaps => list_group_maps(&pool).await,
             Table::All => {
-                list_players()?;
-                list_teams()?;
-                list_games()?;
-                list_group_maps()
+                list_players(&pool).await?;
+                list_teams(&pool).await?;
+                list_games(&pool).await?;
+                list_group_maps(&pool).await
             }
         },
         Opt::Clear(table) => match table {
-            Table::Players => Ok(wwc_db::clear_players()?),
-            Table::Teams => Ok(wwc_db::clear_teams()?),
-            Table::Games => Ok(wwc_db::clear_games()?),
-            Table::GroupGameMaps => Ok(wwc_db::clear_group_game_maps()?),
+            Table::Players => Ok(wwc_db::clear_players(&pool).await?),
+            Table::Teams => Ok(wwc_db::clear_teams(&pool).await?),
+            Table::Games => Ok(wwc_db::clear_games(&pool).await?),
+            Table::GroupGameMaps => Ok(wwc_db::clear_group_game_maps(&pool).await?),
             Table::All => {
-                wwc_db::clear_teams()?;
-                wwc_db::clear_games()?;
-                Ok(wwc_db::clear_group_game_maps()?)
+                wwc_db::clear_teams(&pool).await?;
+                wwc_db::clear_games(&pool).await?;
+                Ok(wwc_db::clear_group_game_maps(&pool).await?)
             }
         },
     }
 }
 
-fn register_player(name: String) -> Result<(), CliError> {
-    Ok(wwc_db::register_player(&name)?)
+async fn register_player(pool: &sqlx::SqlitePool, name: String) -> Result<(), CliError> {
+    Ok(wwc_db::register_player(pool, &name).await?)
 }
 
-fn add_teams() -> Result<(), CliError> {
+async fn add_teams(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
     let teams = get_data::<Tournament>(DATA_PATH)?
         .try_teams()?
         .values()
         .cloned()
         .collect::<Vec<Team>>();
-    Ok(wwc_db::insert_teams(&teams)?)
+    Ok(wwc_db::insert_teams(pool, &teams).await?)
 }
 
-fn add_games() -> Result<(), CliError> {
+async fn add_games(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
     let groups = get_data::<Tournament>(DATA_PATH)?
         .try_groups()?
         .values()
@@ -81,17 +83,17 @@ fn add_games() -> Result<(), CliError> {
         .flat_map(|group| group.unplayed_games())
         .cloned()
         .collect();
-    wwc_db::insert_games(&unplayed_games)?;
+    wwc_db::insert_unplayed_games(pool, &unplayed_games).await?;
     let played_games: Vec<_> = groups
         .iter()
         .flat_map(|group| group.played_games())
         .cloned()
         .collect();
-    wwc_db::insert_games(&played_games)?;
+    wwc_db::insert_played_games(pool, &played_games).await?;
     Ok(())
 }
 
-fn add_groups() -> Result<(), CliError> {
+async fn add_groups(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
     let groups = get_data::<Tournament>(DATA_PATH)?.try_groups()?;
 
     let group_games: Vec<(GroupId, GameId)> = groups
@@ -103,39 +105,38 @@ fn add_groups() -> Result<(), CliError> {
                 .chain(group.unplayed_games().map(move |game| (*id, game.id)))
         })
         .collect();
-    wwc_db::insert_group_game_mappings(&group_games)?;
+    wwc_db::insert_group_game_mappings(pool, &group_games).await?;
     Ok(())
 }
 
-fn list_players() -> Result<(), CliError> {
-    let players = wwc_db::get_players()?;
-    // Very strange bug:
-    // players.for_each(|player| println!("{:?}", player));
+async fn list_players(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
+    let players = wwc_db::get_players(pool).await?;
     for player in players {
         println!("{:?}", player);
     }
     Ok(())
 }
 
-fn list_teams() -> Result<(), CliError> {
-    let teams = wwc_db::get_teams()?;
+async fn list_teams(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
+    let teams = wwc_db::get_teams(pool).await?;
     println!("TEAMS:");
-    teams.for_each(|team| println!("{}", team));
+    teams.iter().for_each(|team| println!("{}", team));
     println!();
     Ok(())
 }
 
-fn list_games() -> Result<(), CliError> {
-    let games = wwc_db::get_games()?;
+async fn list_games(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
+    let games = wwc_db::get_games(pool).await?;
     println!("GAMES:");
     games.iter().for_each(|game| println!("{:?}", game));
     println!();
     Ok(())
 }
 
-fn list_group_maps() -> Result<(), CliError> {
-    let group_game_maps = wwc_db::get_group_game_maps()?;
+async fn list_group_maps(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
+    let group_game_maps = wwc_db::get_group_game_maps(pool).await?;
     group_game_maps
+        .into_iter()
         .map(|(game, group)| (group, game))
         .into_group_map()
         .iter()

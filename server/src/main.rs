@@ -1,10 +1,12 @@
 #[macro_use]
 extern crate rocket;
 use itertools::Itertools;
+use rocket::State;
 use rocket::http::Method;
 use rocket::response::status::BadRequest;
 use rocket::serde::json::Json;
 use rocket_cors::{Cors, CorsOptions};
+use sqlx::SqlitePool;
 use std::collections::{BTreeMap, HashMap};
 use thiserror::Error;
 use wwc_core::error::WwcError;
@@ -15,23 +17,28 @@ use wwc_core::team::Teams;
 
 /// Save preds
 #[put("/save_preds", format = "application/json", data = "<player_preds>")]
-fn save_preds(player_preds: Json<PlayerPredictions>) -> Result<(), BadRequest<String>> {
+async fn save_preds(
+    pool: &State<SqlitePool>,
+    player_preds: Json<PlayerPredictions>,
+) -> Result<(), BadRequest<String>> {
     let player_preds = player_preds.into_inner();
     debug!("Saving predictions for player {}", player_preds.id);
     player_preds.preds().for_each(|pred| debug!("{}", pred));
-    let tmp = wwc_db::insert_preds(&player_preds)
+    wwc_db::insert_preds(pool, &player_preds)
+        .await
         .map_err(ServerError::from)
-        .map_err(BadRequest::from);
-    tmp?;
+        .map_err(BadRequest::from)?;
     Ok(())
 }
 
 /// Get teams
 #[get("/get_teams")]
-fn get_teams() -> Result<Json<Teams>, BadRequest<String>> {
-    let teams: Teams = wwc_db::get_teams()
+async fn get_teams(pool: &State<SqlitePool>) -> Result<Json<Teams>, BadRequest<String>> {
+    let teams: Teams = wwc_db::get_teams(pool)
+        .await
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?
+        .into_iter()
         .map(|x| (x.id, x))
         .collect();
     debug!("TEAMS:\n{:?}", teams);
@@ -40,8 +47,12 @@ fn get_teams() -> Result<Json<Teams>, BadRequest<String>> {
 
 /// Get predictions
 #[get("/get_preds/<player_id>")]
-fn get_preds(player_id: i32) -> Result<Json<Vec<Prediction>>, BadRequest<String>> {
-    let preds = wwc_db::get_preds(PlayerId::from(player_id))
+async fn get_preds(
+    pool: &State<SqlitePool>,
+    player_id: i32,
+) -> Result<Json<Vec<Prediction>>, BadRequest<String>> {
+    let preds = wwc_db::get_preds(pool, PlayerId::from(player_id))
+        .await
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
     debug!("{:?}", preds);
@@ -50,8 +61,9 @@ fn get_preds(player_id: i32) -> Result<Json<Vec<Prediction>>, BadRequest<String>
 
 /// Clear predictions
 #[get("/clear_preds")]
-fn clear_preds() -> Result<(), BadRequest<String>> {
-    wwc_db::clear_preds()
+async fn clear_preds(pool: &State<SqlitePool>) -> Result<(), BadRequest<String>> {
+    wwc_db::clear_preds(pool)
+        .await
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
     debug!("Predictions cleared.");
@@ -64,13 +76,16 @@ fn clear_preds() -> Result<(), BadRequest<String>> {
 /// The games (played and unplayed) games are then mapped to prospective groups.
 /// The final groups are validated (with a fallible constructor) and collected together.
 #[get("/get_groups")]
-fn get_groups() -> Result<Json<Groups>, BadRequest<String>> {
-    let (played_games, unplayed_games) = wwc_db::get_group_games()
+async fn get_groups(pool: &State<SqlitePool>) -> Result<Json<Groups>, BadRequest<String>> {
+    let (played_games, unplayed_games) = wwc_db::get_group_games(pool)
+        .await
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?;
-    let game_group_map = wwc_db::get_group_game_maps()
+    let game_group_map = wwc_db::get_group_game_maps(pool)
+        .await
         .map_err(ServerError::from)
         .map_err(BadRequest::from)?
+        .into_iter()
         .collect::<HashMap<GameId, GroupId>>();
 
     let empty_groups = game_group_map
@@ -158,8 +173,14 @@ fn make_cors() -> Cors {
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
+    // Create the database pool
+    let pool = wwc_db::create_pool()
+        .await
+        .expect("Failed to create database pool");
+
     rocket::build()
+        .manage(pool)
         .mount(
             "/",
             routes![get_teams, get_groups, save_preds, get_preds, clear_preds],
