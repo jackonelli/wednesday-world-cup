@@ -2,4 +2,12 @@
 .gitkeep
 testdb.sqlite3
 migrations
-/test.db
+
+# Trunk build output
+dist/
+
+# wasm-pack artifacts (legacy)
+pkg/
+
+# Node modules if needed later
+node_modules/
