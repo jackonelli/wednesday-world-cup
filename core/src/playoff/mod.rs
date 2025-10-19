@@ -1,119 +1,186 @@
 //! Tournament playoff
+//!
+//! This module models the knockout stage of a tournament using a functional,
+//! graph-based approach.
+//!
+//! # Architecture
+//!
+//! The playoff system separates concerns into:
+//!
+//! - **Structure** ([`bracket::BracketStructure`]): The static graph topology
+//!   - Defined once per tournament format (e.g., "Euro 2020", "World Cup 2018")
+//!   - Represents which games exist and how teams flow between them
+//!   - Immutable after construction
+//!
+//! - **State** ([`bracket::BracketState`]): Immutable snapshots of predictions
+//!   - Contains only the played games and their scores
+//!   - Purely functional - all operations return new states
+//!   - Easy to serialize, undo/redo, compare
+//!
+//! - **View** ([`bracket::PlayoffGameState`]): Computed views
+//!   - Derived by combining structure + state
+//!   - Shows current status of each game (Pending, Ready, Played, etc.)
+//!   - Never stored, always computed on demand
+//!
+//! # Graph Model
+//!
+//! The bracket is a directed acyclic graph (DAG) where:
+//! - **Nodes** = Playoff games
+//! - **Edges** = Team progression (winner/loser flows to next game)
+//!
+//! This allows modeling complex brackets like:
+//! - Standard single elimination
+//! - Third-place playoffs
+//! - Winners vs. losers progression
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use wwc_core::playoff::bracket::{BracketStructure, BracketState, BracketTemplate};
+//!
+//! // Define bracket structure (once per tournament)
+//! let template = BracketTemplate::euro_2020();
+//! let bracket = BracketStructure::from_template(template)?;
+//!
+//! // Start with empty state
+//! let mut state = BracketState::new();
+//!
+//! // View what's ready to play
+//! let ready_games = bracket.all_game_states(&state, &groups, &rules)
+//!     .into_iter()
+//!     .filter(|g| g.is_ready())
+//!     .collect::<Vec<_>>();
+//!
+//! // Play a game (functional - returns new state)
+//! state = state.play_game(game_id, home_team, away_team, score);
+//!
+//! // Check who won the tournament
+//! if let Some(champion) = bracket.champion(&state) {
+//!     println!("Champion: {}", champion);
+//! }
+//! ```
+
+pub mod bracket;
 pub mod game;
+pub mod templates;
 pub mod transition;
-use crate::group::order::{order_teams, OrderIdx, Rules, Tiebreaker};
-use crate::group::{Group, GroupId, GroupOutcome, Groups};
-use crate::playoff::game::PlayoffGame;
-use crate::playoff::transition::{PlayoffTransition, PlayoffTransitions};
+
+// Re-exports for convenience
+pub use bracket::{
+    BracketError, BracketState, BracketStructure, BracketTemplate, PlayoffGameState, PlayoffResult,
+    TeamSource,
+};
+pub use game::{PlayoffError, PlayoffScore};
+
+use crate::game::GameId;
+use crate::group::Groups;
+use crate::group::order::{Rules, Tiebreaker};
 use crate::team::TeamId;
-use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 
-pub struct Playoff {
-    rounds: HashMap<RoundIdx, Round>,
+/// High-level playoff predictions
+///
+/// Combines a bracket structure with user predictions.
+/// This is the main entry point for working with playoffs.
+pub struct PlayoffPredictions {
+    structure: BracketStructure,
+    state: BracketState,
 }
 
-#[derive(Debug)]
-pub struct Round {
-    pub games: Vec<PlayoffGame>,
-}
-
-impl Round {
-    pub fn iter(&self) -> impl Iterator<Item = &PlayoffGame> {
-        self.games.iter()
+impl PlayoffPredictions {
+    /// Create new playoff predictions from a template
+    pub fn new(template: BracketTemplate) -> Result<Self, BracketError> {
+        let structure = BracketStructure::from_template(template)?;
+        let state = BracketState::new();
+        Ok(Self { structure, state })
     }
 
-    pub fn first_round_from_group_stage<T: Tiebreaker, U: Tiebreaker>(
+    /// Create from existing structure and state
+    pub fn from_parts(structure: BracketStructure, state: BracketState) -> Self {
+        Self { structure, state }
+    }
+
+    /// Get all game states
+    pub fn game_states<T: Tiebreaker>(
+        &self,
         groups: &Groups,
-        transitions: &PlayoffTransitions,
-        group_rules: &Rules<T>,
-        third_place_rules: &Rules<U>,
-    ) -> Self {
-        Self {
-            games: transitions
-                .iter()
-                .map(|(id, trans)| {
-                    let (home, away) =
-                        teams_from_groups(groups, trans, group_rules, third_place_rules);
-                    PlayoffGame::new(*id, home, away)
-                })
-                .collect(),
-        }
+        rules: &Rules<T>,
+    ) -> Vec<PlayoffGameState> {
+        self.structure.all_game_states(&self.state, groups, rules)
     }
-}
 
-fn teams_from_groups<T: Tiebreaker, U: Tiebreaker>(
-    groups: &Groups,
-    trans: &PlayoffTransition,
-    group_rules: &Rules<T>,
-    third_place_rules: &Rules<U>,
-) -> (TeamId, TeamId) {
-    let home = match &trans.home {
-        GroupOutcome::Winner(id) => groups.get(id).unwrap().winner(group_rules),
-        GroupOutcome::RunnerUp(id) => groups.get(id).unwrap().runner_up(group_rules),
-        GroupOutcome::ThirdPlace(ids) => {
-            best_third_place(groups, ids, group_rules, third_place_rules)
-        }
-    };
-    let away = match &trans.away {
-        GroupOutcome::Winner(id) => groups.get(id).unwrap().winner(group_rules),
-        GroupOutcome::RunnerUp(id) => groups.get(id).unwrap().runner_up(group_rules),
-        GroupOutcome::ThirdPlace(ids) => {
-            best_third_place(groups, ids, group_rules, third_place_rules)
-        }
-    };
-    (home, away)
-}
+    /// Get games at a specific round (depth from final)
+    pub fn games_at_depth<T: Tiebreaker>(
+        &self,
+        depth: usize,
+        groups: &Groups,
+        rules: &Rules<T>,
+    ) -> Vec<PlayoffGameState> {
+        self.structure
+            .games_at_depth(depth, &self.state, groups, rules)
+    }
 
-fn best_third_place<T: Tiebreaker, U: Tiebreaker>(
-    groups: &Groups,
-    group_ids: &HashSet<GroupId>,
-    group_rules: &Rules<T>,
-    third_place_rules: &Rules<U>,
-) -> TeamId {
-    let candidates = group_ids
-        .iter()
-        .map(|id| {
-            let group = groups.get(id).unwrap();
-            (group.third_place(group_rules), group)
-        })
-        .collect::<HashMap<TeamId, &Group>>();
-    order_teams(&candidates, third_place_rules)[OrderIdx(0)]
-}
+    /// Play a game
+    pub fn play_game(&mut self, game_id: GameId, home: TeamId, away: TeamId, score: PlayoffScore) {
+        self.state = self.state.play_game(game_id, home, away, score);
+    }
 
-struct RoundIdx(u8);
+    /// Unplay a game
+    pub fn unplay_game(&mut self, game_id: GameId) {
+        self.state = self.state.unplay_game(game_id);
+    }
 
-#[derive(Error, Debug, Clone, Copy)]
-pub enum PlayoffError {
-    #[error("Playoff transition id's not a subset of group id's")]
-    TransitionGroupIdMismatch,
+    /// Get the champion (if final is played)
+    pub fn champion(&self) -> Option<TeamId> {
+        self.structure.champion(&self.state)
+    }
+
+    /// Get the runner-up (if final is played)
+    pub fn runner_up(&self) -> Option<TeamId> {
+        self.structure.runner_up(&self.state)
+    }
+
+    /// Get the current state (for serialization)
+    pub fn state(&self) -> &BracketState {
+        &self.state
+    }
+
+    /// Get the structure (for querying topology)
+    pub fn structure(&self) -> &BracketStructure {
+        &self.structure
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::group::mock_data::groups_and_teams;
-    use crate::group::order::{euro_2020_rules, euro_2020_third_place_rules, UefaRanking};
-    use crate::playoff::transition::mock_data::transitions;
+    use crate::group::order::fifa_2018_rules;
+    use crate::group::{GroupId, GroupOutcome};
+
     #[test]
-    fn mock_data_access() {
-        let (mock_groups, mock_teams) = groups_and_teams();
-        let mock_trans = transitions();
-        let ranking = UefaRanking::try_new(
-            &mock_groups,
-            mock_teams
-                .iter()
-                .map(|(id, team)| (*id, team.rank))
-                .collect(),
-        )
-        .unwrap();
-        let round = Round::first_round_from_group_stage(
-            &mock_groups,
-            &mock_trans,
-            &euro_2020_rules(ranking.clone()),
-            &euro_2020_third_place_rules(ranking),
-        );
-        assert_eq!(round.games[0].home.unwrap(), TeamId::from(1));
-        assert_eq!(round.games[0].away.unwrap(), TeamId::from(4));
+    fn test_playoff_predictions() {
+        let (groups, _teams) = groups_and_teams();
+        let rules = fifa_2018_rules();
+
+        // Create a simple bracket
+        let template = BracketTemplate {
+            games: vec![(
+                GameId::from(1),
+                (
+                    TeamSource::GroupOutcome(GroupOutcome::Winner(GroupId::try_from('A').unwrap())),
+                    TeamSource::GroupOutcome(GroupOutcome::RunnerUp(
+                        GroupId::try_from('B').unwrap(),
+                    )),
+                ),
+            )],
+            final_game_id: GameId::from(1),
+        };
+
+        let predictions = PlayoffPredictions::new(template).unwrap();
+        let games = predictions.game_states(&groups, &rules);
+
+        assert_eq!(games.len(), 1);
+        assert!(games[0].is_ready());
     }
 }

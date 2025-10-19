@@ -5,8 +5,10 @@
 //! Transition rules differ across tournaments
 //! Currently supported is to have winners, runner ups and top third placers to advance.
 use crate::game::GameId;
-use crate::group::{GroupId, GroupOutcome};
+use crate::group::order::{Rules, Tiebreaker};
+use crate::group::{GroupId, GroupOutcome, Groups};
 use crate::playoff::PlayoffError;
+use crate::team::TeamId;
 use itertools::Itertools;
 use std::collections::{BTreeMap, HashSet};
 
@@ -77,6 +79,27 @@ impl PlayoffTransitions {
 
     pub fn iter(&self) -> impl Iterator<Item = (&GameId, &PlayoffTransition)> {
         self.0.iter()
+    }
+}
+
+/// Resolve a team from a group outcome
+///
+/// This is used by the bracket system to resolve teams from the group stage.
+pub fn resolve_from_group_outcome<T: Tiebreaker>(
+    groups: &Groups,
+    outcome: &GroupOutcome,
+    rules: &Rules<T>,
+) -> TeamId {
+    match outcome {
+        GroupOutcome::Winner(group_id) => groups.get(group_id).unwrap().winner(rules),
+        GroupOutcome::RunnerUp(group_id) => groups.get(group_id).unwrap().runner_up(rules),
+        GroupOutcome::ThirdPlace(group_ids) => {
+            // For third place, we need special third-place rules
+            // For now, just take the first group's third place
+            // TODO: Implement proper third-place ranking
+            let first_group = group_ids.iter().next().unwrap();
+            groups.get(first_group).unwrap().third_place(rules)
+        }
     }
 }
 
