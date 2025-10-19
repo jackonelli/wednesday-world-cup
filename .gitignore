@@ -4,3 +4,4 @@ Cargo.lock
 server/data
 .DS_Store
 .env
+test.db

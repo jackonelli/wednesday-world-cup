@@ -7,16 +7,13 @@ pub mod playoff;
 use crate::file_io::read_json_file_to_str;
 use crate::lsv::euro_2020::group::ParseGroup;
 use crate::lsv::euro_2020::playoff::ParsePlayoff;
-use crate::lsv::{GameType, LsvData, LsvParseError};
+use crate::lsv::{LsvData, LsvParseError};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use wwc_core::fair_play::{FairPlay, FairPlayScore};
-use wwc_core::game::{GameId, GoalCount};
-use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
-use wwc_core::group::{Group, GroupError, GroupId, GroupOutcome, Groups};
+use wwc_core::game::GameId;
+use wwc_core::group::{GroupError, GroupId, GroupOutcome, Groups};
 use wwc_core::playoff::transition::{PlayoffTransition, PlayoffTransitions};
 use wwc_core::team::{FifaCode, Team, TeamId, TeamRank, Teams};
-use wwc_core::Date;
 
 #[derive(Debug, Clone)]
 pub struct Euro2020Data {

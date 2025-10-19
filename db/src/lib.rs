@@ -72,7 +72,7 @@ pub fn get_group_games() -> Result<(Vec<PlayedGroupGame>, Vec<UnplayedGroupGame>
 
     // Games in the db make no distinction b/w played and unplayed but has a boolean field `played`
     // we use this to return two sep. vec's of played/unplayed games respectively.
-    // Formally, the returned types are.
+    // Formally, the returned types are:
     type FetchedPlayedGroupGame = Vec<Result<PlayedGroupGame, DbError>>;
     type FetchedUnplayedGroupGame = Vec<Result<UnplayedGroupGame, DbError>>;
     // i.e. vec's of conversion attempts

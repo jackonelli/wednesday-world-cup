@@ -28,7 +28,7 @@
 #![warn(clippy::cast_possible_wrap)]
 #![warn(clippy::cast_precision_loss)]
 #![warn(clippy::cast_sign_loss)]
-#![warn(clippy::missing_docs_in_private_items)]
+// #![warn(clippy::missing_docs_in_private_items)]
 #![warn(clippy::mut_mut)]
 // Disallow `println!`. Use `debug!` for debug output
 // (which is provided by the `log` crate).
@@ -36,9 +36,8 @@
 // This allows us to use `unwrap` on `Option` values (because doing makes
 // working with Regex matches much nicer) and when compiling in test mode
 // (because using it in tests is idiomatic).
-#![cfg_attr(not(test), warn(clippy::result_unwrap_used))]
+#![cfg_attr(not(test), warn(clippy::unwrap_used))]
 #![warn(clippy::unseparated_literal_suffix)]
-#![warn(clippy::wrong_pub_self_convention)]
 
 pub mod error;
 pub mod fair_play;

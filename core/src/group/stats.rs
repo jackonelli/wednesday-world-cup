@@ -23,7 +23,7 @@ use std::ops;
 
 /// Unary statistic calculated from a single game.
 ///
-/// Implentor needs to provide the actual [`GameStat::stat`] function,
+/// Implementor needs to provide the actual [`GameStat::stat`] function,
 /// which calculates the statistics (for both teams) for a single game.
 /// The trait then provides default methods to calculate the statistic on group level.
 pub trait GameStat: num::Zero + ops::AddAssign + IterSum {
@@ -103,9 +103,11 @@ fn calc_and_assign_stat<T: GameStat>(
     let mut acc = acc;
     let (delta_home_stat, delta_away_stat) = T::stat(game);
 
+    #[allow(clippy::unwrap_used)]
     let stats = acc.get_mut(&game.home).unwrap();
     *stats += delta_home_stat;
 
+    #[allow(clippy::unwrap_used)]
     let stats = acc.get_mut(&game.away).unwrap();
     *stats += delta_away_stat;
     acc

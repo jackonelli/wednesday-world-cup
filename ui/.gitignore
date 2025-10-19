@@ -2,3 +2,4 @@
 .gitkeep
 testdb.sqlite3
 migrations
+/test.db

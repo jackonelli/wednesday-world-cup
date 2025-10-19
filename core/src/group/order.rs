@@ -32,7 +32,7 @@
 //! The sub-ordering stops when
 //! - We have achieved a strict order or,
 //! - There are no more rules to apply. Then the [`Tiebreaker`] is applied (random chance or
-//! ranking) which guarantees a strict order.
+//!   ranking) which guarantees a strict order.
 //!
 //! A system of greedy, atomic sub-orders is flexible since new rules can easily be composed from them.
 //! The [`SubOrdering`] trait is auto-implemented for every struct that
@@ -71,9 +71,9 @@ use super::Groups;
 /// E.g
 ///
 /// - Fifa 2018 rules are an ordered list of 1-7 non-strict rules
-/// and then random choice as the tiebreaker.
+///   and then random choice as the tiebreaker.
 /// - Euro 2020 rules use a similar (but not the same) list of non-strict rules
-/// but instead lets the team rank define the tiebreaker.
+///   but instead lets the team rank define the tiebreaker.
 pub struct Rules<T: Tiebreaker> {
     non_strict: Vec<Box<dyn SubOrdering>>,
     tiebreaker: T,
@@ -89,8 +89,9 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> TeamOrder 
         &rules.non_strict,
         NonStrictOrder::init_from_group(group),
     );
+    // Does not panic since the unwrapping match arm is checked to be strict.
+    #[allow(clippy::unwrap_used)]
     if possibly_non_strict.is_strict() {
-        // Does not panic since the unwrapping match arm is checked to be strict.
         possibly_non_strict.try_into().unwrap()
     } else {
         rules.tiebreaker.order_teams(possibly_non_strict)
@@ -108,13 +109,15 @@ pub(crate) fn order_teams<T: Tiebreaker>(
     let possibly_non_strict = non_strict_teams_ordering(
         teams,
         &rules.non_strict,
-        NonStrictOrder::init_from_teams(teams.iter().map(|(id, _)| *id)),
+        // NonStrictOrder::init_from_teams(teams.keys().map(|id| *id)),
+        NonStrictOrder::init_from_teams(teams.keys().cloned()),
     );
-    if !possibly_non_strict.is_strict() {
-        rules.tiebreaker.order_teams(possibly_non_strict)
-    } else {
-        // Does not panic since the unwrapping match arm is checked to be strict.
+    // Does not panic since the unwrapping match arm is checked to be strict.
+    #[allow(clippy::unwrap_used)]
+    if possibly_non_strict.is_strict() {
         possibly_non_strict.try_into().unwrap()
+    } else {
+        rules.tiebreaker.order_teams(possibly_non_strict)
     }
 }
 
@@ -364,17 +367,20 @@ impl<T: GameStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
         // TODO: Not efficient to calc stats for all teams, but efficient is not very important
         // here.
         let stats_all_teams = T::team_stats(group);
+        #[allow(clippy::unwrap_used)]
         let team_stats = order
             .into_iter()
             .map(|id| (id, *stats_all_teams.get(&id).unwrap()))
             .collect::<Vec<(TeamId, T)>>();
         common_team_order(team_stats)
     }
+
     fn order_teams(
         &self,
         teams_and_groups: &HashMap<TeamId, &Group>,
         order: Vec<TeamId>,
     ) -> NonStrictOrder {
+        #[allow(clippy::unwrap_used)]
         let teams_stats = order
             .iter()
             .map(|id| {
@@ -410,6 +416,7 @@ impl<T: GameStat + Ord + Copy> SubOrdering for InternalGroupStat<T> {
     /// teams as keys: The teams in `order` is equivalent to the set of keys in `internal_stats`.
     fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder {
         let internal_stats = T::internal_team_stats(group, &HashSet::from_iter(&order));
+        #[allow(clippy::unwrap_used)]
         let team_stats: Vec<(TeamId, T)> = order
             .into_iter()
             .map(|id| (id, *internal_stats.get(&id).unwrap()))
@@ -493,9 +500,8 @@ impl UefaRanking {
         groups: &Groups,
         ranking_map: HashMap<TeamId, TeamRank>,
     ) -> Result<Self, GroupError> {
-        // TODO: Why does this need to be mut?
         let mut all_teams = groups.iter().flat_map(|(_, x)| x.team_ids());
-        let exists = all_teams.all(|x| ranking_map.get(&x).is_some());
+        let exists = all_teams.all(|x| ranking_map.contains_key(&x));
         if exists {
             Ok(UefaRanking(ranking_map))
         } else {
@@ -511,6 +517,7 @@ impl Tiebreaker for UefaRanking {
     ///
     /// Panics if the team id's are not in `self.ranking_map`
     /// Internally ok since the fallible constructor [`UefaRanking::try_new`] ensures that the teams in the groups are a subset of the `ranking_map`.
+    #[allow(clippy::unwrap_used)]
     fn cmp(&self, id_1: TeamId, id_2: TeamId) -> Ordering {
         let rank_1 = self.0.get(&id_1).unwrap();
         let rank_2 = self.0.get(&id_2).unwrap();
@@ -605,9 +612,10 @@ pub fn noop_fifa_2018_third_place_rules() -> Rules<Random> {
 ///     - Direct red card: -3 points
 ///     - Yellow card and direct red card: -5 points
 /// 10. Higher position in the European Qualifiers overall ranking.
+///
 /// TODO: Remaining suborderings:
 /// - How to reapply 1-3 with yet another subset is unclear. I think I need to resort to impl. 1-3
-/// as its own rule.
+///   as its own rule.
 /// - The penalty shootout in 9 is pretty straightforward but needs manual data.
 /// - The FairPlayValue is incorrectly calculated (of course Fifa and Uefa have different weights.)
 pub fn euro_2020_rules(ranking: UefaRanking) -> Rules<UefaRanking> {

@@ -6,6 +6,7 @@ use serde::{self, Deserialize, Serialize};
 pub struct Date(#[serde(with = "serde_date")] DateTime<FixedOffset>);
 
 impl Date {
+    #[allow(clippy::unwrap_used)]
     pub fn mock() -> Self {
         let dt = FixedOffset::east_opt(3600)
             .unwrap()

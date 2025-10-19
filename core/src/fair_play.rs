@@ -93,7 +93,8 @@ impl FairPlayValue for FifaFairPlayValue {
 // Private trait impl possible?
 impl From<u32> for FifaFairPlayValue {
     fn from(magnitude: u32) -> Self {
-        FifaFairPlayValue(-(magnitude as i32))
+        assert!(magnitude < u32::MAX / 2); // Slightly ridiculous check
+        FifaFairPlayValue(-(i32::try_from(magnitude).unwrap()))
     }
 }
 
@@ -142,7 +143,8 @@ impl FairPlayValue for UefaFairPlayValue {
 // Private trait impl possible?
 impl From<u32> for UefaFairPlayValue {
     fn from(magnitude: u32) -> Self {
-        UefaFairPlayValue(-(magnitude as i32))
+        assert!(magnitude < u32::MAX / 2); // Slightly ridiculous check
+        UefaFairPlayValue(-(i32::try_from(magnitude).unwrap()))
     }
 }
 

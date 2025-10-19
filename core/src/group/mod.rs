@@ -138,6 +138,12 @@ impl Group {
         order_group(self, rules).third_place()
     }
 
+    // Generate random group
+    //
+    // Unwrap ok, only used for internal testing.
+    //
+    // TODO: Should not be part of public API.
+    #[allow(clippy::unwrap_used)]
     pub fn random<NG>(
         num_games: NG,
         num_teams: u32,
