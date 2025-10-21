@@ -23,6 +23,10 @@ pub struct PlayoffTransition {
 
 // TODO: Optimisation - chained iters instead of allocating hash sets.
 impl PlayoffTransition {
+    pub fn new(home: GroupOutcome, away: GroupOutcome) -> Self {
+        Self { home, away }
+    }
+
     fn group_ids(&self) -> HashSet<GroupId> {
         let home: HashSet<GroupId> = match &self.home {
             GroupOutcome::Winner(id) => HashSet::from([*id]),
@@ -35,12 +39,6 @@ impl PlayoffTransition {
             GroupOutcome::ThirdPlace(ids) => ids.clone(),
         };
         home.union(&away).cloned().collect()
-    }
-}
-
-impl PlayoffTransition {
-    pub fn new(home: GroupOutcome, away: GroupOutcome) -> Self {
-        Self { home, away }
     }
 }
 

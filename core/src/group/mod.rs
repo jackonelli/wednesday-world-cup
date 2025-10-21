@@ -74,11 +74,15 @@ impl Group {
     }
 
     /// Games accessor
+    ///
+    /// TODO: Sort by date/game id or other
     pub fn unplayed_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
         self.unplayed_games.iter()
     }
 
     /// Games accessor
+    ///
+    /// TODO: Sort by date/game id or other
     pub fn played_games(&self) -> impl Iterator<Item = &PlayedGroupGame> {
         self.played_games.iter()
     }

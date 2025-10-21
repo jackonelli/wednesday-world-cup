@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use wwc_core::game::GameId;
 use wwc_core::group::{GroupError, GroupId, GroupOutcome, Groups};
+use wwc_core::playoff::TeamSource;
 use wwc_core::playoff::transition::{PlayoffTransition, PlayoffTransitions};
 use wwc_core::team::{FifaCode, Team, TeamId, TeamRank, Teams};
 
@@ -22,6 +23,7 @@ pub struct Euro2020Data {
     pub team_map: TeamMap,
     playoff_trans: PlayoffTransitions,
     pub playoff: ParsePlayoff,
+    pub team_sources: Vec<(GameId, (TeamSource, TeamSource))>,
 }
 
 impl LsvData for Euro2020Data {
@@ -44,12 +46,14 @@ impl LsvData for Euro2020Data {
             &groups.iter().map(|pg| pg.id).collect::<HashSet<GroupId>>(),
         )
         .map_err(LsvParseError::Playoff)?;
+
         Ok(Self {
             teams: data.teams,
             groups,
             team_map,
             playoff_trans,
-            playoff: data.playoff,
+            playoff: data.playoff.clone(),
+            team_sources: Self::parse_team_sources(&data.playoff).collect(),
         })
     }
 
@@ -91,12 +95,23 @@ impl Euro2020Data {
     pub(crate) fn parse_transitions(
         data: &ParsePlayoff,
     ) -> impl Iterator<Item = (GameId, PlayoffTransition)> + '_ {
-        data.games().map(|game| {
+        // Only take the first 8 games, i.e. from the the first round.
+        data.round16.games.iter().map(|game| {
             // TODO unwrap
             let home = GroupOutcome::try_from(game.qualification.home_team.clone()).unwrap();
             let away = GroupOutcome::try_from(game.qualification.away_team.clone()).unwrap();
             let trans = PlayoffTransition::new(home, away);
             (game.id, trans)
+        })
+    }
+
+    pub(crate) fn parse_team_sources(
+        data: &ParsePlayoff,
+    ) -> impl Iterator<Item = (GameId, (TeamSource, TeamSource))> + '_ {
+        data.games().map(|game| {
+            let home = TeamSource::try_from(game.qualification.home_team.clone()).unwrap();
+            let away = TeamSource::try_from(game.qualification.away_team.clone()).unwrap();
+            (game.id, (home, away))
         })
     }
 }

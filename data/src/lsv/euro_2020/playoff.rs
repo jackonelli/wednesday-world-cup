@@ -1,53 +1,151 @@
 use crate::lsv::LsvParseError;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use wwc_core::game::GameId;
+use std::collections::{HashMap, HashSet};
+use wwc_core::game::{GameId, GoalCount};
 use wwc_core::group::{GroupError, GroupId, GroupOutcome};
+use wwc_core::playoff::{PlayoffGameState, PlayoffResult, PlayoffScore, TeamSource};
+use wwc_core::team::{FifaCode, TeamId};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ParsePlayoff {
-    round16: ParseFirstRound,
+    pub round16: ParseRound,
+    pub round8: ParseRound,
+    pub round4: ParseRound,
+    pub round2: ParseRound,
 }
 
 impl ParsePlayoff {
     pub fn games(&self) -> impl Iterator<Item = &ParsePlayoffGame> {
-        self.round16.games.iter()
+        self.round16
+            .games
+            .iter()
+            .chain(self.round8.games.iter())
+            .chain(self.round4.games.iter())
+            .chain(self.round2.games.iter())
     }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-struct ParseFirstRound {
+pub struct ParseRound {
     #[serde(rename = "matches")]
-    games: Vec<ParsePlayoffGame>,
+    pub games: Vec<ParsePlayoffGame>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ParsePlayoffGame {
     pub id: GameId,
-    pub(crate) qualification: ParseQualification,
+    pub qualification: ParseQualification,
     // Fifa code
-    pub home_team: Option<String>,
+    pub home_team: Option<FifaCode>,
     // Fifa code
-    pub away_team: Option<String>,
+    pub away_team: Option<FifaCode>,
+    home_result: Option<GoalCount>,
+    away_result: Option<GoalCount>,
+    home_penalty: Option<GoalCount>,
+    away_penalty: Option<GoalCount>,
+    pub winner: Option<FifaCode>,
+}
+
+impl ParsePlayoffGame {
+    pub fn try_parse(
+        self,
+        teams_map: &HashMap<FifaCode, TeamId>,
+    ) -> Result<PlayoffGameState, LsvParseError> {
+        match (self.home_team, self.away_team) {
+            (None, None) => Ok(PlayoffGameState::Pending {
+                game_id: self.id,
+                home_source: TeamSource::try_from(self.qualification.home_team)?,
+                away_source: TeamSource::try_from(self.qualification.away_team)?,
+            }),
+            (Some(home_team), None) => Ok(PlayoffGameState::HomeKnown {
+                game_id: self.id,
+                home: teams_map
+                    .get(&home_team)
+                    .ok_or(LsvParseError::MissingTeam(home_team))?
+                    .clone(),
+                away_source: TeamSource::try_from(self.qualification.away_team)?,
+            }),
+            (None, Some(away_team)) => Ok(PlayoffGameState::AwayKnown {
+                game_id: self.id,
+                home_source: TeamSource::try_from(self.qualification.home_team)?,
+                away: teams_map
+                    .get(&away_team)
+                    .ok_or(LsvParseError::MissingTeam(away_team))?
+                    .clone(),
+            }),
+            (Some(home_team), Some(away_team)) => match (self.home_result, self.away_result) {
+                (None, None) => Ok(PlayoffGameState::Ready {
+                    game_id: self.id,
+                    home: teams_map
+                        .get(&home_team)
+                        .ok_or(LsvParseError::MissingTeam(home_team))?
+                        .clone(),
+                    away: teams_map
+                        .get(&away_team)
+                        .ok_or(LsvParseError::MissingTeam(away_team))?
+                        .clone(),
+                }),
+                (Some(home_result), Some(away_result)) => Ok(PlayoffGameState::Played {
+                    game_id: self.id,
+                    result: PlayoffResult::new(
+                        teams_map
+                            .get(&home_team)
+                            .ok_or(LsvParseError::MissingTeam(home_team))?
+                            .clone(),
+                        teams_map
+                            .get(&away_team)
+                            .ok_or(LsvParseError::MissingTeam(away_team))?
+                            .clone(),
+                        PlayoffScore::try_new(
+                            home_result,
+                            away_result,
+                            self.home_penalty,
+                            self.away_penalty,
+                        )?,
+                    ),
+                }),
+                _ => Err(LsvParseError::MissingResult),
+            },
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ParseQualification {
-    pub(crate) home_team: ParseQualificationTeam,
-    pub(crate) away_team: ParseQualificationTeam,
+pub struct ParseQualification {
+    pub home_team: ParseQualificationTeam,
+    pub away_team: ParseQualificationTeam,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub(crate) struct ParseQualificationTeam {
+pub struct ParseQualificationTeam {
     qualificationtype: ParseGroupOutcome,
-    group: String,
+    group: Option<String>,
+    #[serde(rename = "match")]
+    game: Option<GameId>,
+}
+
+impl TryFrom<ParseQualificationTeam> for TeamSource {
+    type Error = LsvParseError;
+
+    fn try_from(value: ParseQualificationTeam) -> Result<Self, Self::Error> {
+        match (&value.group, &value.game) {
+            (Some(_), None) => Ok(TeamSource::GroupOutcome(GroupOutcome::try_from(value)?)),
+            (None, Some(game_id)) => match &value.qualificationtype {
+                ParseGroupOutcome::Winner => Ok(TeamSource::WinnerOf(*game_id)),
+                ParseGroupOutcome::Loser => Ok(TeamSource::LoserOf(*game_id)),
+                _ => Err(LsvParseError::GroupOutcomeInPlayoffQualification),
+            },
+            _ => Err(LsvParseError::InvalidQualification),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ParseGroupOutcome {
     Winner,
+    Loser,
     RunnerUp,
     ThirdPlace,
 }
@@ -56,19 +154,25 @@ impl TryFrom<ParseQualificationTeam> for GroupOutcome {
     type Error = LsvParseError;
 
     fn try_from(x: ParseQualificationTeam) -> Result<Self, Self::Error> {
+        if let None = x.group {
+            return Err(LsvParseError::OutcomeParse(
+                "No group tag found in round16 game".into(),
+            ));
+        }
         match x.qualificationtype {
             ParseGroupOutcome::Winner => {
-                let id = parse_single_group_id(&x.group)?;
+                let id = parse_single_group_id(&x.group.unwrap())?;
                 Ok(GroupOutcome::Winner(id))
             }
             ParseGroupOutcome::RunnerUp => {
-                let id = parse_single_group_id(&x.group)?;
+                let id = parse_single_group_id(&x.group.unwrap())?;
                 Ok(GroupOutcome::RunnerUp(id))
             }
             ParseGroupOutcome::ThirdPlace => {
-                let ids = parse_group_id_set(&x.group)?;
+                let ids = parse_group_id_set(&x.group.unwrap())?;
                 Ok(GroupOutcome::ThirdPlace(ids))
             }
+            _ => Err(LsvParseError::PlayoffOutcomeInQualification),
         }
     }
 }

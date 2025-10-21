@@ -27,9 +27,9 @@ pub enum TeamSource {
     /// Team from group stage outcome
     GroupOutcome(GroupOutcome),
     /// Winner of a previous playoff game
-    WinnerOf(NodeIndex),
+    WinnerOf(GameId),
     /// Loser of a previous playoff game (for 3rd place playoff)
-    LoserOf(NodeIndex),
+    LoserOf(GameId),
 }
 
 /// Edge type in the bracket graph
@@ -132,6 +132,7 @@ impl BracketState {
 ///
 /// Defines the graph topology and team sources for each game.
 /// This is immutable and defined once per tournament format.
+#[derive(Debug, Clone)]
 pub struct BracketStructure {
     /// The directed graph (nodes are GameIds, edges are team flows)
     graph: DiGraph<GameId, EdgeType>,
@@ -159,8 +160,8 @@ impl BracketStructure {
 
         // Second pass: create edges based on dependencies
         for (node_idx, (home_src, away_src)) in &sources {
-            Self::add_edge_for_source(&mut graph, home_src.clone(), *node_idx);
-            Self::add_edge_for_source(&mut graph, away_src.clone(), *node_idx);
+            Self::add_edge_for_source(&mut graph, home_src.clone(), *node_idx, &game_to_node);
+            Self::add_edge_for_source(&mut graph, away_src.clone(), *node_idx, &game_to_node);
         }
 
         let final_node = game_to_node
@@ -181,17 +182,37 @@ impl BracketStructure {
         })
     }
 
+    /// Create bracket structure from team sources
+    pub fn from_team_sources(
+        team_sources: &[(GameId, (TeamSource, TeamSource))],
+    ) -> Result<Self, BracketError> {
+        let templ = BracketTemplate {
+            games: team_sources.to_vec(),
+            final_game_id: team_sources.last().unwrap().0,
+        };
+        Self::from_template(templ)
+    }
+
     fn add_edge_for_source(
         graph: &mut DiGraph<GameId, EdgeType>,
         source: TeamSource,
         target: NodeIndex,
+        game_to_node: &HashMap<GameId, NodeIndex>,
     ) {
         match source {
             TeamSource::WinnerOf(src_idx) => {
-                graph.add_edge(src_idx, target, EdgeType::Winner);
+                graph.add_edge(
+                    game_to_node.get(&src_idx).unwrap().clone(),
+                    target,
+                    EdgeType::Winner,
+                );
             }
             TeamSource::LoserOf(src_idx) => {
-                graph.add_edge(src_idx, target, EdgeType::Loser);
+                graph.add_edge(
+                    game_to_node.get(&src_idx).unwrap().clone(),
+                    target,
+                    EdgeType::Loser,
+                );
             }
             TeamSource::GroupOutcome(_) => {
                 // No edge needed for group outcomes
@@ -215,14 +236,8 @@ impl BracketStructure {
                     group_rules,
                 ))
             }
-            TeamSource::WinnerOf(node_idx) => {
-                let game_id = self.graph[node_idx];
-                state.result(game_id).map(|r| r.winner())
-            }
-            TeamSource::LoserOf(node_idx) => {
-                let game_id = self.graph[node_idx];
-                state.result(game_id).map(|r| r.loser())
-            }
+            TeamSource::WinnerOf(game_id) => state.result(game_id).map(|r| r.winner()),
+            TeamSource::LoserOf(game_id) => state.result(game_id).map(|r| r.loser()),
         }
     }
 
@@ -298,9 +313,11 @@ impl BracketStructure {
         group_rules: &Rules<T>,
     ) -> Vec<PlayoffGameState> {
         use petgraph::algo::dijkstra;
+        use petgraph::visit::Reversed;
 
         // Calculate distances from final (going backwards through edges)
-        let distances = dijkstra(&self.graph, self.final_node, None, |_| 1);
+        // Use Reversed to traverse incoming edges instead of outgoing
+        let distances = dijkstra(Reversed(&self.graph), self.final_node, None, |_| 1);
 
         self.graph
             .node_indices()

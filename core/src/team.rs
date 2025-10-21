@@ -83,7 +83,7 @@ pub struct Iso2(String);
 /// A Fifa code is a trigram or trigraph, i.e. a three letter id.
 /// Furthermore, the codes are all upper case ASCII letters, e.g. "DEN"
 /// <https://en.wikipedia.org/wiki/List_of_FIFA_country_codes>
-#[derive(Display, Debug, Clone, Into, AsRef, Deserialize, Serialize, PartialEq)]
+#[derive(Display, Debug, Clone, Into, AsRef, Deserialize, Serialize, PartialEq, Hash, Eq)]
 #[as_ref(forward)]
 pub struct FifaCode(String);
 

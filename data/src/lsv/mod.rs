@@ -2,8 +2,9 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use wwc_core::group::GroupError;
 use wwc_core::group::Groups;
-use wwc_core::playoff::transition::PlayoffTransitions;
 use wwc_core::playoff::PlayoffError;
+use wwc_core::playoff::transition::PlayoffTransitions;
+use wwc_core::team::FifaCode;
 use wwc_core::team::{TeamId, Teams};
 
 pub mod euro_2020;
@@ -53,4 +54,14 @@ pub enum LsvParseError {
     TransitionIncomplete(String),
     #[error("Error parsing playoff: {0}")]
     Playoff(#[from] PlayoffError),
+    #[error("Both 'group' and 'match' or none of the set")]
+    InvalidQualification,
+    #[error("Got 'runnerup' or 'thirdplace' in playoff qualification")]
+    GroupOutcomeInPlayoffQualification,
+    #[error("Got 'loser' in group qualification")]
+    PlayoffOutcomeInQualification,
+    #[error("Unexpected team {0}")]
+    MissingTeam(FifaCode),
+    #[error("Missing result")]
+    MissingResult,
 }

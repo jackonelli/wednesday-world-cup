@@ -76,7 +76,6 @@ use crate::game::GameId;
 use crate::group::Groups;
 use crate::group::order::{Rules, Tiebreaker};
 use crate::team::TeamId;
-use thiserror::Error;
 
 /// High-level playoff predictions
 ///

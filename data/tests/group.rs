@@ -3,10 +3,10 @@ use wwc_data::lsv::{Euro2020Data, Fifa2018Data, LsvData, get_data};
 
 #[test]
 fn fifa_2018_group_ordering() {
-    let rules = fifa_2018_rules();
     let data: Fifa2018Data = get_data("lsv_data/complete-fifa-2018.json").unwrap();
 
     let groups = data.try_groups().unwrap();
+    let rules = fifa_2018_rules();
 
     for (id, true_winner) in data.group_winners() {
         let group = groups
