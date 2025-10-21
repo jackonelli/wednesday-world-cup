@@ -19,7 +19,7 @@ async fn main() -> Result<(), CliError> {
     let opt = Opt::from_args();
     match opt {
         Opt::Register(new_instance) => match new_instance {
-            Instance::Player { name } => register_player(&pool, name).await,
+            Register::Player { name } => register_player(&pool, name).await,
         },
         Opt::Add(table) => match table {
             Table::Players => Ok(()),
@@ -153,10 +153,10 @@ async fn list_group_maps(pool: &sqlx::SqlitePool) -> Result<(), CliError> {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "bryggio-cli", about = "cli usage")]
+#[structopt(name = "wwc-cli", about = "cli usage")]
 pub enum Opt {
     #[structopt(name = "register")]
-    Register(Instance),
+    Register(Register),
     #[structopt(name = "add")]
     Add(Table),
     #[structopt(name = "list")]
@@ -166,14 +166,14 @@ pub enum Opt {
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "bryggio-cli", about = "cli usage")]
-pub enum Instance {
+#[structopt(name = "wwc-cli-register", about = "Register new player")]
+pub enum Register {
     #[structopt(name = "player")]
     Player { name: String },
 }
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "bryggio-cli", about = "cli usage")]
+#[structopt(name = "wwc-cli-table", about = "Add table to database")]
 pub enum Table {
     #[structopt(name = "players")]
     Players,
