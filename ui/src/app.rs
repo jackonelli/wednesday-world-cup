@@ -1,13 +1,17 @@
-use crate::data::{clear_preds, get_groups_played_with_preds, get_teams, save_preds};
+use crate::data::{
+    clear_preds, get_groups_played_with_preds, get_playoff_team_sources, get_teams, save_preds,
+};
 use crate::game::ScoreInput;
 use crate::group::view_group_play;
+use crate::playoff::PlayoffBracketView;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use web_sys::console;
 use wwc_core::{
     game::GameId,
-    group::{GroupId, Groups},
+    group::{GroupId, Groups, order::fifa_2018_rules},
     player::{Player, PlayerPredictions, Prediction},
+    playoff::{BracketStructure, TeamSource},
     team::Teams,
 };
 
@@ -17,6 +21,7 @@ pub fn App() -> impl IntoView {
     let groups = RwSignal::new(Groups::new());
     let teams = RwSignal::new(Teams::new());
     let player = RwSignal::new(Player::dummy());
+    let team_sources = RwSignal::new(Vec::<(GameId, (TeamSource, TeamSource))>::new());
 
     // Fetch teams on mount
     Effect::new(move |_| {
@@ -46,6 +51,22 @@ pub fn App() -> impl IntoView {
                 }
                 Err(e) => {
                     console::error_1(&format!("Error fetching groups: {}", e).into());
+                }
+            }
+        });
+    });
+
+    // Fetch playoff team sources on mount
+    Effect::new(move |_| {
+        spawn_local(async move {
+            console::log_1(&"Fetching playoff team sources".into());
+            match get_playoff_team_sources().await {
+                Ok(sources) => {
+                    console::log_1(&format!("Fetched {} playoff games", sources.len()).into());
+                    team_sources.set(sources);
+                }
+                Err(e) => {
+                    console::error_1(&format!("Error fetching playoff: {}", e).into());
                 }
             }
         });
@@ -125,6 +146,16 @@ pub fn App() -> impl IntoView {
         });
     };
 
+    // Derive bracket structure reactively from team sources
+    let bracket = move || {
+        let sources = team_sources.get();
+        if sources.is_empty() {
+            None
+        } else {
+            BracketStructure::from_team_sources(&sources).ok()
+        }
+    };
+
     view! {
         <div>
             <header class="header">
@@ -139,6 +170,25 @@ pub fn App() -> impl IntoView {
                 play_game,
                 unplay_game
             )}
+            {move || {
+                // Only render bracket when we have both bracket structure and groups loaded
+                let current_groups = groups.get();
+                let has_groups = !current_groups.is_empty();
+
+                if has_groups {
+                    bracket().map(|b| {
+                        view! {
+                            <PlayoffBracketView
+                                bracket=b
+                                groups=current_groups
+                                rules=fifa_2018_rules()
+                            />
+                        }
+                    })
+                } else {
+                    None
+                }
+            }}
         </div>
     }
 }

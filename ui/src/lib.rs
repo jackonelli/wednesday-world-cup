@@ -4,6 +4,7 @@ mod app;
 mod data;
 mod game;
 mod group;
+mod playoff;
 mod table;
 mod team;
 

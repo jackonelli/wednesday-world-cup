@@ -2,6 +2,7 @@ use crate::UiError;
 use gloo_net::http::Request;
 use std::collections::HashMap;
 use wwc_core::player::{PlayerId, Prediction};
+use wwc_core::playoff::TeamSource;
 use wwc_core::{
     game::GameId,
     group::{GroupId, Groups},
@@ -85,4 +86,13 @@ pub(crate) async fn get_groups_as_unplayed() -> Result<Groups, UiError> {
             .for_each(|game| group.unplay_game(game.id))
     });
     Ok(groups)
+}
+
+/// Fetch playoff team sources from server
+pub(crate) async fn get_playoff_team_sources()
+-> Result<Vec<(GameId, (TeamSource, TeamSource))>, UiError> {
+    let response = Request::get(&format!("{}/{}", SERVER_IP, "get_playoff_team_sources"))
+        .send()
+        .await?;
+    response.json().await.map_err(Into::into)
 }

@@ -1,0 +1,129 @@
+/* Playoff Bracket Styles */
+.playoff-bracket {
+    padding: 2rem;
+    background: #f7f7f7;
+    margin-top: 2rem;
+}
+
+.playoff-bracket h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* Reuse existing tournament-bracket styles but with our simpler structure */
+.tournament-bracket {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    overflow-x: auto;
+    padding: 20px;
+}
+
+.bracket-round {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    min-width: 200px;
+    padding: 0;
+}
+
+.round-title {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.1em;
+    color: #9e9e9e;
+    font-style: italic;
+}
+
+.bracket-game {
+    display: flex;
+    flex-direction: column;
+    margin: 10px 0;
+    position: relative;
+    background: white;
+    border: 2px solid #e5e5e5;
+    border-radius: 4px;
+    box-shadow: 0 2px 0 0 #e5e5e5;
+}
+
+.team-slot {
+    padding: 10px;
+    min-height: 35px;
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.team-slot:last-child {
+    border-bottom: none;
+}
+
+/* Different states */
+.team-slot.pending {
+    color: #9e9e9e;
+    font-style: italic;
+    background: #fafafa;
+}
+
+.team-slot.known {
+    color: #212121;
+    font-weight: 500;
+    background: #e3f2fd;
+}
+
+.team-slot.ready {
+    color: #212121;
+    font-weight: 600;
+    background: #c8e6c9;
+}
+
+.team-slot.played {
+    color: #212121;
+    background: #fff9c4;
+}
+
+.team-slot.winner {
+    font-weight: 700;
+    background: #ffeb3b;
+}
+
+/* Connecting lines between rounds */
+@media (min-width: 38em) {
+    .bracket-game::after {
+        content: '';
+        position: absolute;
+        right: -20px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 2px;
+        background: #9e9e9e;
+    }
+
+    .bracket-round:last-child .bracket-game::after {
+        display: none;
+    }
+
+    .bracket-game:nth-child(odd)::before {
+        content: '';
+        position: absolute;
+        right: -20px;
+        top: 50%;
+        width: 2px;
+        height: 50%;
+        background: #9e9e9e;
+    }
+
+    .bracket-game:nth-child(even)::before {
+        content: '';
+        position: absolute;
+        right: -20px;
+        bottom: 50%;
+        width: 2px;
+        height: 50%;
+        background: #9e9e9e;
+    }
+}

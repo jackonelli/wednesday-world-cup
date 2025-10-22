@@ -358,6 +358,16 @@ impl BracketStructure {
         state.result(final_game_id).map(|r| r.loser())
     }
 
+    /// Get the maximum depth (number of rounds) in the bracket
+    /// Depth 0 = final, depth 1 = semifinals, etc.
+    pub fn max_depth(&self) -> usize {
+        use petgraph::algo::dijkstra;
+        use petgraph::visit::Reversed;
+
+        let distances = dijkstra(Reversed(&self.graph), self.final_node, None, |_| 1);
+        distances.values().max().copied().unwrap_or(0)
+    }
+
     /// Get all game IDs in the bracket
     pub fn all_game_ids(&self) -> impl Iterator<Item = GameId> + '_ {
         self.graph.node_weights().copied()
