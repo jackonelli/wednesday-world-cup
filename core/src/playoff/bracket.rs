@@ -20,6 +20,7 @@ use petgraph::graph::{DiGraph, NodeIndex};
 use petgraph::visit::EdgeRef;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::fmt::Display;
 use thiserror::Error;
 
 /// Where a team comes from in the bracket
@@ -31,6 +32,16 @@ pub enum TeamSource {
     WinnerOf(GameId),
     /// Loser of a previous playoff game (for 3rd place playoff)
     LoserOf(GameId),
+}
+
+impl Display for TeamSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TeamSource::GroupOutcome(outcome) => write!(f, "Group {}", outcome),
+            TeamSource::WinnerOf(game_id) => write!(f, "Winner of {}", game_id),
+            TeamSource::LoserOf(game_id) => write!(f, "Loser of {}", game_id),
+        }
+    }
 }
 
 /// Edge type in the bracket graph

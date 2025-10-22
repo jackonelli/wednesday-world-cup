@@ -1,3 +1,9 @@
+-- Playoff games table (just the IDs)
+-- Playoff games don't have known teams until BracketStructure resolves them
+CREATE TABLE IF NOT EXISTS playoff_games (
+  id INTEGER PRIMARY KEY NOT NULL
+);
+
 -- Playoff team sources (for building BracketStructure)
 -- This defines HOW teams enter each playoff game
 CREATE TABLE IF NOT EXISTS playoff_team_sources (
@@ -17,8 +23,19 @@ CREATE TABLE IF NOT EXISTS playoff_team_sources (
   away_third_place_groups VARCHAR,
   away_source_game_id INTEGER,
 
-  FOREIGN KEY(game_id) REFERENCES games(id)
+  FOREIGN KEY(game_id) REFERENCES playoff_games(id)
 );
 
--- Playoff game results are stored in the existing games table
--- BracketState is built by filtering games where id IN (SELECT game_id FROM playoff_team_sources)
+-- Playoff game results (when played)
+CREATE TABLE IF NOT EXISTS playoff_results (
+  game_id INTEGER PRIMARY KEY NOT NULL,
+  home_team INTEGER NOT NULL,
+  away_team INTEGER NOT NULL,
+  home_result INTEGER NOT NULL,
+  away_result INTEGER NOT NULL,
+  home_penalty INTEGER,
+  away_penalty INTEGER,
+  FOREIGN KEY(game_id) REFERENCES playoff_games(id),
+  FOREIGN KEY(home_team) REFERENCES teams(id),
+  FOREIGN KEY(away_team) REFERENCES teams(id)
+);

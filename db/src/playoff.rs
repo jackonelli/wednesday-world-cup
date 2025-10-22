@@ -213,6 +213,27 @@ pub async fn insert_playoff_team_sources(
     Ok(())
 }
 
+/// Insert playoff game IDs into the database
+pub async fn insert_playoff_games(pool: &SqlitePool, game_ids: &[GameId]) -> Result<(), DbError> {
+    for game_id in game_ids {
+        sqlx::query("INSERT INTO playoff_games (id) VALUES (?)")
+            .bind(i32::try_from(u32::from(*game_id)).unwrap())
+            .execute(pool)
+            .await
+            .map_err(DbError::Sqlx)?;
+    }
+    Ok(())
+}
+
+/// Clear all playoff games from the database
+pub async fn clear_playoff_games(pool: &SqlitePool) -> Result<(), DbError> {
+    sqlx::query("DELETE FROM playoff_games")
+        .execute(pool)
+        .await
+        .map_err(DbError::Sqlx)?;
+    Ok(())
+}
+
 /// Clear all playoff team sources from the database
 pub async fn clear_playoff_team_sources(pool: &SqlitePool) -> Result<(), DbError> {
     sqlx::query("DELETE FROM playoff_team_sources")

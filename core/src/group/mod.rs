@@ -21,6 +21,7 @@ use rand::{
 use serde::{Deserialize, Deserializer, Serialize, de};
 use std::collections::BTreeMap;
 use std::collections::HashSet;
+use std::fmt::Display;
 use std::iter;
 use thiserror::Error;
 
@@ -325,6 +326,23 @@ pub enum GroupOutcome {
     Winner(GroupId),
     RunnerUp(GroupId),
     ThirdPlace(HashSet<GroupId>),
+}
+
+impl Display for GroupOutcome {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GroupOutcome::Winner(id) => write!(f, "Winner {}", id),
+            GroupOutcome::RunnerUp(id) => write!(f, "Runner-up {}", id),
+            GroupOutcome::ThirdPlace(ids) => write!(
+                f,
+                "Third place {}",
+                ids.iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ),
+        }
+    }
 }
 
 #[cfg(test)]

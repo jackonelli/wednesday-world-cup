@@ -23,7 +23,8 @@ pub use player::{
     clear_players, clear_preds, get_players, get_preds, insert_preds, register_player,
 };
 pub use playoff::{
-    clear_playoff_team_sources, get_playoff_team_sources, insert_playoff_team_sources,
+    clear_playoff_games, clear_playoff_team_sources, get_playoff_team_sources,
+    insert_playoff_games, insert_playoff_team_sources,
 };
 pub use pool::create_pool;
 pub use team::{clear_teams, get_teams, insert_teams};
