@@ -98,61 +98,61 @@ pub fn order_group<T: Tiebreaker>(group: &Group, rules: &Rules<T>) -> TeamOrder 
     }
 }
 
-/// Order general set of teams based on rules
-///
-/// First orders by a list of non-strict sub-orders.
-/// If the sub-order is not strict, the rules' tiebreaker is used.
-pub(crate) fn order_teams<T: Tiebreaker>(
-    teams: &HashMap<TeamId, &Group>,
-    rules: &Rules<T>,
-) -> TeamOrder {
-    let possibly_non_strict = non_strict_teams_ordering(
-        teams,
-        &rules.non_strict,
-        // NonStrictOrder::init_from_teams(teams.keys().map(|id| *id)),
-        NonStrictOrder::init_from_teams(teams.keys().cloned()),
-    );
-    // Does not panic since the unwrapping match arm is checked to be strict.
-    #[allow(clippy::unwrap_used)]
-    if possibly_non_strict.is_strict() {
-        possibly_non_strict.try_into().unwrap()
-    } else {
-        rules.tiebreaker.order_teams(possibly_non_strict)
-    }
-}
-
-/// Try ordering teams across groups
-///
-/// Returns the input group order if it is strict or if there are no more rules left to apply.
-/// Otherwise recursively calls itself with the next rule.
-fn non_strict_teams_ordering(
-    teams: &HashMap<TeamId, &Group>,
-    rules: &[Box<dyn SubOrdering>],
-    sub_order: NonStrictOrder,
-) -> NonStrictOrder {
-    if sub_order.is_strict() || rules.is_empty() {
-        sub_order
-    } else {
-        let (current_rule, remaining_rules) = rules.split_at(1);
-        // current_rule is always a vec with a single element,
-        let current_rule = &current_rule[0];
-        let sub_order = sub_order
-            .into_iter()
-            .fold(NonStrictOrder::empty(), |acc, x| {
-                // Don't apply rule if the sub-order is already strict,
-                // i.e. if x consists of a single TeamId
-                // TODO: benchmark, possible that the allocation in the else branch is more costly.
-                let new_order = if x.len() > 1 {
-                    current_rule.order_teams(teams, x)
-                } else {
-                    NonStrictOrder::single(x)
-                };
-
-                acc.extend(new_order)
-            });
-        non_strict_teams_ordering(teams, remaining_rules, sub_order)
-    }
-}
+// /// Order general set of teams based on rules
+// ///
+// /// First orders by a list of non-strict sub-orders.
+// /// If the sub-order is not strict, the rules' tiebreaker is used.
+// pub(crate) fn order_teams<T: Tiebreaker>(
+//     teams: &HashMap<TeamId, &Group>,
+//     rules: &Rules<T>,
+// ) -> TeamOrder {
+//     let possibly_non_strict = non_strict_teams_ordering(
+//         teams,
+//         &rules.non_strict,
+//         // NonStrictOrder::init_from_teams(teams.keys().map(|id| *id)),
+//         NonStrictOrder::init_from_teams(teams.keys().cloned()),
+//     );
+//     // Does not panic since the unwrapping match arm is checked to be strict.
+//     #[allow(clippy::unwrap_used)]
+//     if possibly_non_strict.is_strict() {
+//         possibly_non_strict.try_into().unwrap()
+//     } else {
+//         rules.tiebreaker.order_teams(possibly_non_strict)
+//     }
+// }
+//
+// /// Try ordering teams across groups
+// ///
+// /// Returns the input group order if it is strict or if there are no more rules left to apply.
+// /// Otherwise recursively calls itself with the next rule.
+// fn non_strict_teams_ordering(
+//     teams: &HashMap<TeamId, &Group>,
+//     rules: &[Box<dyn SubOrdering>],
+//     sub_order: NonStrictOrder,
+// ) -> NonStrictOrder {
+//     if sub_order.is_strict() || rules.is_empty() {
+//         sub_order
+//     } else {
+//         let (current_rule, remaining_rules) = rules.split_at(1);
+//         // current_rule is always a vec with a single element,
+//         let current_rule = &current_rule[0];
+//         let sub_order = sub_order
+//             .into_iter()
+//             .fold(NonStrictOrder::empty(), |acc, x| {
+//                 // Don't apply rule if the sub-order is already strict,
+//                 // i.e. if x consists of a single TeamId
+//                 // TODO: benchmark, possible that the allocation in the else branch is more costly.
+//                 let new_order = if x.len() > 1 {
+//                     current_rule.order_teams(teams, x)
+//                 } else {
+//                     NonStrictOrder::single(x)
+//                 };
+//
+//                 acc.extend(new_order)
+//             });
+//         non_strict_teams_ordering(teams, remaining_rules, sub_order)
+//     }
+// }
 
 /// Try ordering a group
 ///
@@ -269,9 +269,9 @@ impl NonStrictOrder {
         NonStrictOrder(vec![group.team_ids().collect()])
     }
 
-    fn init_from_teams(teams: impl Iterator<Item = TeamId>) -> Self {
-        NonStrictOrder(vec![teams.collect()])
-    }
+    // fn init_from_teams(teams: impl Iterator<Item = TeamId>) -> Self {
+    //     NonStrictOrder(vec![teams.collect()])
+    // }
 
     /// Strict ordering check
     ///

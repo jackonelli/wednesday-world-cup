@@ -77,14 +77,14 @@ impl Group {
     ///
     /// TODO: Sort by date/game id or other
     pub fn unplayed_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
-        self.unplayed_games.iter()
+        self.unplayed_games.iter().sorted_by_key(|game| game.id)
     }
 
     /// Games accessor
     ///
     /// TODO: Sort by date/game id or other
     pub fn played_games(&self) -> impl Iterator<Item = &PlayedGroupGame> {
-        self.played_games.iter()
+        self.played_games.iter().sorted_by_key(|game| game.id)
     }
 
     pub fn play_game(&mut self, game_id: GameId, score: GroupGameScore) {
@@ -104,7 +104,7 @@ impl Group {
             .played_games
             .iter()
             .position(|game| game.id == game_id)
-            .unwrap();
+            .unwrap(); // TODO no unwrap
         let game = self.played_games.swap_remove(idx).unplay();
         self.unplayed_games.push(game);
     }

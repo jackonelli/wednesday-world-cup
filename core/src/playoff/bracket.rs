@@ -13,6 +13,7 @@ use crate::game::GameId;
 use crate::group::order::{Rules, Tiebreaker};
 use crate::group::{GroupOutcome, Groups};
 use crate::playoff::game::PlayoffScore;
+use crate::playoff::template::BracketTemplate;
 use crate::team::TeamId;
 use petgraph::Direction;
 use petgraph::graph::{DiGraph, NodeIndex};
@@ -160,8 +161,8 @@ impl BracketStructure {
 
         // Second pass: create edges based on dependencies
         for (node_idx, (home_src, away_src)) in &sources {
-            Self::add_edge_for_source(&mut graph, home_src.clone(), *node_idx, &game_to_node);
-            Self::add_edge_for_source(&mut graph, away_src.clone(), *node_idx, &game_to_node);
+            Self::add_edge_for_source(&mut graph, home_src.clone(), *node_idx, &game_to_node)?;
+            Self::add_edge_for_source(&mut graph, away_src.clone(), *node_idx, &game_to_node)?;
         }
 
         let final_node = game_to_node
@@ -188,7 +189,10 @@ impl BracketStructure {
     ) -> Result<Self, BracketError> {
         let templ = BracketTemplate {
             games: team_sources.to_vec(),
-            final_game_id: team_sources.last().unwrap().0,
+            final_game_id: team_sources
+                .last()
+                .ok_or(BracketError::FinalGameNotFound)?
+                .0,
         };
         Self::from_template(templ)
     }
@@ -198,18 +202,22 @@ impl BracketStructure {
         source: TeamSource,
         target: NodeIndex,
         game_to_node: &HashMap<GameId, NodeIndex>,
-    ) {
+    ) -> Result<(), BracketError> {
         match source {
             TeamSource::WinnerOf(src_idx) => {
                 graph.add_edge(
-                    game_to_node.get(&src_idx).unwrap().clone(),
+                    *game_to_node
+                        .get(&src_idx)
+                        .ok_or(BracketError::MissingGameNode(src_idx))?,
                     target,
                     EdgeType::Winner,
                 );
             }
             TeamSource::LoserOf(src_idx) => {
                 graph.add_edge(
-                    game_to_node.get(&src_idx).unwrap().clone(),
+                    *game_to_node
+                        .get(&src_idx)
+                        .ok_or(BracketError::MissingGameNode(src_idx))?,
                     target,
                     EdgeType::Loser,
                 );
@@ -218,6 +226,7 @@ impl BracketStructure {
                 // No edge needed for group outcomes
             }
         }
+        Ok(())
     }
 
     /// Resolve a team from a source (pure function)
@@ -422,18 +431,14 @@ impl PlayoffGameState {
     }
 }
 
-/// Template for defining bracket structure
-pub struct BracketTemplate {
-    pub games: Vec<(GameId, (TeamSource, TeamSource))>,
-    pub final_game_id: GameId,
-}
-
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone, Copy)]
 pub enum BracketError {
     #[error("Final game not found in template")]
     FinalGameNotFound,
     #[error("Bracket contains a cycle")]
     CyclicBracket,
+    #[error("{0:?} not found in games_to_node map.")]
+    MissingGameNode(GameId),
 }
 
 #[cfg(test)]

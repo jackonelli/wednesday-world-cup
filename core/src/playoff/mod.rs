@@ -62,15 +62,15 @@
 
 pub mod bracket;
 pub mod game;
-pub mod templates;
+pub mod template;
 pub mod transition;
 
 // Re-exports for convenience
 pub use bracket::{
-    BracketError, BracketState, BracketStructure, BracketTemplate, PlayoffGameState, PlayoffResult,
-    TeamSource,
+    BracketError, BracketState, BracketStructure, PlayoffGameState, PlayoffResult, TeamSource,
 };
 pub use game::{PlayoffError, PlayoffScore};
+use template::BracketTemplate;
 
 use crate::game::GameId;
 use crate::group::Groups;
