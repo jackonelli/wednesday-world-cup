@@ -94,7 +94,7 @@ impl Group {
             .unwrap_or_else(|| panic!("No game with id: {:?}", game_id));
         let game = self
             .unplayed_games
-            .swap_remove(idx)
+            .remove(idx)
             .play(score, FairPlayScore::default());
         self.played_games.push(game);
     }
@@ -105,7 +105,7 @@ impl Group {
             .iter()
             .position(|game| game.id == game_id)
             .unwrap(); // TODO no unwrap
-        let game = self.played_games.swap_remove(idx).unplay();
+        let game = self.played_games.remove(idx).unplay();
         self.unplayed_games.push(game);
     }
 
