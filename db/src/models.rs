@@ -4,7 +4,7 @@ use crate::DbError;
 use sqlx::FromRow;
 use wwc_core::error::WwcError;
 use wwc_core::fair_play::FairPlayScore;
-use wwc_core::game::GameId;
+use wwc_core::game::{GameId, GoalCount};
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::player::Prediction;
 use wwc_core::team::{FifaCode, TeamId, TeamName, TeamRank};
@@ -60,8 +60,8 @@ impl TryFrom<Game> for PlayedGroupGame {
         .map_err(DbError::from)?
         .play(
             GroupGameScore::from((
-                u32::try_from(game.home_result.unwrap()).unwrap(),
-                u32::try_from(game.away_result.unwrap()).unwrap(),
+                GoalCount::try_from(u32::try_from(game.home_result.unwrap()).unwrap()).unwrap(),
+                GoalCount::try_from(u32::try_from(game.away_result.unwrap()).unwrap()).unwrap(),
             )),
             FairPlayScore::default(),
         ))
@@ -115,8 +115,8 @@ pub struct Pred {
 impl From<Pred> for Prediction {
     fn from(pred: Pred) -> Prediction {
         let score = GroupGameScore::from((
-            u32::try_from(pred.home_result).unwrap(),
-            u32::try_from(pred.away_result).unwrap(),
+            GoalCount::try_from(u32::try_from(pred.home_result).unwrap()).unwrap(),
+            GoalCount::try_from(u32::try_from(pred.away_result).unwrap()).unwrap(),
         ));
         Prediction(GameId::from(u32::try_from(pred.game_id).unwrap()), score)
     }

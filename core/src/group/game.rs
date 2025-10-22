@@ -7,12 +7,12 @@
 //! The two game structs [`UnplayedGroupGame`] and [`PlayedGroupGame`]
 //! are the fundamental datastructure for the group; all other properties and statistics are
 //! derived from them.
+use crate::Date;
 use crate::fair_play::FairPlayScore;
 use crate::game::{Game, GameId, GoalCount, GoalDiff};
 use crate::group::stats::GameStat;
 use crate::group::{GroupError, GroupPoint};
 use crate::team::TeamId;
-use crate::Date;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::str::FromStr;
@@ -231,7 +231,11 @@ impl FromStr for GroupGameScore {
         let away = away
             .parse::<u32>()
             .map_err(|_err| GroupError::GameScoreParse(String::from(s)))?;
-        Ok(GroupGameScore::from((home, away)))
+        let home_goals = GoalCount::try_from(home)
+            .map_err(|_| GroupError::GameScoreParse(format!("{} (home goals too high)", s)))?;
+        let away_goals = GoalCount::try_from(away)
+            .map_err(|_| GroupError::GameScoreParse(format!("{} (away goals too high)", s)))?;
+        Ok(GroupGameScore::from((home_goals, away_goals)))
     }
 }
 
@@ -247,9 +251,18 @@ mod group_game {
     use super::*;
     #[test]
     fn home_win() {
-        let game =
-            PlayedGroupGame::try_new(0, 0, 1, (3, 0), FairPlayScore::default(), Date::mock())
-                .unwrap();
+        let game = PlayedGroupGame::try_new(
+            0,
+            0,
+            1,
+            (
+                GoalCount::try_from(3).unwrap(),
+                GoalCount::try_from(0).unwrap(),
+            ),
+            FairPlayScore::default(),
+            Date::mock(),
+        )
+        .unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(3));
         assert_eq!(away, GroupPoint(0));
@@ -257,9 +270,18 @@ mod group_game {
 
     #[test]
     fn away_win() {
-        let game =
-            PlayedGroupGame::try_new(0, 0, 1, (0, 2), FairPlayScore::default(), Date::mock())
-                .unwrap();
+        let game = PlayedGroupGame::try_new(
+            0,
+            0,
+            1,
+            (
+                GoalCount::try_from(0).unwrap(),
+                GoalCount::try_from(2).unwrap(),
+            ),
+            FairPlayScore::default(),
+            Date::mock(),
+        )
+        .unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(0));
         assert_eq!(away, GroupPoint(3));
@@ -267,9 +289,18 @@ mod group_game {
 
     #[test]
     fn draw() {
-        let game =
-            PlayedGroupGame::try_new(0, 0, 1, (0, 0), FairPlayScore::default(), Date::mock())
-                .unwrap();
+        let game = PlayedGroupGame::try_new(
+            0,
+            0,
+            1,
+            (
+                GoalCount::try_from(0).unwrap(),
+                GoalCount::try_from(0).unwrap(),
+            ),
+            FairPlayScore::default(),
+            Date::mock(),
+        )
+        .unwrap();
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));
@@ -281,14 +312,20 @@ mod score {
     use super::*;
     #[test]
     fn correct_single_digits() {
-        let true_score = GroupGameScore::new(1, 2);
+        let true_score = GroupGameScore::new(
+            GoalCount::try_from(1).unwrap(),
+            GoalCount::try_from(2).unwrap(),
+        );
         let parsed_score = GroupGameScore::from_str("1-2").unwrap();
         assert_eq!(true_score, parsed_score);
     }
 
     #[test]
     fn correct_double_digits() {
-        let true_score = GroupGameScore::new(11, 22);
+        let true_score = GroupGameScore::new(
+            GoalCount::try_from(11).unwrap(),
+            GoalCount::try_from(22).unwrap(),
+        );
         let parsed_score = GroupGameScore::from_str("11-22").unwrap();
         assert_eq!(true_score, parsed_score);
     }

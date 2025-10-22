@@ -107,8 +107,9 @@ pub struct PredScore(f32);
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::group::mock_data::groups_and_teams;
+    use crate::game::GoalCount;
     use crate::group::GroupId;
+    use crate::group::mock_data::groups_and_teams;
     use assert_approx_eq::assert_approx_eq;
     use itertools::Itertools;
 
@@ -119,13 +120,25 @@ mod test {
             result_weight: 2.0,
         };
         // Correct outcome and correct result: score = 3 * 1 + 2 * 1 = 5
-        let true_score = GroupGameScore::new(2, 2);
-        let pred = GroupGameScore::new(2, 2);
+        let true_score = GroupGameScore::new(
+            GoalCount::try_from(2).unwrap(),
+            GoalCount::try_from(2).unwrap(),
+        );
+        let pred = GroupGameScore::new(
+            GoalCount::try_from(2).unwrap(),
+            GoalCount::try_from(2).unwrap(),
+        );
         assert_approx_eq!(score_fn.pred_score(&pred, &true_score).0, PredScore(5.0).0);
 
         // Correct outcome but incorrect result: score = 3 * 1
-        let true_score = GroupGameScore::new(2, 1);
-        let pred = GroupGameScore::new(3, 1);
+        let true_score = GroupGameScore::new(
+            GoalCount::try_from(2).unwrap(),
+            GoalCount::try_from(1).unwrap(),
+        );
+        let pred = GroupGameScore::new(
+            GoalCount::try_from(3).unwrap(),
+            GoalCount::try_from(1).unwrap(),
+        );
         assert_approx_eq!(score_fn.pred_score(&pred, &true_score).0, PredScore(3.0).0);
     }
 

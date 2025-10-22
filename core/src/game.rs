@@ -38,10 +38,8 @@ pub struct GameId(u32);
 ///
 /// Either in a single game or aggregated, like in number of goals scored in a group stage.
 ///
-/// TODO: Cap it to an insane but limited number so that casts to i32 are safe.
+/// Capped at 999 to ensure safe casts to i32 and prevent overflow issues.
 /// This value is essentially the only thing the user can interact with, by predicting scores in the ui.
-/// In aggragate the thing we're risking is surpassing i32::MAX for like one teams total goal count in the group.
-/// Or later perhaps the total number scored by a team in a tournament.
 #[derive(
     Default,
     Debug,
@@ -50,8 +48,6 @@ pub struct GameId(u32);
     Serialize,
     Clone,
     Copy,
-    From,
-    Into,
     Eq,
     PartialEq,
     Ord,
@@ -61,6 +57,44 @@ pub struct GameId(u32);
     Sum,
 )]
 pub struct GoalCount(u32);
+
+impl GoalCount {
+    pub const MAX: u32 = 999;
+
+    /// Create a new GoalCount from a u32, capped at MAX
+    pub fn new(value: u32) -> Result<Self, GoalCountError> {
+        if value <= Self::MAX {
+            Ok(GoalCount(value))
+        } else {
+            Err(GoalCountError::Overflow(value))
+        }
+    }
+
+    /// Get the inner value as u32
+    pub fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+impl TryFrom<u32> for GoalCount {
+    type Error = GoalCountError;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        Self::new(value)
+    }
+}
+
+impl From<GoalCount> for u32 {
+    fn from(count: GoalCount) -> u32 {
+        count.0
+    }
+}
+
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq, thiserror::Error)]
+pub enum GoalCountError {
+    #[display("Goal count {_0} exceeds maximum of {}", GoalCount::MAX)]
+    Overflow(u32),
+}
 
 impl Sub for GoalCount {
     type Output = GoalDiff;

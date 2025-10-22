@@ -119,12 +119,12 @@ impl GameStat for GroupPoint {
     /// ```
     /// # use wwc_core::group::stats::GameStat;
     /// # use wwc_core::group::game::{GroupGameScore, UnplayedGroupGame};
-    /// # use wwc_core::game::GameId;
+    /// # use wwc_core::game::{GameId, GoalCount};
     /// # use wwc_core::group::GroupPoint;
     /// # use wwc_core::team::TeamId;
     /// # use wwc_core::Date;
     /// # use wwc_core::fair_play::{FairPlay, FairPlayScore};
-    /// let score = GroupGameScore::from((1, 0));
+    /// let score = GroupGameScore::from((GoalCount::try_from(1).unwrap(), GoalCount::try_from(0).unwrap()));
     /// let fair_play_score = FairPlayScore::new(FairPlay::new(1, 0, 0, 0), FairPlay::new(0, 0, 0, 0));
     /// let game = UnplayedGroupGame::try_new(GameId::from(0), TeamId::from(1), TeamId::from(2), Date::mock())
     ///     .unwrap()
@@ -324,7 +324,13 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
             .unwrap()
-            .play(GroupGameScore::from((2, 1)), FairPlayScore::default());
+            .play(
+                GroupGameScore::from((
+                    GoalCount::try_from(2).unwrap(),
+                    GoalCount::try_from(1).unwrap(),
+                )),
+                FairPlayScore::default(),
+            );
         let group = Group::try_new(vec![game_1], vec![game_2]).unwrap();
         let truth: HashSet<TeamId> = [1, 2, 3, 4].iter().map(|x| TeamId::from(*x)).collect();
         let stat_teams = GroupPoint::team_stats(&group)
@@ -338,8 +344,30 @@ mod tests {
         let (groups, _) = mock_data::groups_and_teams();
         let group_a = groups.get(&GroupId::try_from('A').unwrap()).unwrap();
         let mut truth = HashMap::new();
-        truth.insert(TeamId::from(1), TableStats::new(3, 2, 1, 0, 1, 0, 0));
-        truth.insert(TeamId::from(2), TableStats::new(0, 1, 2, 0, 0, 1, 0));
+        truth.insert(
+            TeamId::from(1),
+            TableStats::new(
+                3,
+                GoalCount::try_from(2).unwrap(),
+                GoalCount::try_from(1).unwrap(),
+                0,
+                1,
+                0,
+                0,
+            ),
+        );
+        truth.insert(
+            TeamId::from(2),
+            TableStats::new(
+                0,
+                GoalCount::try_from(1).unwrap(),
+                GoalCount::try_from(2).unwrap(),
+                0,
+                0,
+                1,
+                0,
+            ),
+        );
         truth.insert(TeamId::from(3), TableStats::zero());
         truth.insert(TeamId::from(4), TableStats::zero());
         assert_eq!(truth, TableStats::team_stats(group_a));

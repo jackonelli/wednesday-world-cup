@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use wwc_core::game::GoalCountError;
 use wwc_core::group::GroupError;
 use wwc_core::group::Groups;
 use wwc_core::playoff::PlayoffError;
@@ -66,4 +67,6 @@ pub enum LsvParseError {
     MissingTeamId(TeamId),
     #[error("Missing result")]
     MissingResult,
+    #[error("Goal count error: {0}")]
+    GoalCount(#[from] GoalCountError),
 }

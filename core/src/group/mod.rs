@@ -4,7 +4,7 @@ pub mod order;
 pub mod stats;
 use crate::Date;
 use crate::fair_play::FairPlayScore;
-use crate::game::{Game, GameId, NumGames};
+use crate::game::{Game, GameId, GoalCount, NumGames};
 use crate::group::game::GroupGameScore;
 use crate::team::TeamId;
 use derive_more::{Add, AddAssign, Display, From, Into, Sum};
@@ -188,8 +188,9 @@ impl Group {
             .iter()
             .map(|unpl| {
                 let goal_count = Uniform::new(0, 5).unwrap();
-                let score =
-                    GroupGameScore::new(goal_count.sample(&mut rng), goal_count.sample(&mut rng));
+                let home_goals = GoalCount::try_from(goal_count.sample(&mut rng)).unwrap();
+                let away_goals = GoalCount::try_from(goal_count.sample(&mut rng)).unwrap();
+                let score = GroupGameScore::new(home_goals, away_goals);
                 unpl.play(score, FairPlayScore::default())
             })
             .collect();
@@ -336,7 +337,13 @@ pub(crate) mod mock_data {
         let game_1 = UnplayedGroupGame::try_new(2, 3, 4, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
             .unwrap()
-            .play(GroupGameScore::from((2, 1)), FairPlayScore::default());
+            .play(
+                GroupGameScore::from((
+                    GoalCount::try_from(2).unwrap(),
+                    GoalCount::try_from(1).unwrap(),
+                )),
+                FairPlayScore::default(),
+            );
         let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
         let game_1 = UnplayedGroupGame::try_new(3, 5, 6, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(4, 7, 8, Date::mock()).unwrap();
@@ -384,9 +391,18 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
-        let game_3 =
-            PlayedGroupGame::try_new(2, 2, 1, (1, 2), FairPlayScore::default(), Date::mock())
-                .unwrap();
+        let game_3 = PlayedGroupGame::try_new(
+            2,
+            2,
+            1,
+            (
+                GoalCount::try_from(1).unwrap(),
+                GoalCount::try_from(2).unwrap(),
+            ),
+            FairPlayScore::default(),
+            Date::mock(),
+        )
+        .unwrap();
         let played = vec![game_3];
         assert_eq!(Group::game_ids_unique(&played, &upcoming), false);
     }
@@ -395,9 +411,18 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(2, 0, 3, Date::mock()).unwrap();
         let upcoming = vec![game_1, game_2];
-        let game_3 =
-            PlayedGroupGame::try_new(3, 2, 1, (1, 2), FairPlayScore::default(), Date::mock())
-                .unwrap();
+        let game_3 = PlayedGroupGame::try_new(
+            3,
+            2,
+            1,
+            (
+                GoalCount::try_from(1).unwrap(),
+                GoalCount::try_from(2).unwrap(),
+            ),
+            FairPlayScore::default(),
+            Date::mock(),
+        )
+        .unwrap();
         let played = vec![game_3];
         assert_eq!(Group::game_ids_unique(&played, &upcoming), true);
     }
@@ -418,7 +443,13 @@ mod tests {
         let game_1 = UnplayedGroupGame::try_new(1, 0, 1, Date::mock()).unwrap();
         let game_2 = UnplayedGroupGame::try_new(3, 1, 2, Date::mock())
             .unwrap()
-            .play(GroupGameScore::from((2, 0)), FairPlayScore::default());
+            .play(
+                GroupGameScore::from((
+                    GoalCount::try_from(2).unwrap(),
+                    GoalCount::try_from(0).unwrap(),
+                )),
+                FairPlayScore::default(),
+            );
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])
             .unwrap()
             .team_ids()

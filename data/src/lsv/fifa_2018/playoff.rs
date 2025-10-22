@@ -2,7 +2,7 @@
 use crate::lsv::LsvParseError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use wwc_core::game::GameId;
+use wwc_core::game::{GameId, GoalCount};
 use wwc_core::group::{GroupId, GroupOutcome};
 use wwc_core::playoff::{PlayoffGameState, PlayoffResult, PlayoffScore, TeamSource};
 use wwc_core::team::TeamId;
@@ -185,10 +185,14 @@ impl ParsePlayoffGame {
                             .get(&away)
                             .ok_or(LsvParseError::MissingTeamId(away))?,
                         PlayoffScore::try_new(
-                            home_result.into(),
-                            away_result.into(),
-                            self.home_penalty.map(|p| p.into()),
-                            self.away_penalty.map(|p| p.into()),
+                            GoalCount::try_from(home_result)?,
+                            GoalCount::try_from(away_result)?,
+                            self.home_penalty
+                                .map(|p| GoalCount::try_from(p))
+                                .transpose()?,
+                            self.away_penalty
+                                .map(|p| GoalCount::try_from(p))
+                                .transpose()?,
                         )?,
                     ),
                 }),
