@@ -15,7 +15,6 @@ use crate::group::{GroupError, GroupPoint};
 use crate::team::TeamId;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::str::FromStr;
 
 /// Unplayed group game
 #[derive(Deserialize, Serialize, Debug, Clone, Copy)]
@@ -176,10 +175,10 @@ pub struct GroupGameScore {
 }
 
 impl GroupGameScore {
-    pub fn new<T: Into<GoalCount>>(home_goals: T, away_goals: T) -> Self {
+    pub fn new(home_goals: GoalCount, away_goals: GoalCount) -> Self {
         GroupGameScore {
-            home: home_goals.into(),
-            away: away_goals.into(),
+            home: home_goals,
+            away: away_goals,
         }
     }
     pub fn home_outcome(&self) -> GroupGameOutcome {
@@ -204,41 +203,6 @@ impl std::fmt::Display for GroupGameScore {
     }
 }
 
-impl<T: Into<GoalCount>> From<(T, T)> for GroupGameScore {
-    fn from(x: (T, T)) -> Self {
-        let (home, away) = x;
-        Self {
-            home: home.into(),
-            away: away.into(),
-        }
-    }
-}
-
-// TODO test.
-impl FromStr for GroupGameScore {
-    type Err = GroupError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let score_split: Vec<&str> = s.split('-').collect();
-        let (home, away) = if score_split.len() != 2 {
-            return Err(GroupError::GameScoreParse(String::from(s)));
-        } else {
-            (score_split[0], score_split[1])
-        };
-        //TODO: Better error handling
-        let home = home
-            .parse::<u32>()
-            .map_err(|_err| GroupError::GameScoreParse(String::from(s)))?;
-        let away = away
-            .parse::<u32>()
-            .map_err(|_err| GroupError::GameScoreParse(String::from(s)))?;
-        let home_goals = GoalCount::try_from(home)
-            .map_err(|_| GroupError::GameScoreParse(format!("{} (home goals too high)", s)))?;
-        let away_goals = GoalCount::try_from(away)
-            .map_err(|_| GroupError::GameScoreParse(format!("{} (away goals too high)", s)))?;
-        Ok(GroupGameScore::from((home_goals, away_goals)))
-    }
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, Eq, PartialEq)]
 pub enum GroupGameOutcome {
     Win,
@@ -255,7 +219,7 @@ mod group_game {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(3).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -274,7 +238,7 @@ mod group_game {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(2).unwrap(),
             ),
@@ -293,7 +257,7 @@ mod group_game {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -304,35 +268,5 @@ mod group_game {
         let (home, away) = game.points();
         assert_eq!(home, GroupPoint(1));
         assert_eq!(away, GroupPoint(1));
-    }
-}
-
-#[cfg(test)]
-mod score {
-    use super::*;
-    #[test]
-    fn correct_single_digits() {
-        let true_score = GroupGameScore::new(
-            GoalCount::try_from(1).unwrap(),
-            GoalCount::try_from(2).unwrap(),
-        );
-        let parsed_score = GroupGameScore::from_str("1-2").unwrap();
-        assert_eq!(true_score, parsed_score);
-    }
-
-    #[test]
-    fn correct_double_digits() {
-        let true_score = GroupGameScore::new(
-            GoalCount::try_from(11).unwrap(),
-            GoalCount::try_from(22).unwrap(),
-        );
-        let parsed_score = GroupGameScore::from_str("11-22").unwrap();
-        assert_eq!(true_score, parsed_score);
-    }
-
-    #[test]
-    fn fails_gibberish() {
-        let parsed_score = GroupGameScore::from_str("asödkfaäe");
-        assert!(parsed_score.is_err());
     }
 }

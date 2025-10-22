@@ -338,10 +338,10 @@ pub(crate) mod mock_data {
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
             .unwrap()
             .play(
-                GroupGameScore::from((
+                GroupGameScore::new(
                     GoalCount::try_from(2).unwrap(),
                     GoalCount::try_from(1).unwrap(),
-                )),
+                ),
                 FairPlayScore::default(),
             );
         let group_a = Group::try_new(vec![game_1], vec![game_2]).unwrap();
@@ -395,7 +395,7 @@ mod tests {
             2,
             2,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(2).unwrap(),
             ),
@@ -415,7 +415,7 @@ mod tests {
             3,
             2,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(2).unwrap(),
             ),
@@ -444,10 +444,10 @@ mod tests {
         let game_2 = UnplayedGroupGame::try_new(3, 1, 2, Date::mock())
             .unwrap()
             .play(
-                GroupGameScore::from((
+                GroupGameScore::new(
                     GoalCount::try_from(2).unwrap(),
                     GoalCount::try_from(0).unwrap(),
-                )),
+                ),
                 FairPlayScore::default(),
             );
         let parsed_teams: HashSet<TeamId> = Group::try_new(vec![game_1], vec![game_2])

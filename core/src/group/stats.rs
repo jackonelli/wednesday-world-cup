@@ -124,7 +124,7 @@ impl GameStat for GroupPoint {
     /// # use wwc_core::team::TeamId;
     /// # use wwc_core::Date;
     /// # use wwc_core::fair_play::{FairPlay, FairPlayScore};
-    /// let score = GroupGameScore::from((GoalCount::try_from(1).unwrap(), GoalCount::try_from(0).unwrap()));
+    /// let score = GroupGameScore::new(GoalCount::try_from(1).unwrap(), GoalCount::try_from(0).unwrap());
     /// let fair_play_score = FairPlayScore::new(FairPlay::new(1, 0, 0, 0), FairPlay::new(0, 0, 0, 0));
     /// let game = UnplayedGroupGame::try_new(GameId::from(0), TeamId::from(1), TeamId::from(2), Date::mock())
     ///     .unwrap()
@@ -325,10 +325,10 @@ mod tests {
         let game_2 = UnplayedGroupGame::try_new(1, 1, 2, Date::mock())
             .unwrap()
             .play(
-                GroupGameScore::from((
+                GroupGameScore::new(
                     GoalCount::try_from(2).unwrap(),
                     GoalCount::try_from(1).unwrap(),
-                )),
+                ),
                 FairPlayScore::default(),
             );
         let group = Group::try_new(vec![game_1], vec![game_2]).unwrap();

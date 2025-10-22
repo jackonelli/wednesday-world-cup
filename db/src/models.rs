@@ -59,10 +59,10 @@ impl TryFrom<Game> for PlayedGroupGame {
         .map_err(WwcError::from)
         .map_err(DbError::from)?
         .play(
-            GroupGameScore::from((
+            GroupGameScore::new(
                 GoalCount::try_from(u32::try_from(game.home_result.unwrap()).unwrap()).unwrap(),
                 GoalCount::try_from(u32::try_from(game.away_result.unwrap()).unwrap()).unwrap(),
-            )),
+            ),
             FairPlayScore::default(),
         ))
     }
@@ -114,10 +114,10 @@ pub struct Pred {
 
 impl From<Pred> for Prediction {
     fn from(pred: Pred) -> Prediction {
-        let score = GroupGameScore::from((
+        let score = GroupGameScore::new(
             GoalCount::try_from(u32::try_from(pred.home_result).unwrap()).unwrap(),
             GoalCount::try_from(u32::try_from(pred.away_result).unwrap()).unwrap(),
-        ));
+        );
         Prediction(GameId::from(u32::try_from(pred.game_id).unwrap()), score)
     }
 }

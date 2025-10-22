@@ -2,15 +2,15 @@
 //!
 //! Data source: <https://github.com/lsv/fifa-worldcup-2018>
 
-use crate::lsv::euro_2020::TeamMap;
 use crate::lsv::GameType;
+use crate::lsv::euro_2020::TeamMap;
 use serde::{Deserialize, Serialize};
+use wwc_core::Date;
 use wwc_core::fair_play::{FairPlay, FairPlayScore};
 use wwc_core::game::{GameId, GoalCount};
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::group::{Group, GroupError, GroupId};
 use wwc_core::team::FifaCode;
-use wwc_core::Date;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub(crate) struct ParseGroup {
@@ -82,7 +82,7 @@ impl ParseGroupGame {
             parse_game.date,
         )?;
         let score = match (parse_game.home_result, parse_game.away_result) {
-            (Some(home), Some(away)) => GroupGameScore::from((home, away)),
+            (Some(home), Some(away)) => GroupGameScore::new(home, away),
             _ => return Err(GroupError::GenericError),
         };
         let fair_play_score = match (parse_game.home_fair_play, parse_game.away_fair_play) {

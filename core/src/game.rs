@@ -38,7 +38,7 @@ pub struct GameId(u32);
 ///
 /// Either in a single game or aggregated, like in number of goals scored in a group stage.
 ///
-/// Capped at 999 to ensure safe casts to i32 and prevent overflow issues.
+/// Capped at 255 to ensure safe casts to i32 and prevent overflow issues.
 /// This value is essentially the only thing the user can interact with, by predicting scores in the ui.
 #[derive(
     Default,
@@ -59,7 +59,7 @@ pub struct GameId(u32);
 pub struct GoalCount(u32);
 
 impl GoalCount {
-    pub const MAX: u32 = 999;
+    pub const MAX: u32 = 255;
 
     /// Create a new GoalCount from a u32, capped at MAX
     pub fn new(value: u32) -> Result<Self, GoalCountError> {

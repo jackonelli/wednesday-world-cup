@@ -2,6 +2,7 @@ use crate::team::format_team_flag;
 use leptos::ev;
 use leptos::prelude::*;
 use wwc_core::game::GameId;
+use wwc_core::game::GoalCount;
 use wwc_core::group::GroupId;
 use wwc_core::group::game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame};
 use wwc_core::team::Teams;
@@ -73,9 +74,11 @@ pub fn UnplayedGameView(
             let home_val = home_input.value();
             let away_val = away_input.value();
 
-            if let (Ok(home), Ok(away)) = (home_val.parse::<u8>(), away_val.parse::<u8>()) {
+            if let (Ok(home), Ok(away)) = (home_val.parse::<u32>(), away_val.parse::<u32>()) {
                 let score_str = format!("{}-{}", home, away);
-                if let Ok(score) = score_str.parse::<GroupGameScore>() {
+                if let (Ok(home), Ok(away)) = (GoalCount::try_from(home), GoalCount::try_from(away))
+                {
+                    let score = GroupGameScore::new(home, away);
                     on_play(ScoreInput::new(score, group_id, game_id));
                     home_input.set_value("");
                     away_input.set_value("");

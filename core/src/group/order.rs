@@ -663,7 +663,7 @@ mod fifa_2018_ordering_tests {
     use crate::Date;
     use crate::fair_play::{FairPlay, FairPlayScore};
     use crate::group::Group;
-    use crate::group::game::PlayedGroupGame;
+    use crate::group::game::{GroupGameScore, PlayedGroupGame};
     /// One round of the group stage of 4 teams.
     /// Strict order only on PrimaryStats
     #[test]
@@ -672,7 +672,7 @@ mod fifa_2018_ordering_tests {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(2).unwrap(),
             ),
@@ -684,7 +684,7 @@ mod fifa_2018_ordering_tests {
             1,
             2,
             3,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(1).unwrap(),
             ),
@@ -696,7 +696,7 @@ mod fifa_2018_ordering_tests {
             2,
             0,
             3,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(1).unwrap(),
             ),
@@ -718,7 +718,7 @@ mod fifa_2018_ordering_tests {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(1).unwrap(),
             ),
@@ -730,7 +730,7 @@ mod fifa_2018_ordering_tests {
             1,
             2,
             3,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -742,7 +742,7 @@ mod fifa_2018_ordering_tests {
             2,
             0,
             2,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -754,7 +754,7 @@ mod fifa_2018_ordering_tests {
             3,
             1,
             3,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(5).unwrap(),
                 GoalCount::try_from(5).unwrap(),
             ),
@@ -777,7 +777,7 @@ mod fifa_2018_ordering_tests {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(2).unwrap(),
             ),
@@ -789,7 +789,7 @@ mod fifa_2018_ordering_tests {
             1,
             2,
             3,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -815,7 +815,7 @@ mod fifa_2018_ordering_tests {
             0,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -838,7 +838,7 @@ mod fifa_2018_ordering_tests {
             0,
             0,
             2,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -850,7 +850,7 @@ mod fifa_2018_ordering_tests {
             1,
             1,
             2,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -862,7 +862,7 @@ mod fifa_2018_ordering_tests {
             2,
             1,
             2,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -874,7 +874,7 @@ mod fifa_2018_ordering_tests {
             3,
             0,
             1,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(1).unwrap(),
                 GoalCount::try_from(0).unwrap(),
             ),
@@ -886,7 +886,7 @@ mod fifa_2018_ordering_tests {
             4,
             0,
             3,
-            (
+            GroupGameScore::new(
                 GoalCount::try_from(0).unwrap(),
                 GoalCount::try_from(1).unwrap(),
             ),
