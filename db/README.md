@@ -9,7 +9,7 @@ This crate provides async database operations using SQLx with SQLite.
 Create a `.env` file in the project root (or export the variable):
 
 ```bash
-DATABASE_URL=sqlite:./server/data/wwc.db
+DATABASE_URL=sqlite:<path_to_db>
 ```
 
 Or for in-memory (testing):
@@ -71,15 +71,6 @@ cargo run -p wwc_cli -- clear teams
 cargo run -p wwc_cli -- clear games
 ```
 
-## Migration from Diesel
-
-If you have an existing Diesel database, it will work as-is! The schema is identical:
-- Same table names
-- Same column names
-- Same data types
-
-Just point `DATABASE_URL` to your existing SQLite file.
-
 ## Schema
 
 The database has 5 tables:
@@ -94,7 +85,7 @@ See `sqlx_migrations/001_create_tables.sql` for the full schema.
 
 ## Development
 
-The database layer is fully async and uses connection pooling:
+The database layer is async and uses connection pooling:
 
 ```rust
 use wwc_db::{create_pool, get_teams};
@@ -103,7 +94,7 @@ use wwc_db::{create_pool, get_teams};
 async fn main() {
     // Create pool (runs migrations automatically)
     let pool = create_pool().await.unwrap();
-    
+
     // Use it
     let teams = get_teams(&pool).await.unwrap();
     println!("Teams: {:?}", teams);

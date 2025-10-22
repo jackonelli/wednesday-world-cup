@@ -54,41 +54,10 @@ To get the full app up and running, you need to have
 The backend consists of the tightly linked `server` and `db` crates. The `db` crate is a pure lib. It provides rust bindings to a `sqlite3` database containing the raw data for the application (teams, games, betters et c.).
 The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with or manipulates database data.
 
-First, setup the database. We use a rust object relational mapping _ORM_ called Diesel.
-This requires the `diesel-cli`, get it with:
-
-```bash
-# This requires an install sqlite lib on your system.
-cargo install diesel_cli --no-default-features --features sqlite
-# Optionally, install with bundled sqlite c-lib. Path of least resistance for Windows users
-cargo install diesel_cli --no-default-features --features "sqlite-bundled"
+First, setup the database, see [`db/README.md`](db/README.md)
 ```
 
-Set environment variable `DATABASE_URL=<path_to_db>`, perhaps like this:
-
-```bash
-# Preferably in a ".env" file.
-export WWC_ROOT=$(pwd)
-export DATABASE_URL=$WWC_ROOT/<path_to_db>
-```
-
-The variable `WWC_ROOT` is not necessary, but I will use it here to reference the repo root.
-To create and fill the db with data, run:
-
-```bash
-cd $WWC_ROOT/db
-diesel setup
-cd $WWC_ROOT
-cargo run --bin wwc_cli add all
-# To verify that it worked, run
-cargo run --bin wwc_cli list all
-# Which should list a lot of hard-to-read data
-```
-
-Now, the database is set up and the only remaining backend thing is to start the server.
-The server expects a config file `Rocket.toml` in the repo root.
-An actual config is placed in `server/Rocket.toml`, which is symlinked to the repo root.
-If there is an issue with the symlinking, simply copy the actual file from `server/` to the repo root.
+With the database set up, the only remaining backend thing is to start the server.
 
 ```bash
 cd $WWC_ROOT
@@ -98,30 +67,17 @@ cargo run --bin wwc_server
 ### UI setup
 
 The UI is a webpage, hosted with some generic web server. The final UI is in html, css and javascript, but this is all generated from rust source code, found in the `ui` crate. We use a special build program to generate WASM from rust.
-Specifically, the rust code in `ui` is written with a web framework called [Seed](https://seed-rs.org/), which looks even stranger than normal rust since it uses macros to generate the html.
-
-#### Local hosting
-
-Any webserver will do. I find [`miniserve`](https://github.com/svenstaro/miniserve) to be very convenient when developing.
-Download the executable or simply install with `cargo install miniserve`
+Specifically, the rust code in `ui` is written with a web framework called [Leptos](https://leptos.dev/), which looks even stranger than normal rust since it uses macros to generate the html.
 
 #### WASM compilation
 
-Install [`wasm-pack`](https://rustwasm.github.io/wasm-pack/installer/#).
-Again, some pre-built binaries are provided but the `cargo install` option works just as well.
+Install [`trunk`](https://trunkrs.dev/).
 
+For development use `trunk serve`, this will host and automatically rebuild the UI when the source code changes.
 ```bash
 cd $WWC_ROOT/ui
-wasm-pack build --target web --out-name wwc_ui --dev
-# host the `ui` directory, e.g. with
-miniserve --index index.html $WWC_ROOT/ui
+trunk serve
 ```
-
-### Optional
-
-Install [`cargo-make`](https://github.com/sagiegurari/cargo-make#installation).
-The repo contains some `Makefile.toml`s, which defines some long and tedious build commands which can be accessed with `cargo-make`.
-I don't love `cargo-make` but it is kind of helpful to document all the build commands.
 
 ## Docs
 

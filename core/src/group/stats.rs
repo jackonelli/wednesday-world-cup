@@ -7,7 +7,7 @@
 //! Such as points, goals scored, played games et c.
 //! This category is represented with the trait [`GameStat`].
 //!
-//! The trait is used in defining generic `SubOrderings` in the [`super::order`] module which enables
+//! The trait is used in defining generic [`SubOrdering`](super::order::SubOrdering) which enables
 //! ergonomic creation of new group ordering rules.
 use crate::fair_play::{FairPlayValue, FifaFairPlayValue};
 use crate::game::{GoalCount, GoalDiff, NumGames};

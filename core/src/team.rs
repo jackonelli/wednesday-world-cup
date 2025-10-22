@@ -104,7 +104,7 @@ impl TryFrom<String> for FifaCode {
     }
 }
 
-/// Look-up table for Fifa code to iso2 value.
+/// Look-up table for Fifa code to ISO2 value.
 ///
 /// Taking the lower case first two letters of the Fifa code is a good heuristic for this
 /// conversion but for some countries it fails. These failed states are added to this look-up
@@ -141,6 +141,7 @@ const FIFA_CODE_ISO2_MAP: &[(&str, &str)] = &[
 ///
 /// Never panics, [`FifaCode`] is guaranteed to have exactly three (upper case ASCII) chars.
 /// The function assumes that it can access the two first chars, and so can never fail.
+#[clippy::unwrap_used]
 impl From<&FifaCode> for Iso2 {
     fn from(fifa_code: &FifaCode) -> Iso2 {
         if let Some((_, iso2)) = FIFA_CODE_ISO2_MAP

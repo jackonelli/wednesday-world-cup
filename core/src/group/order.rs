@@ -11,7 +11,7 @@
 //! 3.
 //! 4.
 //!
-//! which is represented as a list of list ([`NonStrictGroupOrder`]):
+//! which is represented as a list of lists ([`NonStrictOrder`]):
 //!
 //! `[[SWE, GER, BRA, ITA], [], [], []]`
 //!
@@ -31,13 +31,13 @@
 //!
 //! The sub-ordering stops when
 //! - We have achieved a strict order or,
-//! - There are no more rules to apply. Then the [`Tiebreaker`] is applied (random chance or
-//!   ranking) which guarantees a strict order.
+//! - There are no more rules to apply. Then the [`Tiebreaker`] is applied (random chance for Fifa World Cup or
+//!   ranking for Euro Cup) which guarantees a strict order.
 //!
 //! A system of greedy, atomic sub-orders is flexible since new rules can easily be composed from them.
 //! The [`SubOrdering`] trait is auto-implemented for every struct that
 //! implements [`GameStat`] + [`Ord`] + [`Copy`], making the
-//! composition of new rules straightforward, see ([`euro_2020`], [`fifa_2018`]).
+//! composition of new rules straightforward, see ([`euro_2020_rules`], [`fifa_2018_rules`]).
 //!
 //! ### A note on performance
 //!
@@ -210,6 +210,21 @@ impl TeamOrder {
     }
 }
 
+impl TryFrom<NonStrictOrder> for TeamOrder {
+    type Error = GroupError;
+
+    /// Converts a non-strict order into a strict order
+    ///
+    /// Fails if there are two or more teams which are equal according to the given rules.
+    fn try_from(value: NonStrictOrder) -> Result<Self, Self::Error> {
+        if value.is_strict() {
+            Ok(TeamOrder(value.0.into_iter().map(|x| x[0]).collect()))
+        } else {
+            Err(GroupError::NonStrictOrder)
+        }
+    }
+}
+
 /// Indexes [`TeamOrder`]
 #[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq)]
 pub(crate) struct OrderIdx(pub(crate) usize);
@@ -227,18 +242,6 @@ impl std::ops::Index<OrderIdx> for TeamOrder {
     type Output = TeamId;
     fn index(&self, idx: OrderIdx) -> &Self::Output {
         &self.0[idx.0]
-    }
-}
-
-impl TryFrom<NonStrictOrder> for TeamOrder {
-    type Error = GroupError;
-
-    fn try_from(value: NonStrictOrder) -> Result<Self, Self::Error> {
-        if value.is_strict() {
-            Ok(TeamOrder(value.0.into_iter().map(|x| x[0]).collect()))
-        } else {
-            Err(GroupError::NonStrictOrder)
-        }
     }
 }
 
@@ -312,7 +315,7 @@ impl IntoIterator for NonStrictOrder {
 ///
 /// A complete order of a group is defined by a prioritised list of orders
 /// which implements this trait. I.e. they can take a vector of teams and split them into a
-/// [`NonStrictGroupOrder`].
+/// [`NonStrictOrder`].
 pub trait SubOrdering {
     fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder;
     fn order_teams(
@@ -364,7 +367,7 @@ impl<T: GameStat + Ord + Copy> SubOrdering for AllGroupStat<T> {
     /// Does not panic since the [`GameStat::team_stats`] returns a hashmap which has all group
     /// teams as keys: The teams in `order` is a subset of the keys in `stats_all_teams`.
     fn order_group(&self, group: &Group, order: Vec<TeamId>) -> NonStrictOrder {
-        // TODO: Not efficient to calc stats for all teams, but efficient is not very important
+        // TODO: Not efficient to calc stats for all teams, but efficiency is not very important
         // here.
         let stats_all_teams = T::team_stats(group);
         #[allow(clippy::unwrap_used)]

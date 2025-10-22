@@ -73,16 +73,16 @@ impl Group {
             .unique()
     }
 
-    /// Games accessor
+    /// Unplayed games accessor
     ///
-    /// TODO: Sort by date/game id or other
+    /// Returns an iterator over unplayed games sorted by game id.
     pub fn unplayed_games(&self) -> impl Iterator<Item = &UnplayedGroupGame> {
         self.unplayed_games.iter().sorted_by_key(|game| game.id)
     }
 
-    /// Games accessor
+    /// Played games accessor
     ///
-    /// TODO: Sort by date/game id or other
+    /// Returns an iterator over played games sorted by game id.
     pub fn played_games(&self) -> impl Iterator<Item = &PlayedGroupGame> {
         self.played_games.iter().sorted_by_key(|game| game.id)
     }
