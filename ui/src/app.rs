@@ -181,6 +181,7 @@ pub fn App() -> impl IntoView {
                             <PlayoffBracketView
                                 bracket=b
                                 groups=current_groups
+                                teams=teams.get()
                                 rules=fifa_2018_rules()
                             />
                         }
