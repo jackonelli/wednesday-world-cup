@@ -16,6 +16,7 @@ use wwc_core::error::WwcError;
 use wwc_core::game::GameId;
 use wwc_core::group::{Group, GroupId, Groups, game::PlayedGroupGame, game::UnplayedGroupGame};
 use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
+use wwc_core::playoff::TeamSource;
 use wwc_core::team::Teams;
 
 #[tokio::main]
@@ -32,6 +33,7 @@ async fn main() {
     let app = Router::new()
         .route("/get_teams", get(get_teams))
         .route("/get_groups", get(get_groups))
+        .route("/get_playoff_team_sources", get(get_playoff_team_sources))
         .route("/get_preds/:player_id", get(get_preds))
         .route("/clear_preds", get(clear_preds))
         .route("/save_preds", put(save_preds))
@@ -106,6 +108,19 @@ async fn clear_preds(State(pool): State<SqlitePool>) -> Result<StatusCode, AppEr
 
     info!("Predictions cleared");
     Ok(StatusCode::OK)
+}
+
+/// Get playoff team sources
+///
+/// Returns the team sources for all playoff games.
+/// This is used to build the BracketStructure on the client.
+async fn get_playoff_team_sources(
+    State(pool): State<SqlitePool>,
+) -> Result<Json<Vec<(GameId, (TeamSource, TeamSource))>>, AppError> {
+    let team_sources = wwc_db::get_playoff_team_sources(&pool).await?;
+
+    info!("Retrieved {} playoff team sources", team_sources.len());
+    Ok(Json(team_sources))
 }
 
 /// Get groups

@@ -37,6 +37,11 @@ pub struct GameId(u32);
 /// Non-negative int. of goals.
 ///
 /// Either in a single game or aggregated, like in number of goals scored in a group stage.
+///
+/// TODO: Cap it to an insane but limited number so that casts to i32 are safe.
+/// This value is essentially the only thing the user can interact with, by predicting scores in the ui.
+/// In aggragate the thing we're risking is surpassing i32::MAX for like one teams total goal count in the group.
+/// Or later perhaps the total number scored by a team in a tournament.
 #[derive(
     Default,
     Debug,

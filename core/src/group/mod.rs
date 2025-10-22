@@ -319,7 +319,7 @@ pub enum GroupError {
     GenericError,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupOutcome {
     Winner(GroupId),
     RunnerUp(GroupId),

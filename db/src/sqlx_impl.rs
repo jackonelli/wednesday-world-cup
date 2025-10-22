@@ -2,15 +2,17 @@ use crate::DbError;
 use dotenv::dotenv;
 use itertools::{Either, Itertools};
 use sqlx::{FromRow, SqlitePool};
+use std::collections::HashSet;
 use std::env;
 use wwc_core::error::WwcError;
 use wwc_core::fair_play::FairPlayScore;
 use wwc_core::game::GameId;
 use wwc_core::group::{
-    GroupId,
+    GroupId, GroupOutcome,
     game::{GroupGameScore, PlayedGroupGame, UnplayedGroupGame},
 };
 use wwc_core::player::{PlayerId, PlayerPredictions, Prediction};
+use wwc_core::playoff::TeamSource;
 use wwc_core::team::{FifaCode, TeamId, TeamName, TeamRank};
 
 // Database models
@@ -94,6 +96,21 @@ pub struct GroupGameMap {
 }
 
 #[derive(Debug, FromRow)]
+pub struct PlayoffTeamSourceRow {
+    pub game_id: i32,
+    pub home_source_type: String,
+    pub home_group_id: Option<String>,
+    pub home_outcome: Option<String>,
+    pub home_third_place_groups: Option<String>,
+    pub home_source_game_id: Option<i32>,
+    pub away_source_type: String,
+    pub away_group_id: Option<String>,
+    pub away_outcome: Option<String>,
+    pub away_third_place_groups: Option<String>,
+    pub away_source_game_id: Option<i32>,
+}
+
+#[derive(Debug, FromRow)]
 pub struct Pred {
     pub id: i32,
     pub player_id: i32,
@@ -139,6 +156,11 @@ pub async fn create_pool() -> Result<SqlitePool, DbError> {
 
     // Run migrations (idempotent due to IF NOT EXISTS)
     sqlx::query(include_str!("../sqlx_migrations/001_create_tables.sql"))
+        .execute(&pool)
+        .await
+        .map_err(DbError::Sqlx)?;
+
+    sqlx::query(include_str!("../sqlx_migrations/002_playoff_tables.sql"))
         .execute(&pool)
         .await
         .map_err(DbError::Sqlx)?;
@@ -413,4 +435,106 @@ pub async fn clear_group_game_maps(pool: &SqlitePool) -> Result<(), DbError> {
         .await
         .map_err(DbError::Sqlx)?;
     Ok(())
+}
+
+// Playoff-related functions
+
+/// Parse a TeamSource from database row fields
+fn parse_team_source(
+    source_type: &str,
+    group_id: Option<&str>,
+    outcome: Option<&str>,
+    third_place_groups: Option<&str>,
+    source_game_id: Option<i32>,
+) -> Result<TeamSource, DbError> {
+    match source_type {
+        "group_outcome" => {
+            let group_id = group_id
+                .ok_or_else(|| DbError::Generic("Missing group_id for group_outcome".into()))?;
+            let group_id = GroupId::try_from(group_id.chars().next().unwrap())
+                .map_err(|e| DbError::Core(WwcError::from(e)))?;
+
+            let outcome = outcome
+                .ok_or_else(|| DbError::Generic("Missing outcome for group_outcome".into()))?;
+
+            let group_outcome = match outcome {
+                "winner" => GroupOutcome::Winner(group_id),
+                "runner_up" => GroupOutcome::RunnerUp(group_id),
+                "third_place" => {
+                    let groups_str = third_place_groups
+                        .ok_or_else(|| DbError::Generic("Missing third_place_groups".into()))?;
+                    // Parse JSON array like '["A","B","C"]'
+                    let groups: Vec<String> = serde_json::from_str(groups_str).map_err(|e| {
+                        DbError::Generic(format!("Invalid third_place_groups JSON: {}", e))
+                    })?;
+                    let group_set: HashSet<GroupId> = groups
+                        .into_iter()
+                        .map(|s| GroupId::try_from(s.chars().next().unwrap()))
+                        .collect::<Result<_, _>>()
+                        .map_err(|e| DbError::Core(WwcError::from(e)))?;
+                    GroupOutcome::ThirdPlace(group_set)
+                }
+                _ => return Err(DbError::Generic(format!("Unknown outcome: {}", outcome))),
+            };
+
+            Ok(TeamSource::GroupOutcome(group_outcome))
+        }
+        "winner_of" => {
+            let game_id = source_game_id
+                .ok_or_else(|| DbError::Generic("Missing source_game_id for winner_of".into()))?;
+            Ok(TeamSource::WinnerOf(GameId::from(
+                u32::try_from(game_id).unwrap(),
+            )))
+        }
+        "loser_of" => {
+            let game_id = source_game_id
+                .ok_or_else(|| DbError::Generic("Missing source_game_id for loser_of".into()))?;
+            Ok(TeamSource::LoserOf(GameId::from(
+                u32::try_from(game_id).unwrap(),
+            )))
+        }
+        _ => Err(DbError::Generic(format!(
+            "Unknown source_type: {}",
+            source_type
+        ))),
+    }
+}
+
+/// Get playoff team sources from the database
+pub async fn get_playoff_team_sources(
+    pool: &SqlitePool,
+) -> Result<Vec<(GameId, (TeamSource, TeamSource))>, DbError> {
+    let rows = sqlx::query_as::<_, PlayoffTeamSourceRow>(
+        "SELECT * FROM playoff_team_sources ORDER BY game_id",
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(DbError::Sqlx)?;
+
+    let team_sources: Result<Vec<_>, DbError> = rows
+        .into_iter()
+        .map(|row| {
+            let game_id = GameId::from(u32::try_from(row.game_id).unwrap());
+
+            let home_source = parse_team_source(
+                &row.home_source_type,
+                row.home_group_id.as_deref(),
+                row.home_outcome.as_deref(),
+                row.home_third_place_groups.as_deref(),
+                row.home_source_game_id,
+            )?;
+
+            let away_source = parse_team_source(
+                &row.away_source_type,
+                row.away_group_id.as_deref(),
+                row.away_outcome.as_deref(),
+                row.away_third_place_groups.as_deref(),
+                row.away_source_game_id,
+            )?;
+
+            Ok((game_id, (home_source, away_source)))
+        })
+        .collect();
+
+    team_sources
 }

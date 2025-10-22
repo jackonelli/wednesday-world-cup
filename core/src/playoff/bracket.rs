@@ -23,7 +23,7 @@ use std::collections::HashMap;
 use thiserror::Error;
 
 /// Where a team comes from in the bracket
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TeamSource {
     /// Team from group stage outcome
     GroupOutcome(GroupOutcome),
