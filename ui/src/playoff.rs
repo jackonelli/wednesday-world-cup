@@ -19,7 +19,6 @@ where
 
     view! {
         <section class="playoff-bracket">
-            <h2>"Playoff Bracket"</h2>
             <div class="tournament-bracket tournament-bracket--rounded">
                 {rounds
                     .into_iter()
@@ -47,7 +46,6 @@ where
 fn round_name(depth: usize, max_depth: usize) -> &'static str {
     match depth {
         0 => "Final",
-        1 if max_depth == 1 => "Semi-Finals",
         1 => "Semi-Finals",
         2 => "Quarter-Finals",
         3 => "Round of 16",
@@ -66,20 +64,9 @@ fn view_playoff_game(game: PlayoffGameState) -> impl IntoView {
             view! {
                 <li class="tournament-bracket__item">
                     <div class="tournament-bracket__match">
-                        <table class="tournament-bracket__table">
-                            <tbody class="tournament-bracket__content">
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{home_source.to_string()}</span>
-                                    </td>
-                                </tr>
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{away_source.to_string()}</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <span class="tournament-bracket__code">{home_source.to_string()}</span>
+                        <span class="vs-separator">"-"</span>
+                        <span class="tournament-bracket__code">{away_source.to_string()}</span>
                     </div>
                 </li>
             }
@@ -92,20 +79,9 @@ fn view_playoff_game(game: PlayoffGameState) -> impl IntoView {
             view! {
                 <li class="tournament-bracket__item">
                     <div class="tournament-bracket__match">
-                        <table class="tournament-bracket__table">
-                            <tbody class="tournament-bracket__content">
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{format!("Team {}", home)}</span>
-                                    </td>
-                                </tr>
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{away_source.to_string()}</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <span class="tournament-bracket__code">{format!("Team {}", home)}</span>
+                        <span class="vs-separator">"-"</span>
+                        <span class="tournament-bracket__code">{away_source.to_string()}</span>
                     </div>
                 </li>
             }
@@ -118,20 +94,9 @@ fn view_playoff_game(game: PlayoffGameState) -> impl IntoView {
             view! {
                 <li class="tournament-bracket__item">
                     <div class="tournament-bracket__match">
-                        <table class="tournament-bracket__table">
-                            <tbody class="tournament-bracket__content">
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{home_source.to_string()}</span>
-                                    </td>
-                                </tr>
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{format!("Team {}", away)}</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <span class="tournament-bracket__code">{home_source.to_string()}</span>
+                        <span class="vs-separator">"-"</span>
+                        <span class="tournament-bracket__code">{format!("Team {}", away)}</span>
                     </div>
                 </li>
             }
@@ -144,20 +109,9 @@ fn view_playoff_game(game: PlayoffGameState) -> impl IntoView {
             view! {
                 <li class="tournament-bracket__item">
                     <div class="tournament-bracket__match">
-                        <table class="tournament-bracket__table">
-                            <tbody class="tournament-bracket__content">
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{format!("Team {}", home)}</span>
-                                    </td>
-                                </tr>
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{format!("Team {}", away)}</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <span class="tournament-bracket__code">{format!("Team {}", home)}</span>
+                        <span class="vs-separator">"-"</span>
+                        <span class="tournament-bracket__code">{format!("Team {}", away)}</span>
                     </div>
                 </li>
             }
@@ -166,20 +120,9 @@ fn view_playoff_game(game: PlayoffGameState) -> impl IntoView {
             view! {
                 <li class="tournament-bracket__item">
                     <div class="tournament-bracket__match">
-                        <table class="tournament-bracket__table">
-                            <tbody class="tournament-bracket__content">
-                                <tr class="tournament-bracket__team tournament-bracket__team--winner">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{format!("Team {}", result.home)}</span>
-                                    </td>
-                                </tr>
-                                <tr class="tournament-bracket__team">
-                                    <td class="tournament-bracket__country">
-                                        <span class="tournament-bracket__code">{format!("Team {}", result.away)}</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <span class="tournament-bracket__code">{format!("Team {}", result.home)}</span>
+                        <span class="vs-separator">"-"</span>
+                        <span class="tournament-bracket__code">{format!("Team {}", result.away)}</span>
                     </div>
                 </li>
             }

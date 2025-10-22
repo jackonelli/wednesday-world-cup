@@ -24,19 +24,20 @@ where
 
     view! {
         <section class="group_play">
-            <h2>"Groups"</h2>
-            {groups_vec
-                .into_iter()
-                .map(move |(group_id, group)| {
-                    view_group(
-                        group_id,
-                        group,
-                        teams.clone(),
-                        on_play.clone(),
-                        on_unplay.clone(),
-                    )
-                })
-                .collect_view()}
+            <div class="groups-container">
+                {groups_vec
+                    .into_iter()
+                    .map(move |(group_id, group)| {
+                        view_group(
+                            group_id,
+                            group,
+                            teams.clone(),
+                            on_play.clone(),
+                            on_unplay.clone(),
+                        )
+                    })
+                    .collect_view()}
+            </div>
         </section>
     }
 }
@@ -84,7 +85,6 @@ where
 
     view! {
         <div class="games">
-            <h4>"Games"</h4>
             <table>
                 {played_games
                     .into_iter()

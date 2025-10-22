@@ -42,15 +42,16 @@ pub fn PlayedGameView(
         <tr class="played_game">
             <td>{home_team.fifa_code.to_string()}</td>
             <td><span class={home_flag}></span></td>
-            <td>{game.score.home.to_string()}</td>
-            <td>{game.score.away.to_string()}</td>
-            <td>{away_team.fifa_code.to_string()}</td>
-            <td><span class={away_flag}></span></td>
-            <td>
-                <button on:click=move |_| on_unplay(group_id, game_id)>
+            <td class="score-display">
+                {game.score.home.to_string()}
+                <span class="score-separator">"-"</span>
+                {game.score.away.to_string()}
+                <button class="unplay-button" on:click=move |_| on_unplay(group_id, game_id)>
                     "\u{1F504}"
                 </button>
             </td>
+            <td>{away_team.fifa_code.to_string()}</td>
+            <td><span class={away_flag}></span></td>
         </tr>
     }
 }

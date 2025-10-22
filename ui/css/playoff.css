@@ -1,129 +1,147 @@
 /* Playoff Bracket Styles */
 .playoff-bracket {
-    padding: 2rem;
+    padding: 1rem;
     background: #f7f7f7;
-    margin-top: 2rem;
+    margin-top: 1rem;
 }
 
-.playoff-bracket h2 {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-/* Reuse existing tournament-bracket styles but with our simpler structure */
 .tournament-bracket {
     display: flex;
     flex-direction: row;
-    gap: 40px;
+    gap: 3rem;
+    padding: 2rem;
     overflow-x: auto;
-    padding: 20px;
 }
 
-.bracket-round {
-    list-style: none;
+.tournament-bracket__round {
     display: flex;
     flex-direction: column;
     justify-content: space-around;
-    min-width: 200px;
+    list-style: none;
     padding: 0;
+    margin: 0;
 }
 
-.round-title {
-    font-weight: bold;
+.tournament-bracket__round-title {
     text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.1em;
-    color: #9e9e9e;
-    font-style: italic;
+    font-weight: 600;
+    color: #666;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
 }
 
-.bracket-game {
+.tournament-bracket__list {
     display: flex;
     flex-direction: column;
-    margin: 10px 0;
-    position: relative;
-    background: white;
-    border: 2px solid #e5e5e5;
-    border-radius: 4px;
-    box-shadow: 0 2px 0 0 #e5e5e5;
+    justify-content: space-around;
+    flex-grow: 1;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-.team-slot {
-    padding: 10px;
-    min-height: 35px;
+.tournament-bracket__item {
+    position: relative;
+    margin: 0.5rem 0;
+    list-style: none;
+}
+
+.tournament-bracket__match {
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    padding: 0.4rem 0.6rem;
+    min-width: 200px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
     display: flex;
     align-items: center;
-    font-size: 0.9rem;
-    border-bottom: 1px solid #e5e5e5;
+    gap: 0.5rem;
+    font-size: 0.8rem;
 }
 
-.team-slot:last-child {
-    border-bottom: none;
+.tournament-bracket__table {
+    display: contents;
 }
 
-/* Different states */
-.team-slot.pending {
-    color: #9e9e9e;
-    font-style: italic;
-    background: #fafafa;
+.tournament-bracket__content {
+    display: contents;
 }
 
-.team-slot.known {
-    color: #212121;
-    font-weight: 500;
-    background: #e3f2fd;
+.tournament-bracket__team {
+    display: contents;
 }
 
-.team-slot.ready {
-    color: #212121;
-    font-weight: 600;
-    background: #c8e6c9;
+.tournament-bracket__country {
+    display: inline;
 }
 
-.team-slot.played {
-    color: #212121;
-    background: #fff9c4;
+.tournament-bracket__code {
+    font-size: 0.8rem;
+    color: #333;
+    white-space: nowrap;
 }
 
-.team-slot.winner {
-    font-weight: 700;
-    background: #ffeb3b;
+.vs-separator {
+    color: #999;
+    font-weight: normal;
+    padding: 0 0.3rem;
 }
 
-/* Connecting lines between rounds */
-@media (min-width: 38em) {
-    .bracket-game::after {
-        content: '';
-        position: absolute;
-        right: -20px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 20px;
-        height: 2px;
-        background: #9e9e9e;
-    }
+/* Horizontal line going right from each game */
+.tournament-bracket__item::after {
+    content: "";
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    width: 1.5rem;
+    height: 2px;
+    background: #999;
+    transform: translateY(-1px);
+}
 
-    .bracket-round:last-child .bracket-game::after {
-        display: none;
-    }
+/* Horizontal line coming left into each game */
+.tournament-bracket__match::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    width: 1.5rem;
+    height: 2px;
+    background: #999;
+    transform: translateY(-1px);
+}
 
-    .bracket-game:nth-child(odd)::before {
-        content: '';
-        position: absolute;
-        right: -20px;
-        top: 50%;
-        width: 2px;
-        height: 50%;
-        background: #9e9e9e;
-    }
+/* Vertical connectors between pairs - go from center of game to midpoint between pairs */
+.tournament-bracket__item:nth-child(odd)::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 1.5rem);
+    top: 50%;
+    width: 2px;
+    /* Height extends down to meet the even child's line */
+    height: calc(100% + 1rem);
+    background: #999;
+}
 
-    .bracket-game:nth-child(even)::before {
-        content: '';
-        position: absolute;
-        right: -20px;
-        bottom: 50%;
-        width: 2px;
-        height: 50%;
-        background: #9e9e9e;
-    }
+.tournament-bracket__item:nth-child(even)::before {
+    content: "";
+    position: absolute;
+    left: calc(100% + 1.5rem);
+    bottom: 50%;
+    width: 2px;
+    /* Height extends up to meet the odd child's line */
+    height: calc(100% + 1rem);
+    background: #999;
+}
+
+/* Hide connectors on first round (no incoming lines) */
+.tournament-bracket__round:first-child .tournament-bracket__match::before {
+    display: none;
+}
+
+/* Hide connectors on last round (final - no outgoing lines) */
+.tournament-bracket__round:last-child .tournament-bracket__item::after,
+.tournament-bracket__round:last-child .tournament-bracket__item::before {
+    display: none;
 }
