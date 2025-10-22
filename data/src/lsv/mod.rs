@@ -62,6 +62,8 @@ pub enum LsvParseError {
     PlayoffOutcomeInQualification,
     #[error("Unexpected team {0}")]
     MissingTeam(FifaCode),
+    #[error("Unexpected team id {0}")]
+    MissingTeamId(TeamId),
     #[error("Missing result")]
     MissingResult,
 }

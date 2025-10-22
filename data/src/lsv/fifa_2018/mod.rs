@@ -12,6 +12,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::convert::{TryFrom, TryInto};
 use wwc_core::game::GameId;
 use wwc_core::group::{GroupError, GroupId, GroupOutcome, Groups};
+use wwc_core::playoff::TeamSource;
 use wwc_core::playoff::transition::{PlayoffTransition, PlayoffTransitions};
 use wwc_core::team::{Team, TeamId, TeamRank, Teams};
 
@@ -21,6 +22,8 @@ pub struct Fifa2018Data {
     groups: HashMap<GroupId, ParseGroup>,
     #[serde(rename = "knockout")]
     pub playoff: ParsePlayoff,
+    #[serde(skip)]
+    pub team_sources: Vec<(GameId, (TeamSource, TeamSource))>,
 }
 
 impl LsvData for Fifa2018Data {
@@ -54,6 +57,8 @@ impl LsvData for Fifa2018Data {
             .into_iter()
             .map(|(id, pg)| (id.into_uppercase(), pg))
             .collect();
+        let team_sources = Self::parse_team_sources(&data.playoff).collect();
+        data.team_sources = team_sources;
         Ok(data)
     }
 
@@ -80,6 +85,19 @@ impl LsvData for Fifa2018Data {
             .map(|team| team.try_into())
             .collect::<Result<Vec<Team>, LsvParseError>>()?;
         Ok(tmp.into_iter().map(|t| (t.id, t)).collect())
+    }
+}
+
+impl Fifa2018Data {
+    pub(crate) fn parse_team_sources(
+        data: &ParsePlayoff,
+    ) -> impl Iterator<Item = (GameId, (TeamSource, TeamSource))> + '_ {
+        data.games().filter_map(|game| {
+            // Use game_type to determine if teams are from group stage or previous playoff games
+            let home = game.home_team.to_team_source(&game.game_type).ok()?;
+            let away = game.away_team.to_team_source(&game.game_type).ok()?;
+            Some((game.id, (home, away)))
+        })
     }
 }
 
