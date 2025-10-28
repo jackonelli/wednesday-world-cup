@@ -17,8 +17,6 @@ The backend consists of the tightly linked `server` and `db` crates. The `db` cr
 The `server` is an executable which needs to be running whenever the application is active. It listens for http requests and responds with or manipulates database data.
 
 First, setup the database, see [`db/README.md`](db/README.md)
-```
-
 With the database set up, the only remaining backend thing is to start the server.
 
 ```bash

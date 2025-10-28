@@ -187,3 +187,4 @@ Why is it implemented like this?
 
 The downside is of course that the implementation makes a lot more computations than is strictly necessary.
 However, due to the nature of the application, some 50 games and groups of four teams are never going to cause performance issues.
+What's more, essentially all computations are run in the browser, so it's your electricity bill, not mine, that will suffer.

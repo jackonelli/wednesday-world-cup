@@ -1,6 +1,5 @@
 use leptos::prelude::*;
 use std::collections::HashMap;
-use wwc_core::game::GameId;
 use wwc_core::group::Groups;
 use wwc_core::group::order::{Rules, Tiebreaker};
 use wwc_core::playoff::{BracketState, BracketStructure, PlayoffGameState};
@@ -26,11 +25,9 @@ where
                 {rounds
                     .into_iter()
                     .map(|depth| {
-                        let round_name = round_name(depth, max_depth);
                         let games = bracket.games_at_depth(depth, &state, &groups, &rules);
                         view! {
                             <ul class="tournament-bracket__round">
-                                <li class="tournament-bracket__round-title">{round_name}</li>
                                 <ul class="tournament-bracket__list">
                                     {games
                                         .into_iter()
@@ -43,17 +40,6 @@ where
                     .collect_view()}
             </div>
         </section>
-    }
-}
-
-fn round_name(depth: usize, max_depth: usize) -> &'static str {
-    match depth {
-        0 => "Final",
-        1 => "Semi-Finals",
-        2 => "Quarter-Finals",
-        3 => "Round of 16",
-        4 => "Round of 32",
-        _ => "Round",
     }
 }
 
