@@ -7,6 +7,7 @@ mod group;
 mod group_game;
 mod pages;
 mod playoff;
+mod playoff_game;
 mod table;
 mod team;
 

@@ -1,22 +1,31 @@
+use crate::playoff_game::{
+    AwayKnownGameView, HomeKnownGameView, PendingGameView, PlayedGameView, PlayoffScoreInput,
+    ReadyGameView,
+};
 use leptos::prelude::*;
 use std::collections::HashMap;
+use wwc_core::game::GameId;
 use wwc_core::group::Groups;
 use wwc_core::group::order::{Rules, Tiebreaker};
 use wwc_core::playoff::{BracketState, BracketStructure, PlayoffGameState};
 use wwc_core::team::{Team, TeamId};
 
 #[component]
-pub fn PlayoffBracketView<T>(
+pub fn PlayoffBracketView<T, F1, F2>(
     bracket: BracketStructure,
+    bracket_state: BracketState,
     groups: Groups,
     teams: HashMap<TeamId, Team>,
     rules: Rules<T>,
+    on_play: F1,
+    on_unplay: F2,
 ) -> impl IntoView
 where
     T: Tiebreaker + 'static,
+    F1: Fn(PlayoffScoreInput) + Clone + Send + Sync + 'static,
+    F2: Fn(GameId) + Clone + Send + Sync + 'static,
 {
     let max_depth = bracket.max_depth();
-    let state = BracketState::new(); // Empty state - no games played yet
     let rounds: Vec<_> = (0..=max_depth).rev().collect();
 
     view! {
@@ -25,13 +34,22 @@ where
                 {rounds
                     .into_iter()
                     .map(|depth| {
-                        let games = bracket.games_at_depth(depth, &state, &groups, &rules);
+                        let games = bracket.games_at_depth(depth, &bracket_state, &groups, &rules);
+                        let on_play = on_play.clone();
+                        let on_unplay = on_unplay.clone();
                         view! {
                             <ul class="tournament-bracket__round">
                                 <ul class="tournament-bracket__list">
                                     {games
                                         .into_iter()
-                                        .map(|game| view_playoff_game(game, teams.clone()))
+                                        .map(|game| {
+                                            view_playoff_game(
+                                                game,
+                                                teams.clone(),
+                                                on_play.clone(),
+                                                on_unplay.clone(),
+                                            )
+                                        })
                                         .collect_view()}
                                 </ul>
                             </ul>
@@ -43,84 +61,57 @@ where
     }
 }
 
-fn view_playoff_game(game: PlayoffGameState, teams: HashMap<TeamId, Team>) -> impl IntoView {
+fn view_playoff_game<F1, F2>(
+    game: PlayoffGameState,
+    teams: HashMap<TeamId, Team>,
+    on_play: F1,
+    on_unplay: F2,
+) -> impl IntoView
+where
+    F1: Fn(PlayoffScoreInput) + Clone + Send + Sync + 'static,
+    F2: Fn(GameId) + Clone + Send + Sync + 'static,
+{
     match game {
         PlayoffGameState::Pending {
             game_id,
             home_source,
             away_source,
-        } => view_game_box(home_source.to_string(), away_source.to_string()),
+        } => view! {
+            <PendingGameView game_id=game_id home_source=home_source away_source=away_source/>
+        }
+        .into_any(),
         PlayoffGameState::HomeKnown {
             game_id,
             home,
             away_source,
-        } => {
-            let home_text = get_team_text(&teams, &home);
-            view_game_box(home_text, away_source.to_string())
+        } => view! {
+            <HomeKnownGameView game_id=game_id home=home away_source=away_source teams=teams/>
         }
+        .into_any(),
         PlayoffGameState::AwayKnown {
             game_id,
             home_source,
             away,
-        } => {
-            let away_text = get_team_text(&teams, &away);
-            view_game_box(home_source.to_string(), away_text)
+        } => view! {
+            <AwayKnownGameView
+                game_id=game_id
+                home_source=home_source
+                away=away
+                teams=teams
+            />
         }
+        .into_any(),
         PlayoffGameState::Ready {
             game_id,
             home,
             away,
-        } => {
-            let home_text = get_team_text(&teams, &home);
-            let away_text = get_team_text(&teams, &away);
-            view_game_box(home_text, away_text)
+        } => view! {
+            <ReadyGameView game_id=game_id home=home away=away teams=teams on_play=on_play/>
         }
-        PlayoffGameState::Played { game_id, result } => {
-            let home_text = get_team_text(&teams, &result.home);
-            let away_text = get_team_text(&teams, &result.away);
-            view_game_box(home_text, away_text)
+        .into_any(),
+        PlayoffGameState::Played { game_id, result } => view! {
+            <PlayedGameView game_id=game_id result=result teams=teams on_unplay=on_unplay/>
         }
-    }
-}
-
-fn get_team_text(teams: &HashMap<TeamId, Team>, team_id: &TeamId) -> String {
-    teams
-        .get(team_id)
-        .map(|t| t.fifa_code.to_string())
-        .unwrap_or_else(|| format!("Team {}", team_id))
-}
-
-fn display_unready_box(team_id: Option<TeamId>) -> impl IntoView {
-    if let Some(team_id) = team_id {
-        view! {
-            <span class="tournament-bracket__code">get_team_text(teams, team_id)</span>
-        }
-    } else {
-        view! {
-        <span class="tournament-bracket__code">""</span>
-        }
-    }
-}
-
-fn view_unready(home: Option<TeamId>, away: Option<TeamId>) -> impl IntoView {
-    view! {
-        <li class="tournament-bracket__item">
-            <div class="tournament-bracket__match">
-                display_unready_box(home)
-                <span class="vs-separator">"-"</span>
-                display_unready_box(away)
-            </div>
-        </li>
-    }
-}
-fn view_game_box(home_text: String, away_text: String) -> impl IntoView {
-    view! {
-        <li class="tournament-bracket__item">
-            <div class="tournament-bracket__match">
-                <span class="tournament-bracket__code">{home_text}</span>
-                <span class="vs-separator">"-"</span>
-                <span class="tournament-bracket__code">{away_text}</span>
-            </div>
-        </li>
+        .into_any(),
     }
 }

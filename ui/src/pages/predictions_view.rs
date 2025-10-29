@@ -6,6 +6,7 @@ use crate::data::{
 use crate::group::view_group_play;
 use crate::group_game::ScoreInput;
 use crate::playoff::PlayoffBracketView;
+use crate::playoff_game::PlayoffScoreInput;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use web_sys::console;
@@ -13,7 +14,7 @@ use wwc_core::{
     game::GameId,
     group::{GroupId, Groups, order::fifa_2018_rules},
     player::{PlayerPredictions, Prediction},
-    playoff::{BracketStructure, TeamSource},
+    playoff::{BracketState, BracketStructure, TeamSource},
     team::Teams,
 };
 
@@ -34,6 +35,7 @@ pub fn PredictionsView() -> impl IntoView {
 
     // Reactive signals for model state
     let groups = RwSignal::new(Groups::new());
+    let bracket_state = RwSignal::new(BracketState::new());
     // Teams and team_sources are read-only, we only need to set them once on load,
     // therefore it is better for reactivity to have separate read/write accessors.
     let (teams, set_teams) = signal(Teams::new());
@@ -136,20 +138,55 @@ pub fn PredictionsView() -> impl IntoView {
         });
     };
 
+    // Action to play a playoff game
+    let play_playoff_game = move |input: PlayoffScoreInput| {
+        console::log_1(
+            &format!(
+                "Playing playoff game {} with score {:?}",
+                input.game_id, input.score
+            )
+            .into(),
+        );
+        bracket_state.update(|state| {
+            *state = state.play_game(input.game_id, input.home, input.away, input.score);
+            console::log_1(&"Playoff game played successfully".into());
+        });
+    };
+
+    // Action to unplay a playoff game
+    let unplay_playoff_game = move |game_id: GameId| {
+        console::log_1(&format!("Replaying playoff game {}", game_id).into());
+        bracket_state.update(|state| {
+            *state = state.unplay_game(game_id);
+        });
+    };
+
     // Action to save predictions
     let save_preds_action = move |_| {
         let current_groups = groups.get();
+        let current_bracket_state = bracket_state.get();
         if let Some(token) = auth_token.get() {
             spawn_local(async move {
                 console::log_1(&"Saving preds".into());
-                let player_preds = PlayerPredictions::new(
-                    player_id,
-                    current_groups
-                        .iter()
-                        .flat_map(|(_, group)| group.played_games())
-                        .map(|game| Prediction::from(*game))
-                        .collect(),
+
+                // Collect group predictions
+                let all_predictions: Vec<Prediction> = current_groups
+                    .iter()
+                    .flat_map(|(_, group)| group.played_games())
+                    .map(|game| Prediction::from(*game))
+                    .collect();
+
+                // TODO: Add playoff predictions once Prediction type supports playoff scores
+                // For now, playoff predictions are only stored in UI state
+                console::log_1(
+                    &format!(
+                        "Saving {} group predictions (playoff predictions not yet persisted)",
+                        all_predictions.len()
+                    )
+                    .into(),
                 );
+
+                let player_preds = PlayerPredictions::new(player_id, all_predictions);
                 match save_preds(player_preds, &token).await {
                     Ok(_) => {
                         console::log_1(&"Preds saved successfully".into());
@@ -165,6 +202,8 @@ pub fn PredictionsView() -> impl IntoView {
     // Action to clear predictions
     let clear_preds_action = move |_| {
         console::log_1(&"Clearing preds".into());
+
+        // Clear group predictions
         groups.update(|groups| {
             groups.iter_mut().for_each(|(_, group)| {
                 let tmp = group.clone();
@@ -172,6 +211,10 @@ pub fn PredictionsView() -> impl IntoView {
                     .for_each(|game| group.unplay_game(game.id));
             });
         });
+
+        // Clear playoff predictions
+        bracket_state.set(BracketState::new());
+
         if let Some(token) = auth_token.get() {
             spawn_local(async move {
                 match clear_my_preds(&token).await {
@@ -230,9 +273,12 @@ pub fn PredictionsView() -> impl IntoView {
                             view! {
                                 <PlayoffBracketView
                                     bracket=b
+                                    bracket_state=bracket_state.get()
                                     groups=current_groups
                                     teams=teams.get()
                                     rules=fifa_2018_rules()
+                                    on_play=play_playoff_game
+                                    on_unplay=unplay_playoff_game
                                 />
                             }
                         })

@@ -145,3 +145,160 @@
 .tournament-bracket__round:last-child .tournament-bracket__item::before {
     display: none;
 }
+
+/* Playoff Game States */
+
+/* Ensure consistent sizing for all states */
+.tournament-bracket__match {
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Pending state - both teams unknown */
+.tournament-bracket__match.playoff-pending {
+    background-color: #f5f5f5;
+    opacity: 0.7;
+    border-color: #ccc;
+}
+
+.playoff-team-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+.tournament-bracket__source {
+    font-size: 0.75rem;
+    color: #888;
+    font-style: italic;
+}
+
+/* Partial state - one team known */
+.tournament-bracket__match.playoff-partial {
+    background-color: #fafafa;
+    opacity: 0.85;
+    border-color: #bbb;
+}
+
+.playoff-team-known {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+/* Ready state - both teams known, can predict */
+.tournament-bracket__match.playoff-ready {
+    background-color: #fff;
+    border-color: #4caf50;
+    border-width: 2px;
+}
+
+.playoff-ready-game {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.playoff-teams-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.playoff-team {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+.playoff-score-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.playoff-score-input {
+    width: 40px;
+    height: 30px;
+    text-align: center;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    padding: 0.2rem;
+}
+
+.playoff-score-input:focus {
+    outline: none;
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.playoff-penalty-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    background-color: #f9f9f9;
+    border-top: 1px dashed #ddd;
+    margin-top: 0.3rem;
+}
+
+.penalty-label {
+    font-size: 0.75rem;
+    color: #666;
+    font-weight: 600;
+}
+
+.penalty-input {
+    width: 35px;
+    height: 26px;
+}
+
+/* Played state - completed game */
+.tournament-bracket__match.playoff-played {
+    background-color: #e8f5e9;
+    border-color: #2e7d32;
+}
+
+.playoff-played-game {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.playoff-score-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.score-text {
+    font-weight: 600;
+    color: #2e7d32;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.unplay-button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.2rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.unplay-button:hover {
+    opacity: 1;
+}
