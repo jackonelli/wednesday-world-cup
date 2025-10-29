@@ -35,5 +35,10 @@ pub async fn create_pool() -> Result<SqlitePool, DbError> {
         .await
         .map_err(DbError::Sqlx)?;
 
+    sqlx::query(include_str!("../sqlx_migrations/003_auth_tables.sql"))
+        .execute(&pool)
+        .await
+        .map_err(DbError::Sqlx)?;
+
     Ok(pool)
 }

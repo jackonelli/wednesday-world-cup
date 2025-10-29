@@ -1,4 +1,4 @@
-use crate::game::{PlayedGameView, ScoreInput, UnplayedGameView};
+use crate::group_game::{PlayedGameView, ScoreInput, UnplayedGameView};
 use crate::table::DisplayTableView;
 use leptos::prelude::*;
 use wwc_core::{

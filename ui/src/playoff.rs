@@ -2,7 +2,7 @@ use leptos::prelude::*;
 use std::collections::HashMap;
 use wwc_core::group::Groups;
 use wwc_core::group::order::{Rules, Tiebreaker};
-use wwc_core::playoff::{BracketState, BracketStructure, PlayoffGameState};
+use wwc_core::playoff::{BracketState, BracketStructure, PlayoffGameState, TeamSource};
 use wwc_core::team::{Team, TeamId};
 
 #[component]
@@ -90,6 +90,29 @@ fn get_team_text(teams: &HashMap<TeamId, Team>, team_id: &TeamId) -> String {
         .unwrap_or_else(|| format!("Team {}", team_id))
 }
 
+fn display_unready_box(team_id: Option<TeamId>) -> impl IntoView {
+    if let Some(team_id) = team_id {
+        view! {
+            <span class="tournament-bracket__code">get_team_text(teams, team_id)</span>
+        }
+    } else {
+        view! {
+        <span class="tournament-bracket__code">""</span>
+        }
+    }
+}
+
+fn view_unready(home: Option<TeamId>, away: Option<TeamId>) -> impl IntoView {
+    view! {
+        <li class="tournament-bracket__item">
+            <div class="tournament-bracket__match">
+                display_unready_box(home)
+                <span class="vs-separator">"-"</span>
+                display_unready_box(away)
+            </div>
+        </li>
+    }
+}
 fn view_game_box(home_text: String, away_text: String) -> impl IntoView {
     view! {
         <li class="tournament-bracket__item">

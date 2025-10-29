@@ -15,3 +15,8 @@ wwc_data = {path = "../data"}
 wwc_db = {path = "../db"}
 tokio = { version = "1", features = ["full"] }
 sqlx = { version = "0.8", features = ["sqlite"] }
+serde = {version = ">=1", features = ["derive"]}
+# Auth
+bcrypt = "0.15"
+jsonwebtoken = "9"
+chrono = "0.4"

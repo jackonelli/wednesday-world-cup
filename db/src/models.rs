@@ -110,6 +110,7 @@ pub struct Pred {
     pub game_id: i32,
     pub home_result: i32,
     pub away_result: i32,
+    pub bot_name: Option<String>,
 }
 
 impl From<Pred> for Prediction {
@@ -126,4 +127,22 @@ impl From<Pred> for Prediction {
 pub struct Player {
     pub id: i32,
     pub name: String,
+}
+
+#[derive(Debug, FromRow)]
+pub struct User {
+    pub id: i32, // This is also the player_id
+    pub username: String,
+    pub password_hash: String,
+    pub display_name: String,
+    pub created_at: String,
+}
+
+#[derive(Debug, FromRow)]
+pub struct Bot {
+    pub id: i32,
+    pub user_id: i32, // This is also the player_id
+    pub bot_name: String,
+    pub bot_display_name: String,
+    pub created_at: String,
 }

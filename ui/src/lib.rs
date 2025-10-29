@@ -2,7 +2,7 @@
 #![allow(dead_code, unused_variables)]
 mod app;
 mod data;
-mod game;
+mod group_game;
 mod group;
 mod playoff;
 mod table;

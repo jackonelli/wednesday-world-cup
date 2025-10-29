@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS preds (
   game_id INTEGER NOT NULL,
   home_result INTEGER NOT NULL,
   away_result INTEGER NOT NULL,
+  bot_name VARCHAR,  -- NULL for human predictions, bot identifier for bot predictions
   FOREIGN KEY(game_id) REFERENCES games(id),
   FOREIGN KEY(player_id) REFERENCES players(id)
 );

@@ -1,3 +1,4 @@
+//! TODO Remove
 use wwc_db::{create_pool, get_games};
 
 #[tokio::main]

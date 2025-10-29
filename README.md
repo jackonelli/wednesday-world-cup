@@ -19,6 +19,19 @@ The `server` is an executable which needs to be running whenever the application
 First, setup the database, see [`db/README.md`](db/README.md)
 With the database set up, the only remaining backend thing is to start the server.
 
+### Create a user
+JWT_SECRET=<secret-key> cargo run --bin wwc_cli user create <username> <password> <player_id> "<display_name>"
+
+# Create a bot for a user (outputs JWT token)
+JWT_SECRET=<secret-key> cargo run --bin wwc_cli bot create <username> <bot_name> "<bot_display_name>"
+
+# List users/bots
+cargo run --bin wwc_cli user list
+cargo run --bin wwc_cli bot list <username>
+
+# Start server
+JWT_SECRET=<secret-key> cargo run --bin wwc_server
+
 ```bash
 cd $WWC_ROOT
 cargo run --bin wwc_server

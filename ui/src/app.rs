@@ -1,8 +1,9 @@
 use crate::data::{
-    clear_preds, get_groups_played_with_preds, get_playoff_team_sources, get_teams, save_preds,
+    clear_my_preds, get_groups_played_with_preds, get_playoff_team_sources, get_teams, login,
+    save_preds,
 };
-use crate::game::ScoreInput;
 use crate::group::view_group_play;
+use crate::group_game::ScoreInput;
 use crate::playoff::PlayoffBracketView;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -22,6 +23,30 @@ pub fn App() -> impl IntoView {
     let teams = RwSignal::new(Teams::new());
     let player = RwSignal::new(Player::dummy());
     let team_sources = RwSignal::new(Vec::<(GameId, (TeamSource, TeamSource))>::new());
+    let auth_token = RwSignal::new(Option::<String>::None);
+
+    // Login on mount - TEMPORARY: using hardcoded credentials
+    // TODO: Replace with proper login UI
+    Effect::new(move |_| {
+        spawn_local(async move {
+            console::log_1(&"Attempting login...".into());
+            // FIXME: Replace with actual credentials from user input
+            match login("dummy_user", "dummy_pass").await {
+                Ok((token, player_id, display_name)) => {
+                    console::log_1(
+                        &format!("Logged in as: {} (player_id: {})", display_name, player_id)
+                            .into(),
+                    );
+                    auth_token.set(Some(token));
+                }
+                Err(e) => {
+                    console::error_1(
+                        &format!("Login failed: {} - Predictions won't be saveable", e).into(),
+                    );
+                }
+            }
+        });
+    });
 
     // Fetch teams on mount
     Effect::new(move |_| {
@@ -103,23 +128,29 @@ pub fn App() -> impl IntoView {
     let save_preds_action = move |_| {
         let current_groups = groups.get();
         let current_player = player.get();
+        let token = auth_token.get();
         spawn_local(async move {
             console::log_1(&"Saving preds".into());
-            let player_preds = PlayerPredictions::new(
-                current_player.id(),
-                current_groups
-                    .iter()
-                    .flat_map(|(_, group)| group.played_games())
-                    .map(|game| Prediction::from(*game))
-                    .collect(),
-            );
-            match save_preds(player_preds).await {
-                Ok(_) => {
-                    console::log_1(&"Preds saved successfully".into());
+
+            if let Some(token) = token {
+                let player_preds = PlayerPredictions::new(
+                    current_player.id(),
+                    current_groups
+                        .iter()
+                        .flat_map(|(_, group)| group.played_games())
+                        .map(|game| Prediction::from(*game))
+                        .collect(),
+                );
+                match save_preds(player_preds, &token).await {
+                    Ok(_) => {
+                        console::log_1(&"Preds saved successfully".into());
+                    }
+                    Err(e) => {
+                        console::error_1(&format!("Error saving preds: {}", e).into());
+                    }
                 }
-                Err(e) => {
-                    console::error_1(&format!("Error saving preds: {}", e).into());
-                }
+            } else {
+                console::error_1(&"Cannot save: Not authenticated".into());
             }
         });
     };
@@ -127,6 +158,7 @@ pub fn App() -> impl IntoView {
     // Action to clear predictions
     let clear_preds_action = move |_| {
         console::log_1(&"Clearing preds".into());
+        let token = auth_token.get();
         groups.update(|groups| {
             groups.iter_mut().for_each(|(_, group)| {
                 let tmp = group.clone();
@@ -135,13 +167,17 @@ pub fn App() -> impl IntoView {
             });
         });
         spawn_local(async move {
-            match clear_preds().await {
-                Ok(_) => {
-                    console::log_1(&"Preds cleared".into());
+            if let Some(token) = token {
+                match clear_my_preds(&token).await {
+                    Ok(_) => {
+                        console::log_1(&"Preds cleared successfully".into());
+                    }
+                    Err(e) => {
+                        console::error_1(&format!("Error clearing preds: {}", e).into());
+                    }
                 }
-                Err(e) => {
-                    console::error_1(&format!("Error clearing preds: {}", e).into());
-                }
+            } else {
+                console::error_1(&"Cannot clear: Not authenticated".into());
             }
         });
     };

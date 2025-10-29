@@ -1,5 +1,6 @@
 use crate::UiError;
 use gloo_net::http::Request;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wwc_core::player::{PlayerId, Prediction};
 use wwc_core::playoff::TeamSource;
@@ -12,6 +13,53 @@ use wwc_core::{
 
 const SERVER_IP: &str = "http://localhost:8000";
 
+#[derive(Serialize)]
+struct LoginRequest {
+    username: String,
+    password: String,
+}
+
+#[derive(Deserialize)]
+struct LoginResponse {
+    token: String,
+    player_id: i32,
+    display_name: String,
+}
+
+#[derive(Deserialize)]
+struct ErrorResponse {
+    error: String,
+}
+
+/// Login with username and password, returns (token, player_id, display_name)
+pub(crate) async fn login(
+    username: &str,
+    password: &str,
+) -> Result<(String, i32, String), UiError> {
+    let url = format!("{}/{}", SERVER_IP, "login");
+    let login_req = LoginRequest {
+        username: username.to_string(),
+        password: password.to_string(),
+    };
+    let response = Request::post(&url)
+        .header("Content-Type", "application/json")
+        .json(&login_req)?
+        .send()
+        .await?;
+
+    if response.ok() {
+        let login_response: LoginResponse = response.json().await?;
+        Ok((
+            login_response.token,
+            login_response.player_id,
+            login_response.display_name,
+        ))
+    } else {
+        let error_response: ErrorResponse = response.json().await?;
+        Err(UiError::Server(error_response.error))
+    }
+}
+
 pub(crate) async fn get_preds(player_id: PlayerId) -> Result<Vec<Prediction>, UiError> {
     let response = Request::get(&format!("{}/{}/{}", SERVER_IP, "get_preds", player_id))
         .send()
@@ -19,19 +67,29 @@ pub(crate) async fn get_preds(player_id: PlayerId) -> Result<Vec<Prediction>, Ui
     Ok(response.json().await?)
 }
 
-pub(crate) async fn save_preds(preds: PlayerPredictions) -> Result<(), UiError> {
+pub(crate) async fn save_preds(preds: PlayerPredictions, token: &str) -> Result<(), UiError> {
     let url = format!("{}/{}", SERVER_IP, "save_preds");
     let json_body = serde_json::to_string(&preds)?;
     Request::put(&url)
         .header("Content-Type", "application/json")
+        .header("Authorization", &format!("Bearer {}", token))
         .body(json_body)?
         .send()
         .await?;
     Ok(())
 }
 
-pub(crate) async fn clear_preds() -> Result<(), UiError> {
+pub(crate) async fn clear_my_preds(token: &str) -> Result<(), UiError> {
+    Request::get(&format!("{}/{}", SERVER_IP, "clear_my_preds"))
+        .header("Authorization", &format!("Bearer {}", token))
+        .send()
+        .await?;
+    Ok(())
+}
+
+pub(crate) async fn clear_preds(admin_secret: &str) -> Result<(), UiError> {
     Request::get(&format!("{}/{}", SERVER_IP, "clear_preds"))
+        .header("Authorization", &format!("Bearer {}", admin_secret))
         .send()
         .await?;
     Ok(())

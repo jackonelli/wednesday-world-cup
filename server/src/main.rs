@@ -1,11 +1,15 @@
+mod auth;
+
 use axum::{
-    Json, Router,
-    extract::{Path, State},
+    Extension, Json, Router,
+    extract::{Path, Query, State},
     http::StatusCode,
+    middleware,
     response::IntoResponse,
-    routing::{get, put},
+    routing::{get, post, put},
 };
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use std::collections::{BTreeMap, HashMap};
 use std::net::SocketAddr;
@@ -30,13 +34,30 @@ async fn main() {
         .expect("Failed to create database pool");
 
     // Build our application with routes
-    let app = Router::new()
+    // Public routes (no auth required)
+    let public_routes = Router::new()
         .route("/get_teams", get(get_teams))
         .route("/get_groups", get(get_groups))
         .route("/get_playoff_team_sources", get(get_playoff_team_sources))
-        .route("/get_preds/:player_id", get(get_preds))
-        .route("/clear_preds", get(clear_preds))
+        .route("/login", post(login))
+        .route("/get_display_names", get(get_display_names))
+        .route("/get_preds/:player_id", get(get_preds_public));
+
+    // User-authenticated routes (requires JWT token)
+    let user_routes = Router::new()
         .route("/save_preds", put(save_preds))
+        .route("/clear_my_preds", get(clear_my_preds))
+        .route_layer(middleware::from_fn(auth::user_auth_middleware));
+
+    // Admin-only routes (requires ADMIN_SECRET)
+    let admin_routes = Router::new()
+        .route("/clear_preds", get(clear_preds))
+        .route_layer(middleware::from_fn(auth::admin_auth_middleware));
+
+    let app = Router::new()
+        .merge(public_routes)
+        .merge(user_routes)
+        .merge(admin_routes)
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
@@ -63,14 +84,25 @@ async fn main() {
 /// Save predictions
 async fn save_preds(
     State(pool): State<SqlitePool>,
+    Extension(auth_user): Extension<auth::AuthUser>,
     Json(player_preds): Json<PlayerPredictions>,
 ) -> Result<StatusCode, AppError> {
-    info!("Saving predictions for player {}", player_preds.id);
+    // Verify the player_id in the predictions matches the authenticated user's player_id
+    if i32::from(player_preds.id) != auth_user.player_id {
+        return Err(AppError::Generic(
+            "Cannot save predictions for a different player".to_string(),
+        ));
+    }
+
+    info!(
+        "Saving predictions for player {} (bot: {:?})",
+        player_preds.id, auth_user.bot_name
+    );
 
     // Ensure player exists (auto-create if needed)
     ensure_player_exists(&pool, player_preds.id).await?;
 
-    wwc_db::insert_preds(&pool, &player_preds).await?;
+    wwc_db::insert_preds(&pool, &player_preds, auth_user.bot_name.as_deref()).await?;
 
     Ok(StatusCode::OK)
 }
@@ -87,27 +119,172 @@ async fn get_teams(State(pool): State<SqlitePool>) -> Result<Json<Teams>, AppErr
     Ok(Json(teams))
 }
 
-/// Get predictions for a player
-async fn get_preds(
+/// Query parameters for get_preds
+#[derive(Deserialize)]
+struct GetPredsQuery {
+    bot: Option<String>,
+}
+
+/// Get predictions for a player (public, no auth required - temporary)
+async fn get_preds_public(
     State(pool): State<SqlitePool>,
     Path(player_id): Path<i32>,
+    Query(query): Query<GetPredsQuery>,
 ) -> Result<Json<Vec<Prediction>>, AppError> {
-    let preds = wwc_db::get_preds(&pool, PlayerId::from(player_id)).await?;
+    let bot_name = query.bot.as_deref();
+    let preds = wwc_db::get_preds(&pool, PlayerId::from(player_id), bot_name).await?;
 
     info!(
-        "Retrieved {} predictions for player {}",
+        "Retrieved {} predictions for player {} (bot: {:?})",
         preds.len(),
-        player_id
+        player_id,
+        bot_name
     );
     Ok(Json(preds))
 }
 
-/// Clear all predictions
+/// Get predictions for a player (authenticated - for future use when UI is updated)
+#[allow(dead_code)]
+async fn get_preds(
+    State(pool): State<SqlitePool>,
+    Path(player_id): Path<i32>,
+    Query(query): Query<GetPredsQuery>,
+    Extension(auth_user): Extension<auth::AuthUser>,
+) -> Result<Json<Vec<Prediction>>, AppError> {
+    // Verify the requested player_id matches the authenticated user's player_id
+    if player_id != auth_user.player_id {
+        return Err(AppError::Generic(
+            "Cannot access predictions for a different player".to_string(),
+        ));
+    }
+
+    let bot_name = query.bot.as_deref();
+    let preds = wwc_db::get_preds(&pool, PlayerId::from(player_id), bot_name).await?;
+
+    info!(
+        "Retrieved {} predictions for player {} (bot: {:?})",
+        preds.len(),
+        player_id,
+        bot_name
+    );
+    Ok(Json(preds))
+}
+
+/// Clear all predictions (admin only)
 async fn clear_preds(State(pool): State<SqlitePool>) -> Result<StatusCode, AppError> {
     wwc_db::clear_preds(&pool).await?;
 
-    info!("Predictions cleared");
+    info!("All predictions cleared");
     Ok(StatusCode::OK)
+}
+
+/// Clear my predictions (authenticated user)
+async fn clear_my_preds(
+    State(pool): State<SqlitePool>,
+    Extension(auth_user): Extension<auth::AuthUser>,
+) -> Result<StatusCode, AppError> {
+    wwc_db::clear_player_preds(
+        &pool,
+        PlayerId::from(auth_user.player_id),
+        auth_user.bot_name.as_deref(),
+    )
+    .await?;
+
+    info!(
+        "Cleared predictions for player {} (bot: {:?})",
+        auth_user.player_id, auth_user.bot_name
+    );
+    Ok(StatusCode::OK)
+}
+
+/// Login request
+#[derive(Deserialize)]
+struct LoginRequest {
+    username: String,
+    password: String,
+}
+
+/// Login response
+#[derive(Serialize)]
+struct LoginResponse {
+    token: String,
+    player_id: i32,
+    display_name: String,
+}
+
+/// Login endpoint
+async fn login(
+    State(pool): State<SqlitePool>,
+    Json(login_req): Json<LoginRequest>,
+) -> Result<Json<LoginResponse>, AppError> {
+    // Get user by username
+    let user = wwc_db::get_user_by_username(&pool, &login_req.username)
+        .await?
+        .ok_or_else(|| AppError::Generic("Invalid username or password".to_string()))?;
+
+    // Verify password
+    let password_valid = bcrypt::verify(&login_req.password, &user.password_hash)
+        .map_err(|_| AppError::Generic("Invalid username or password".to_string()))?;
+
+    if !password_valid {
+        return Err(AppError::Generic(
+            "Invalid username or password".to_string(),
+        ));
+    }
+
+    // Generate JWT token (for human user, not a bot)
+    let token = generate_jwt_token(user.id, None);
+
+    info!("User '{}' logged in", user.username);
+
+    Ok(Json(LoginResponse {
+        token,
+        player_id: user.id,
+        display_name: user.display_name,
+    }))
+}
+
+/// Get all display names
+async fn get_display_names(
+    State(pool): State<SqlitePool>,
+) -> Result<Json<Vec<(i32, Option<String>, String)>>, AppError> {
+    let display_names = wwc_db::get_all_display_names(&pool).await?;
+
+    info!("Retrieved {} display names", display_names.len());
+    Ok(Json(display_names))
+}
+
+/// Generate a JWT token
+fn generate_jwt_token(player_id: i32, bot_name: Option<String>) -> String {
+    use jsonwebtoken::{EncodingKey, Header, encode};
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct Claims {
+        player_id: i32,
+        bot_name: Option<String>,
+        exp: usize,
+    }
+
+    let expiration = chrono::Utc::now()
+        .checked_add_signed(chrono::Duration::days(365))
+        .expect("Invalid timestamp")
+        .timestamp() as usize;
+
+    let claims = Claims {
+        player_id,
+        bot_name,
+        exp: expiration,
+    };
+
+    let secret = std::env::var("JWT_SECRET")
+        .unwrap_or_else(|_| "your-secret-key-change-this-in-production".to_string());
+
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(secret.as_bytes()),
+    )
+    .expect("Failed to generate JWT token")
 }
 
 /// Get playoff team sources
@@ -225,16 +402,28 @@ enum AppError {
     Wwc(#[from] WwcError),
     #[error("SQLx error: {0}")]
     Sqlx(#[from] sqlx::Error),
+    #[error("{0}")]
+    Generic(String),
 }
 
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            error: String,
+        }
+
         let (status, error_message) = match self {
             AppError::Db(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
             AppError::Wwc(e) => (StatusCode::BAD_REQUEST, e.to_string()),
             AppError::Sqlx(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            AppError::Generic(msg) => (StatusCode::BAD_REQUEST, msg),
         };
 
-        (status, error_message).into_response()
+        let error_response = ErrorResponse {
+            error: error_message,
+        };
+
+        (status, Json(error_response)).into_response()
     }
 }
