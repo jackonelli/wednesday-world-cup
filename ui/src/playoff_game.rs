@@ -139,7 +139,7 @@ pub fn ReadyGameView(
     home: TeamId,
     away: TeamId,
     teams: Teams,
-    on_play: impl Fn(PlayoffScoreInput) + 'static,
+    on_play: impl Fn(PlayoffScoreInput) + Clone + 'static,
 ) -> impl IntoView {
     let home_team = teams.get(&home).cloned();
     let away_team = teams.get(&away).cloned();
@@ -166,19 +166,84 @@ pub fn ReadyGameView(
         }
     };
 
-    let on_submit = move |_| {
-        if let (Some(home_input), Some(away_input)) = (home_input_ref.get(), away_input_ref.get()) {
-            let home_val = home_input.value();
-            let away_val = away_input.value();
+    let on_home_keydown = move |ev: ev::KeyboardEvent| {
+        if ev.key() == "Tab" || ev.key() == "Enter" {
+            check_draw();
+            if let Some(away_input) = away_input_ref.get() {
+                let _ = away_input.focus();
+                ev.prevent_default();
+            }
+        }
+    };
 
-            if let (Ok(home_score), Ok(away_score)) =
-                (home_val.parse::<u32>(), away_val.parse::<u32>())
+    let on_play_clone = on_play.clone();
+    let on_away_keydown = move |ev: ev::KeyboardEvent| {
+        check_draw();
+        if ev.key() == "Tab" || ev.key() == "Enter" {
+            if is_draw.get_untracked() {
+                if let Some(home_pen_input) = home_penalty_ref.get() {
+                    let _ = home_pen_input.focus();
+                    ev.prevent_default();
+                }
+            } else {
+                // Not a draw, submit immediately
+                if ev.key() == "Enter" {
+                    if let (Some(home_input), Some(away_input)) =
+                        (home_input_ref.get(), away_input_ref.get())
+                    {
+                        let home_val = home_input.value();
+                        let away_val = away_input.value();
+
+                        if let (Ok(home_score), Ok(away_score)) =
+                            (home_val.parse::<u32>(), away_val.parse::<u32>())
+                        {
+                            if let (Ok(home_goals), Ok(away_goals)) = (
+                                GoalCount::try_from(home_score),
+                                GoalCount::try_from(away_score),
+                            ) {
+                                if let Ok(score) =
+                                    PlayoffScore::regular_time(home_goals, away_goals)
+                                {
+                                    on_play_clone(PlayoffScoreInput::new(
+                                        game_id, home, away, score,
+                                    ));
+                                    home_input.set_value("");
+                                    away_input.set_value("");
+                                    set_is_draw.set(false);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    let on_home_penalty_keydown = move |ev: ev::KeyboardEvent| {
+        if ev.key() == "Tab" || ev.key() == "Enter" {
+            if let Some(away_pen_input) = away_penalty_ref.get() {
+                let _ = away_pen_input.focus();
+                ev.prevent_default();
+            }
+        }
+    };
+
+    let on_away_penalty_keydown = move |ev: ev::KeyboardEvent| {
+        if ev.key() == "Enter" {
+            // Submit with penalties
+            if let (Some(home_input), Some(away_input)) =
+                (home_input_ref.get(), away_input_ref.get())
             {
-                if let (Ok(home_goals), Ok(away_goals)) = (
-                    GoalCount::try_from(home_score),
-                    GoalCount::try_from(away_score),
-                ) {
-                    if home_score == away_score {
+                let home_val = home_input.value();
+                let away_val = away_input.value();
+
+                if let (Ok(home_score), Ok(away_score)) =
+                    (home_val.parse::<u32>(), away_val.parse::<u32>())
+                {
+                    if let (Ok(home_goals), Ok(away_goals)) = (
+                        GoalCount::try_from(home_score),
+                        GoalCount::try_from(away_score),
+                    ) {
                         if let (Some(home_pen_input), Some(away_pen_input)) =
                             (home_penalty_ref.get(), away_penalty_ref.get())
                         {
@@ -207,46 +272,8 @@ pub fn ReadyGameView(
                                 }
                             }
                         }
-                    } else {
-                        if let Ok(score) = PlayoffScore::regular_time(home_goals, away_goals) {
-                            on_play(PlayoffScoreInput::new(game_id, home, away, score));
-                            home_input.set_value("");
-                            away_input.set_value("");
-                            set_is_draw.set(false);
-                        }
                     }
                 }
-            }
-        }
-    };
-
-    let on_home_keydown = move |ev: ev::KeyboardEvent| {
-        if ev.key() == "Tab" || ev.key() == "Enter" {
-            check_draw();
-            if let Some(away_input) = away_input_ref.get() {
-                let _ = away_input.focus();
-                ev.prevent_default();
-            }
-        }
-    };
-
-    let on_away_keydown = move |ev: ev::KeyboardEvent| {
-        check_draw();
-        if ev.key() == "Tab" || ev.key() == "Enter" {
-            if is_draw.get_untracked() {
-                if let Some(home_pen_input) = home_penalty_ref.get() {
-                    let _ = home_pen_input.focus();
-                    ev.prevent_default();
-                }
-            }
-        }
-    };
-
-    let on_home_penalty_keydown = move |ev: ev::KeyboardEvent| {
-        if ev.key() == "Tab" || ev.key() == "Enter" {
-            if let Some(away_pen_input) = away_penalty_ref.get() {
-                let _ = away_pen_input.focus();
-                ev.prevent_default();
             }
         }
     };
@@ -302,36 +329,29 @@ pub fn ReadyGameView(
                     }}
                 </div>
             </div>
-            {move || {
-                is_draw
-                    .get()
-                    .then(|| {
-                        view! {
-                            <div class="playoff-penalty-row">
-                                <span class="penalty-label">"Penalties:"</span>
-                                <input
-                                    node_ref=home_penalty_ref
-                                    class="playoff-score-input penalty-input"
-                                    type="number"
-                                    min="0"
-                                    size=1
-                                    on:keydown=on_home_penalty_keydown
-                                />
-                                <span class="score-separator">"-"</span>
-                                <input
-                                    node_ref=away_penalty_ref
-                                    class="playoff-score-input penalty-input"
-                                    type="number"
-                                    min="0"
-                                    size=1
-                                />
-                            </div>
-                        }
-                    })
-            }}
-            <button class="submit-button" on:click=on_submit>
-                "Submit"
-            </button>
+            <div
+                class="playoff-penalty-row"
+                style:display=move || if is_draw.get() { "flex" } else { "none" }
+            >
+                <span class="penalty-label">"Penalties:"</span>
+                <input
+                    node_ref=home_penalty_ref
+                    class="playoff-score-input penalty-input"
+                    type="number"
+                    min="0"
+                    size=1
+                    on:keydown=on_home_penalty_keydown
+                />
+                <span class="score-separator">"-"</span>
+                <input
+                    node_ref=away_penalty_ref
+                    class="playoff-score-input penalty-input"
+                    type="number"
+                    min="0"
+                    size=1
+                    on:keydown=on_away_penalty_keydown
+                />
+            </div>
         </div>
     };
 
