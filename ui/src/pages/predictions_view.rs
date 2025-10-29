@@ -76,18 +76,21 @@ pub fn PredictionsView() -> impl IntoView {
 
     // Fetch groups on mount (run once)
     Effect::new(move |_| {
-        spawn_local(async move {
-            console::log_1(&"Fetching groups".into());
-            match get_groups_played_with_preds(player_id).await {
-                Ok(fetched_groups) => {
-                    console::log_1(&format!("Fetched {} groups", fetched_groups.len()).into());
-                    groups.set(fetched_groups);
+        if let Some(token) = auth_token.get_untracked() {
+            let token_clone = token.clone();
+            spawn_local(async move {
+                console::log_1(&"Fetching groups".into());
+                match get_groups_played_with_preds(player_id, &token_clone).await {
+                    Ok(fetched_groups) => {
+                        console::log_1(&format!("Fetched {} groups", fetched_groups.len()).into());
+                        groups.set(fetched_groups);
+                    }
+                    Err(e) => {
+                        console::error_1(&format!("Error fetching groups: {}", e).into());
+                    }
                 }
-                Err(e) => {
-                    console::error_1(&format!("Error fetching groups: {}", e).into());
-                }
-            }
-        });
+            });
+        }
     });
 
     // Fetch playoff team sources on mount (run once)

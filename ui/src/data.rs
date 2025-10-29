@@ -76,8 +76,12 @@ pub(crate) async fn login(username: &str, password: &str) -> Result<(String, i32
     }
 }
 
-pub(crate) async fn get_preds(player_id: PlayerId) -> Result<Vec<Prediction>, UiError> {
+pub(crate) async fn get_preds(
+    player_id: PlayerId,
+    token: &str,
+) -> Result<Vec<Prediction>, UiError> {
     let response = Request::get(&format!("{}/{}/{}", SERVER_IP, "get_preds", player_id))
+        .header("Authorization", &format!("Bearer {}", token))
         .send()
         .await?;
     Ok(response.json().await?)
@@ -126,8 +130,11 @@ pub(crate) async fn get_groups() -> Result<Groups, UiError> {
 }
 
 /// Fetches all group games and unplays them to simulate settings at betting time.
-pub(crate) async fn get_groups_played_with_preds(player_id: PlayerId) -> Result<Groups, UiError> {
-    let preds = get_preds(player_id).await?;
+pub(crate) async fn get_groups_played_with_preds(
+    player_id: PlayerId,
+    token: &str,
+) -> Result<Groups, UiError> {
+    let preds = get_preds(player_id, token).await?;
     let mut groups = get_groups().await?;
     groups.iter_mut().for_each(|(_, group)| {
         // TODO: How to remove this allocation?
