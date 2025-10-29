@@ -23,7 +23,6 @@ struct LoginRequest {
 struct LoginResponse {
     token: String,
     player_id: i32,
-    display_name: String,
 }
 
 #[derive(Deserialize)]
@@ -55,11 +54,8 @@ pub(crate) async fn get_me(token: &str) -> Result<(String, Option<String>), UiEr
     }
 }
 
-/// Login with username and password, returns (token, player_id, display_name)
-pub(crate) async fn login(
-    username: &str,
-    password: &str,
-) -> Result<(String, i32, String), UiError> {
+/// Login with username and password, returns (token, player_id)
+pub(crate) async fn login(username: &str, password: &str) -> Result<(String, i32), UiError> {
     let url = format!("{}/{}", SERVER_IP, "login");
     let login_req = LoginRequest {
         username: username.to_string(),
@@ -73,11 +69,7 @@ pub(crate) async fn login(
 
     if response.ok() {
         let login_response: LoginResponse = response.json().await?;
-        Ok((
-            login_response.token,
-            login_response.player_id,
-            login_response.display_name,
-        ))
+        Ok((login_response.token, login_response.player_id))
     } else {
         let error_response: ErrorResponse = response.json().await?;
         Err(UiError::Server(error_response.error))

@@ -9,7 +9,6 @@ use web_sys::console;
 #[component]
 pub fn LoginPage() -> impl IntoView {
     let auth_state = expect_context::<RwSignal<AuthState>>();
-    let display_name = expect_context::<RwSignal<Option<String>>>();
     let navigate = use_navigate();
 
     let username = RwSignal::new(String::new());
@@ -37,14 +36,11 @@ pub fn LoginPage() -> impl IntoView {
             console::log_1(&"Attempting login...".into());
 
             match login_api(&username_val, &password_val).await {
-                Ok((token, player_id, user_display_name)) => {
-                    console::log_1(&format!("Login successful: {}", user_display_name).into());
+                Ok((token, player_id)) => {
+                    console::log_1(&"Login successful".into());
 
                     // Save to localStorage
                     save_auth_to_storage(&token, player_id);
-
-                    // Update display name (separate from auth)
-                    display_name.set(Some(user_display_name));
 
                     // Update auth state
                     auth_state.set(AuthState::Authenticated { token, player_id });

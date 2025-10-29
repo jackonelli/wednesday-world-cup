@@ -73,9 +73,4 @@ pub fn ProtectedRoute(children: ChildrenFn) -> impl IntoView {
 pub fn logout(auth_state: RwSignal<AuthState>) {
     clear_auth_from_storage();
     auth_state.set(AuthState::Unauthenticated);
-
-    // Clear display name if it exists in context
-    if let Some(display_name) = use_context::<RwSignal<Option<String>>>() {
-        display_name.set(None);
-    }
 }

@@ -2,7 +2,7 @@ use leptos::prelude::*;
 use std::collections::HashMap;
 use wwc_core::group::Groups;
 use wwc_core::group::order::{Rules, Tiebreaker};
-use wwc_core::playoff::{BracketState, BracketStructure, PlayoffGameState, TeamSource};
+use wwc_core::playoff::{BracketState, BracketStructure, PlayoffGameState};
 use wwc_core::team::{Team, TeamId};
 
 #[component]

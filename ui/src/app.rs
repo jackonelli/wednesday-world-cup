@@ -12,10 +12,6 @@ pub fn App() -> impl IntoView {
     let auth_state = RwSignal::new(AuthState::Loading);
     provide_context(auth_state);
 
-    // Separate signal for display name (cosmetic, not auth-related)
-    let display_name = RwSignal::new(Option::<String>::None);
-    provide_context(display_name);
-
     // Check localStorage for existing auth on mount
     Effect::new(move |_| {
         if let Some(stored_auth) = load_auth_from_storage() {

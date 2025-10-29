@@ -210,7 +210,6 @@ struct LoginRequest {
 struct LoginResponse {
     token: String,
     player_id: i32,
-    display_name: String,
 }
 
 /// Login endpoint
@@ -241,7 +240,6 @@ async fn login(
     Ok(Json(LoginResponse {
         token,
         player_id: user.id,
-        display_name: user.display_name,
     }))
 }
 

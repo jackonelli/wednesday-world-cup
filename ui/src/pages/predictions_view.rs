@@ -20,7 +20,9 @@ use wwc_core::{
 #[component]
 pub fn PredictionsView() -> impl IntoView {
     let auth_state = expect_context::<RwSignal<AuthState>>();
-    let display_name = expect_context::<RwSignal<Option<String>>>();
+
+    // Display name is local to this component - just cosmetic data from server
+    let (display_name, set_display_name) = signal(Option::<String>::None);
 
     // Extract auth data from context
     let (auth_token, player_id) = match auth_state.get_untracked() {
@@ -46,7 +48,7 @@ pub fn PredictionsView() -> impl IntoView {
                     Ok((user_display_name, _bot_name)) => {
                         console::log_1(&format!("Fetched user info: {}", user_display_name).into());
                         // Update display name (separate signal, won't trigger auth reactivity)
-                        display_name.set(Some(user_display_name));
+                        set_display_name.set(Some(user_display_name));
                     }
                     Err(e) => {
                         console::error_1(&format!("Error fetching user info: {}", e).into());
