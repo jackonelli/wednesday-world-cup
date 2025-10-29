@@ -20,12 +20,13 @@ use wwc_core::{
 #[component]
 pub fn PredictionsView() -> impl IntoView {
     let auth_state = expect_context::<RwSignal<AuthState>>();
+    let display_name = expect_context::<RwSignal<Option<String>>>();
 
     // Extract auth data from context
     let (auth_token, player_id) = match auth_state.get_untracked() {
-        AuthState::Authenticated {
-            token, player_id, ..
-        } => (RwSignal::new(Some(token)), player_id.into()),
+        AuthState::Authenticated { token, player_id } => {
+            (RwSignal::new(Some(token)), player_id.into())
+        }
         _ => (RwSignal::new(None), wwc_core::player::PlayerId::from(1)), // Fallback, shouldn't happen due to ProtectedRoute
     };
 
@@ -36,25 +37,16 @@ pub fn PredictionsView() -> impl IntoView {
     let (teams, set_teams) = signal(Teams::new());
     let (team_sources, set_team_sources) = signal(Vec::<(GameId, (TeamSource, TeamSource))>::new());
 
-    // Fetch user info and update auth_state with display_name (run once on mount)
+    // Fetch user info and update display_name (run once on mount)
     Effect::new(move |_| {
         if let Some(token) = auth_token.get_untracked() {
             let token_clone = token.clone();
             spawn_local(async move {
                 match get_me(&token_clone).await {
-                    Ok((display_name, _bot_name)) => {
-                        console::log_1(&format!("Fetched user info: {}", display_name).into());
-                        // Update auth_state with display_name
-                        if let AuthState::Authenticated {
-                            token, player_id, ..
-                        } = auth_state.get_untracked()
-                        {
-                            auth_state.set(AuthState::Authenticated {
-                                token,
-                                player_id,
-                                display_name: Some(display_name),
-                            });
-                        }
+                    Ok((user_display_name, _bot_name)) => {
+                        console::log_1(&format!("Fetched user info: {}", user_display_name).into());
+                        // Update display name (separate signal, won't trigger auth reactivity)
+                        display_name.set(Some(user_display_name));
                     }
                     Err(e) => {
                         console::error_1(&format!("Error fetching user info: {}", e).into());
@@ -209,14 +201,12 @@ pub fn PredictionsView() -> impl IntoView {
             <header class="header">
                 <h1>"Wednesday world cup"</h1>
                 <div class="user-info">
-                    {move || match auth_state.get() {
-                        AuthState::Authenticated { display_name: Some(name), .. } => {
+                    {move || {
+                        if let Some(name) = display_name.get() {
                             view! { <span>"Logged in as: " {name}</span> }.into_any()
-                        }
-                        AuthState::Authenticated { display_name: None, .. } => {
+                        } else {
                             view! { <span>"Loading user info..."</span> }.into_any()
                         }
-                        _ => view! { <span></span> }.into_any(),
                     }}
                     " "
                     <button on:click=on_logout>"Logout"</button>

@@ -5,16 +5,12 @@ use web_sys::window;
 
 const STORAGE_KEY: &str = "wwc_auth";
 
-// Auth state enum
+// Auth state enum - only authentication info, no cosmetic data
 #[derive(Clone, Debug, PartialEq)]
 pub enum AuthState {
     Loading,
     Unauthenticated,
-    Authenticated {
-        token: String,
-        player_id: i32,
-        display_name: Option<String>,
-    },
+    Authenticated { token: String, player_id: i32 },
 }
 
 // Struct for localStorage serialization
@@ -65,6 +61,7 @@ pub fn ProtectedRoute(children: ChildrenFn) -> impl IntoView {
         }
     });
 
+    // Now that display_name is separate, auth_state changes only for login/logout
     move || match auth_state.get() {
         AuthState::Loading => view! { <div>"Loading..."</div> }.into_any(),
         AuthState::Unauthenticated => view! { <div></div> }.into_any(),
@@ -76,4 +73,9 @@ pub fn ProtectedRoute(children: ChildrenFn) -> impl IntoView {
 pub fn logout(auth_state: RwSignal<AuthState>) {
     clear_auth_from_storage();
     auth_state.set(AuthState::Unauthenticated);
+
+    // Clear display name if it exists in context
+    if let Some(display_name) = use_context::<RwSignal<Option<String>>>() {
+        display_name.set(None);
+    }
 }

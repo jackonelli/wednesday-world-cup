@@ -12,13 +12,16 @@ pub fn App() -> impl IntoView {
     let auth_state = RwSignal::new(AuthState::Loading);
     provide_context(auth_state);
 
+    // Separate signal for display name (cosmetic, not auth-related)
+    let display_name = RwSignal::new(Option::<String>::None);
+    provide_context(display_name);
+
     // Check localStorage for existing auth on mount
     Effect::new(move |_| {
         if let Some(stored_auth) = load_auth_from_storage() {
             auth_state.set(AuthState::Authenticated {
                 token: stored_auth.token,
                 player_id: stored_auth.player_id,
-                display_name: None, // Will be fetched by PredictionsView
             });
         } else {
             auth_state.set(AuthState::Unauthenticated);
