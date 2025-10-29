@@ -3,7 +3,7 @@ use leptos::ev;
 use leptos::prelude::*;
 use wwc_core::game::{GameId, GoalCount};
 use wwc_core::playoff::{PlayoffResult, PlayoffScore, TeamSource};
-use wwc_core::team::{Team, TeamId, Teams};
+use wwc_core::team::{TeamId, Teams};
 
 /// Input data for playing a playoff game
 #[derive(Debug, Clone, Copy)]
@@ -134,16 +134,13 @@ pub fn AwayKnownGameView(
 
 /// Component for Ready state - both teams known, can be predicted
 #[component]
-pub fn ReadyGameView<F>(
+pub fn ReadyGameView(
     game_id: GameId,
     home: TeamId,
     away: TeamId,
     teams: Teams,
-    on_play: F,
-) -> impl IntoView
-where
-    F: Fn(PlayoffScoreInput) + Clone + Send + Sync + 'static,
-{
+    on_play: impl Fn(PlayoffScoreInput) + 'static,
+) -> impl IntoView {
     let home_team = teams.get(&home).cloned();
     let away_team = teams.get(&away).cloned();
 
@@ -169,8 +166,7 @@ where
         }
     };
 
-    let on_play_clone = on_play.clone();
-    let try_submit = move || {
+    let on_submit = move |_| {
         if let (Some(home_input), Some(away_input)) = (home_input_ref.get(), away_input_ref.get()) {
             let home_val = home_input.value();
             let away_val = away_input.value();
@@ -201,9 +197,7 @@ where
                                         home_pen_goals,
                                         away_pen_goals,
                                     ) {
-                                        on_play_clone(PlayoffScoreInput::new(
-                                            game_id, home, away, score,
-                                        ));
+                                        on_play(PlayoffScoreInput::new(game_id, home, away, score));
                                         home_input.set_value("");
                                         away_input.set_value("");
                                         home_pen_input.set_value("");
@@ -215,7 +209,7 @@ where
                         }
                     } else {
                         if let Ok(score) = PlayoffScore::regular_time(home_goals, away_goals) {
-                            on_play_clone(PlayoffScoreInput::new(game_id, home, away, score));
+                            on_play(PlayoffScoreInput::new(game_id, home, away, score));
                             home_input.set_value("");
                             away_input.set_value("");
                             set_is_draw.set(false);
@@ -236,18 +230,14 @@ where
         }
     };
 
-    let try_submit_stored = StoredValue::new(try_submit);
-
     let on_away_keydown = move |ev: ev::KeyboardEvent| {
         check_draw();
-        if ev.key() == "Enter" {
+        if ev.key() == "Tab" || ev.key() == "Enter" {
             if is_draw.get_untracked() {
                 if let Some(home_pen_input) = home_penalty_ref.get() {
                     let _ = home_pen_input.focus();
                     ev.prevent_default();
                 }
-            } else {
-                try_submit_stored.with_value(|f| f());
             }
         }
     };
@@ -258,12 +248,6 @@ where
                 let _ = away_pen_input.focus();
                 ev.prevent_default();
             }
-        }
-    };
-
-    let on_away_penalty_keydown = move |ev: ev::KeyboardEvent| {
-        if ev.key() == "Enter" {
-            try_submit_stored.with_value(|f| f());
         }
     };
 
@@ -318,38 +302,36 @@ where
                     }}
                 </div>
             </div>
-            {
-                let on_home_pen_kd = on_home_penalty_keydown.clone();
-                let on_away_pen_kd = on_away_penalty_keydown.clone();
-                move || {
-                    is_draw
-                        .get()
-                        .then(|| {
-                            view! {
-                                <div class="playoff-penalty-row">
-                                    <span class="penalty-label">"Penalties:"</span>
-                                    <input
-                                        node_ref=home_penalty_ref
-                                        class="playoff-score-input penalty-input"
-                                        type="number"
-                                        min="0"
-                                        size=1
-                                        on:keydown=on_home_pen_kd
-                                    />
-                                    <span class="score-separator">"-"</span>
-                                    <input
-                                        node_ref=away_penalty_ref
-                                        class="playoff-score-input penalty-input"
-                                        type="number"
-                                        min="0"
-                                        size=1
-                                        on:keydown=on_away_pen_kd
-                                    />
-                                </div>
-                            }
-                        })
-                }
-            }
+            {move || {
+                is_draw
+                    .get()
+                    .then(|| {
+                        view! {
+                            <div class="playoff-penalty-row">
+                                <span class="penalty-label">"Penalties:"</span>
+                                <input
+                                    node_ref=home_penalty_ref
+                                    class="playoff-score-input penalty-input"
+                                    type="number"
+                                    min="0"
+                                    size=1
+                                    on:keydown=on_home_penalty_keydown
+                                />
+                                <span class="score-separator">"-"</span>
+                                <input
+                                    node_ref=away_penalty_ref
+                                    class="playoff-score-input penalty-input"
+                                    type="number"
+                                    min="0"
+                                    size=1
+                                />
+                            </div>
+                        }
+                    })
+            }}
+            <button class="submit-button" on:click=on_submit>
+                "Submit"
+            </button>
         </div>
     };
 
@@ -358,15 +340,12 @@ where
 
 /// Component for Played state - game completed
 #[component]
-pub fn PlayedGameView<F>(
+pub fn PlayedGameView(
     game_id: GameId,
     result: PlayoffResult,
     teams: Teams,
-    on_unplay: F,
-) -> impl IntoView
-where
-    F: Fn(GameId) + Clone + Send + Sync + 'static,
-{
+    on_unplay: impl Fn(GameId) + 'static,
+) -> impl IntoView {
     let home_team = teams.get(&result.home).cloned();
     let away_team = teams.get(&result.away).cloned();
 
