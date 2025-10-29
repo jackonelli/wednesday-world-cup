@@ -31,6 +31,30 @@ struct ErrorResponse {
     error: String,
 }
 
+#[derive(Deserialize)]
+struct MeResponse {
+    player_id: i32,
+    display_name: String,
+    bot_name: Option<String>,
+}
+
+/// Get current user info from token
+pub(crate) async fn get_me(token: &str) -> Result<(String, Option<String>), UiError> {
+    let url = format!("{}/{}", SERVER_IP, "me");
+    let response = Request::get(&url)
+        .header("Authorization", &format!("Bearer {}", token))
+        .send()
+        .await?;
+
+    if response.ok() {
+        let me_response: MeResponse = response.json().await?;
+        Ok((me_response.display_name, me_response.bot_name))
+    } else {
+        let error_response: ErrorResponse = response.json().await?;
+        Err(UiError::Server(error_response.error))
+    }
+}
+
 /// Login with username and password, returns (token, player_id, display_name)
 pub(crate) async fn login(
     username: &str,

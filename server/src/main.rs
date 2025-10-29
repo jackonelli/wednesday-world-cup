@@ -47,6 +47,7 @@ async fn main() {
     let user_routes = Router::new()
         .route("/save_preds", put(save_preds))
         .route("/clear_my_preds", get(clear_my_preds))
+        .route("/me", get(get_current_user))
         .route_layer(middleware::from_fn(auth::user_auth_middleware));
 
     // Admin-only routes (requires ADMIN_SECRET)
@@ -241,6 +242,32 @@ async fn login(
         token,
         player_id: user.id,
         display_name: user.display_name,
+    }))
+}
+
+/// Get current user info from JWT token
+#[derive(Serialize)]
+struct MeResponse {
+    player_id: i32,
+    display_name: String,
+    bot_name: Option<String>,
+}
+
+async fn get_current_user(
+    State(pool): State<SqlitePool>,
+    Extension(auth_user): Extension<auth::AuthUser>,
+) -> Result<Json<MeResponse>, AppError> {
+    // Get user from database
+    let user = wwc_db::get_user_by_id(&pool, auth_user.player_id)
+        .await?
+        .ok_or_else(|| AppError::Generic("User not found".to_string()))?;
+
+    info!("User {} fetched their info", auth_user.player_id);
+
+    Ok(Json(MeResponse {
+        player_id: auth_user.player_id,
+        display_name: user.display_name,
+        bot_name: auth_user.bot_name,
     }))
 }
 
