@@ -52,12 +52,17 @@ pub fn PendingGameView(
     let away_text = format_source_display(&away_source);
 
     let content = view! {
-        <div class="playoff-team-placeholder">
-            <span class="tournament-bracket__source">{home_text}</span>
-        </div>
-        <span class="vs-separator">"-"</span>
-        <div class="playoff-team-placeholder">
-            <span class="tournament-bracket__source">{away_text}</span>
+        <div class="playoff-pending-content">
+            <div class="playoff-team-placeholder">
+                <span class="tournament-bracket__source">{home_text}</span>
+            </div>
+            <span class="vs-separator">"-"</span>
+            <div class="playoff-team-placeholder">
+                <span class="tournament-bracket__source">{away_text}</span>
+            </div>
+            <div class="debug-game-id" style="font-size: 0.7em; color: #999;">
+                "Game ID: " {game_id.to_string()}
+            </div>
         </div>
     };
 
@@ -351,6 +356,9 @@ pub fn ReadyGameView(
                     size=1
                     on:keydown=on_away_penalty_keydown
                 />
+            </div>
+            <div class="debug-game-id" style="font-size: 0.7em; color: #999;">
+                "Game ID: " {game_id.to_string()}
             </div>
         </div>
     };
